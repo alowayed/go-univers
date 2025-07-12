@@ -28,6 +28,7 @@ package main
 
 import (
     "fmt"
+    "slices"
     "github.com/alowayed/go-univers/ecosystem/npm"
 )
 
@@ -51,6 +52,11 @@ func main() {
     if range1.Contains(v1) {
         fmt.Println("v1 satisfies ^1.2.0")
     }
+    
+    // Sort versions natively with Go's slices package
+    versions := []*npm.Version{v2, v1} // v2 is newer but listed first
+    slices.SortFunc(versions, (*npm.Version).Compare)
+    fmt.Printf("Sorted: %s, %s\n", versions[0], versions[1]) // v1, v2
 }
 ```
 
@@ -251,6 +257,31 @@ for _, rangeStr := range ranges {
 version := pypi.NewVersion("01.02.03")
 normalized := version.Normalize() // "1.2.3"
 ```
+
+### Version Sorting
+```go
+import "slices"
+
+// Create a slice of versions
+versions := []*npm.Version{v1, v2, v3, v4}
+
+// Sort in ascending order using the existing Compare method
+slices.SortFunc(versions, (*npm.Version).Compare)
+
+// Sort in descending order
+slices.SortFunc(versions, func(a, b *npm.Version) int {
+    return b.Compare(a)
+})
+
+// Stable sort (maintains relative order of equal elements)
+slices.SortStableFunc(versions, (*npm.Version).Compare)
+```
+
+Semantic version sorting follows these rules:
+- Normal versions: `1.0.0 < 1.0.1 < 1.1.0 < 2.0.0`
+- Pre-releases have lower precedence: `1.0.0-alpha < 1.0.0`
+- Pre-release comparison: `1.0.0-alpha < 1.0.0-alpha.1 < 1.0.0-beta`
+- Build metadata is ignored: `1.0.0+build.1` equals `1.0.0+build.2`
 
 ## Testing
 

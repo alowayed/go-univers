@@ -31,18 +31,31 @@ Demonstrates edge cases and error handling:
 
 **Run:** `cd example-edge-cases && go run main.go`
 
+### `example-sorting/`
+Demonstrates native Go sorting capabilities for NPM versions:
+- Sorting version slices using `slices.SortFunc()` with the existing `Compare()` method
+- Ascending and descending sort order
+- Stable sorting for equal versions
+- Semantic version ordering rules (normal vs prerelease, numeric vs string comparison)
+
+**Run:** `cd example-sorting && go run main.go`
+
 ## Key Features Demonstrated
 
 - **Version Parsing**: Handles v-prefixes, equals-prefixes, prerelease, build metadata
 - **Range Parsing**: Supports caret (`^`), tilde (`~`), X-ranges, hyphen ranges, OR logic
 - **Comparison**: Semantic version comparison with proper prerelease ordering
+- **Sorting**: Native Go sorting using `slices.SortFunc()` with existing comparison logic
 - **Edge Cases**: Zero-version handling, whitespace normalization, error handling
 - **NPM Semver Compliance**: Follows NPM semantic versioning specification
 
 ## Usage Pattern
 
 ```go
-import "github.com/alowayed/go-univers/ecosystem/npm"
+import (
+    "slices"
+    "github.com/alowayed/go-univers/ecosystem/npm"
+)
 
 // Parse version
 version, err := npm.NewVersion("1.2.3-alpha.1")
@@ -52,6 +65,10 @@ versionRange, err := npm.NewVersionRange("^1.0.0 || >=2.0.0-alpha")
 
 // Check if version satisfies range
 satisfies := versionRange.Contains(version)
+
+// Sort versions
+versions := []*npm.Version{v1, v2, v3}
+slices.SortFunc(versions, (*npm.Version).Compare)
 ```
 
 These examples showcase over 70 test cases covering comprehensive edge cases identified by comparing with Google's semver library tests.

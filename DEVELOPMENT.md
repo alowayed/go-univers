@@ -172,7 +172,44 @@ ecosystem/npm/
     ├── example-simple/main.go
     ├── example-complex-ranges/main.go
     ├── example-edge-cases/main.go
+    ├── example-sorting/main.go
     └── README.md
 ```
 
 **Test Status**: All 75+ test cases passing, examples demonstrate clean public API usage.
+
+## Session 4: Native Go Sorting Support
+
+### ✅ Version Sorting Integration
+- **Modern Go sorting** - Added native support for sorting NPM versions using `slices.SortFunc()`
+- **Leverages existing Compare()** - No new API surface, uses the already-tested semantic version comparison logic
+- **Clean syntax** - Simple `slices.SortFunc(versions, (*npm.Version).Compare)` for ascending sort
+- **Full sorting capabilities** - Supports ascending, descending, and stable sorting
+
+### ✅ Documentation & Examples
+- **Comprehensive sorting example** - `example-sorting/main.go` demonstrates all sorting patterns
+- **README integration** - Added sorting section to both root and npm-specific READMEs
+- **Semantic version rules** - Documented ordering behavior for normal vs prerelease versions
+- **Usage patterns** - Clean examples showing `slices.SortFunc()` with method values
+
+### ✅ Design Decision: Modern Go Approach
+- **Rejected custom wrapper types** - No need for `Versions` type implementing `sort.Interface`
+- **Embraced Go 1.21+ generics** - Used `slices.SortFunc()` as the modern, idiomatic approach  
+- **Method value syntax** - `(*npm.Version).Compare` provides clean, discoverable API
+- **No convenience functions** - Direct `slices.SortFunc()` usage is simple enough
+
+### Key Implementation
+```go
+// Simple ascending sort
+slices.SortFunc(versions, (*npm.Version).Compare)
+
+// Descending sort  
+slices.SortFunc(versions, func(a, b *npm.Version) int {
+    return b.Compare(a)
+})
+
+// Stable sort (preserves order of equal elements)
+slices.SortStableFunc(versions, (*npm.Version).Compare)
+```
+
+**Current Status**: NPM versions now sort natively with Go's standard library, no additional dependencies or wrapper types required.
