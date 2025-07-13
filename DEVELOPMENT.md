@@ -108,3 +108,13 @@ Test files mirror source files. Examples organized in subdirectories to avoid pa
 - Created `cmd/` directory for CLI application
 - Updated all import paths in examples and documentation
 - Project now ready for both library and CLI development
+
+### Session 6: CLI Implementation
+- Researched Go CLI best practices focusing on standard library approaches
+- Implemented stateless CLI design using only Go standard library
+- Created `cmd/cli` package with `Run()` function for testable design
+- Implemented core commands: `compare`, `sort`, `satisfies` for npm and pypi ecosystems
+- Added comprehensive CLI tests covering success and error cases
+- CLI follows pattern: `univers <ecosystem> <command> [args]`
+- Shell-friendly with proper exit codes (0 for success, 1 for failure)
+- Updated README.md with CLI build instructions and usage examples

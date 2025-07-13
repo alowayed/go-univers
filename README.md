@@ -93,6 +93,57 @@ func main() {
 }
 ```
 
+## CLI Tool
+
+go-univers also provides a command-line interface for version operations.
+
+### Building the CLI
+
+```bash
+# Build the CLI binary
+go build -o univers ./cmd
+
+# Or install globally
+go install github.com/alowayed/go-univers/cmd@latest
+```
+
+### CLI Usage
+
+The CLI follows the pattern: `univers <ecosystem> <command> [args]`
+
+#### Compare Versions
+```bash
+# Compare two NPM versions (outputs -1, 0, or 1)
+univers npm compare "1.2.3" "1.2.4"     # → -1 (first < second)
+univers npm compare "2.0.0" "1.9.9"     # → 1 (first > second)
+univers npm compare "1.2.3" "1.2.3"     # → 0 (equal)
+
+# Compare PyPI versions
+univers pypi compare "1.0.0a1" "1.0.0"  # → -1 (alpha < release)
+```
+
+#### Sort Versions
+```bash
+# Sort NPM versions in ascending order
+univers npm sort "2.0.0" "1.2.3" "1.10.0"
+# → 1.2.3, 1.10.0, 2.0.0
+
+# Sort PyPI versions including prereleases
+univers pypi sort "1.0.0a1" "1.0.0" "0.9.0" "2!1.0.0"
+# → 0.9.0, 1.0.0a1, 1.0.0, 2!1.0.0
+```
+
+#### Check Range Satisfaction
+```bash
+# Check if version satisfies range (exit code 0 = true, 1 = false)
+univers npm satisfies "1.2.5" "^1.2.0"     # Exit 0 (satisfies)
+univers npm satisfies "2.0.0" "^1.2.0"     # Exit 1 (does not satisfy)
+
+# PyPI range checking
+univers pypi satisfies "1.2.5" "~=1.2.0"   # Exit 0 (compatible release)
+univers pypi satisfies "1.2.5" "==1.2.*"   # Exit 0 (wildcard match)
+```
+
 ## Architecture
 
 go-univers uses a **type-safe, ecosystem-isolated architecture** that prevents accidental cross-ecosystem version mixing:
