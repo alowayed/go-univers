@@ -126,6 +126,91 @@ func TestRun(t *testing.T) {
 			args:     []string{"pypi", "satisfies", "1.2.5", "==1.2.*"},
 			wantCode: 0,
 		},
+		{
+			name:     "go compare equal versions",
+			args:     []string{"go", "compare", "v1.2.3", "v1.2.3"},
+			wantCode: 0,
+		},
+		{
+			name:     "go compare less than",
+			args:     []string{"go", "compare", "v1.2.3", "v1.2.4"},
+			wantCode: 0,
+		},
+		{
+			name:     "go compare greater than",
+			args:     []string{"go", "compare", "v1.2.4", "v1.2.3"},
+			wantCode: 0,
+		},
+		{
+			name:     "go compare pseudo-version vs release",
+			args:     []string{"go", "compare", "v1.2.3-0.20170915032832-14c0d48ead0c", "v1.2.3"},
+			wantCode: 0,
+		},
+		{
+			name:     "go compare invalid version",
+			args:     []string{"go", "compare", "invalid", "v1.2.3"},
+			wantCode: 1,
+		},
+		{
+			name:     "go compare wrong number of args",
+			args:     []string{"go", "compare", "v1.2.3"},
+			wantCode: 1,
+		},
+		{
+			name:     "go sort single version",
+			args:     []string{"go", "sort", "v1.2.3"},
+			wantCode: 0,
+		},
+		{
+			name:     "go sort multiple versions with pseudo-version",
+			args:     []string{"go", "sort", "v2.0.0", "v1.2.3", "v1.10.0", "v1.0.0-20170915032832-14c0d48ead0c"},
+			wantCode: 0,
+		},
+		{
+			name:     "go sort no args",
+			args:     []string{"go", "sort"},
+			wantCode: 1,
+		},
+		{
+			name:     "go sort invalid version",
+			args:     []string{"go", "sort", "invalid", "v1.2.3"},
+			wantCode: 1,
+		},
+		{
+			name:     "go satisfies true",
+			args:     []string{"go", "satisfies", "v1.2.5", ">=v1.2.0"},
+			wantCode: 0,
+		},
+		{
+			name:     "go satisfies false",
+			args:     []string{"go", "satisfies", "v2.0.0", "<v1.9.0"},
+			wantCode: 1,
+		},
+		{
+			name:     "go satisfies multiple constraints true",
+			args:     []string{"go", "satisfies", "v1.5.0", ">=v1.2.0 <v2.0.0"},
+			wantCode: 0,
+		},
+		{
+			name:     "go satisfies multiple constraints false",
+			args:     []string{"go", "satisfies", "v2.0.0", ">=v1.2.0 <v2.0.0"},
+			wantCode: 1,
+		},
+		{
+			name:     "go satisfies invalid version",
+			args:     []string{"go", "satisfies", "invalid", ">=v1.2.0"},
+			wantCode: 1,
+		},
+		{
+			name:     "go satisfies invalid range",
+			args:     []string{"go", "satisfies", "v1.2.3", "invalid"},
+			wantCode: 1,
+		},
+		{
+			name:     "go satisfies wrong number of args",
+			args:     []string{"go", "satisfies", "v1.2.3"},
+			wantCode: 1,
+		},
 	}
 
 	for _, tt := range tests {
@@ -213,5 +298,30 @@ func TestCLIIntegration(t *testing.T) {
 	result = Run([]string{"npm", "satisfies", "2.0.0", "^1.2.0"})
 	if result != 1 {
 		t.Errorf("Expected version to not satisfy range, got exit code %d", result)
+	}
+
+	// Test Go ecosystem
+	// Test compare command
+	result = Run([]string{"go", "compare", "v1.2.3", "v1.2.4"})
+	if result != 0 {
+		t.Errorf("Expected successful Go comparison, got exit code %d", result)
+	}
+
+	// Test sort command with pseudo-version
+	result = Run([]string{"go", "sort", "v2.0.0", "v1.2.3", "v1.0.0-20170915032832-14c0d48ead0c"})
+	if result != 0 {
+		t.Errorf("Expected successful Go sort, got exit code %d", result)
+	}
+
+	// Test satisfies command (true case)
+	result = Run([]string{"go", "satisfies", "v1.5.0", ">=v1.2.0"})
+	if result != 0 {
+		t.Errorf("Expected Go version to satisfy range, got exit code %d", result)
+	}
+
+	// Test satisfies command (false case)
+	result = Run([]string{"go", "satisfies", "v2.0.0", "<v1.9.0"})
+	if result != 1 {
+		t.Errorf("Expected Go version to not satisfy range, got exit code %d", result)
 	}
 }

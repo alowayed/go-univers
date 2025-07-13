@@ -16,6 +16,8 @@ func Run(args []string) int {
 		return runEcosystem("npm", args[1:])
 	case "pypi":
 		return runEcosystem("pypi", args[1:])
+	case "go":
+		return runEcosystem("go", args[1:])
 	default:
 		fmt.Printf("Unknown ecosystem: %s\n", args[0])
 		return 1

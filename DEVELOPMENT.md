@@ -49,13 +49,17 @@ Test files mirror source files. Examples organized in subdirectories to avoid pa
         │   ├── version_test.go # Version tests
         │   ├── range_test.go   # Range tests
         │   └── constraint_test.go # Internal tests
-        └── pypi/
-            ├── pypi.go         # PyPI implementation
-            └── pypi_test.go    # PyPI tests
+        ├── pypi/
+        │   ├── pypi.go         # PyPI implementation
+        │   └── pypi_test.go    # PyPI tests
+        └── gomod/
+            ├── gomod.go        # Go module implementation
+            └── gomod_test.go   # Go module tests
 ```
 
 **NPM**: Semantic versioning with full range syntax (^, ~, x-ranges, hyphen ranges, OR logic)
 **PyPI**: PEP 440 compliant (epochs, prereleases, post-releases, dev releases, local versions)
+**Go**: Go module versioning with pseudo-version support (all three patterns)
 **Tests**: All passing (`go test ./...`)
 
 ## Future Work
@@ -118,3 +122,20 @@ Test files mirror source files. Examples organized in subdirectories to avoid pa
 - CLI follows pattern: `univers <ecosystem> <command> [args]`
 - Shell-friendly with proper exit codes (0 for success, 1 for failure)
 - Updated README.md with CLI build instructions and usage examples
+
+### Session 7: Go Module Versioning Implementation
+- Researched Go module versioning specification from go.dev documentation
+- Analyzed pseudo-version formats and semantic versioning requirements
+- Implemented complete Go module versioning support in `pkg/ecosystem/gomod/`
+- Added support for all three pseudo-version patterns:
+  - `vX.0.0-yyyymmddhhmmss-abcdefabcdef` (no base version)
+  - `vX.Y.Z-pre.0.yyyymmddhhmmss-abcdefabcdef` (prerelease base)
+  - `vX.Y.(Z+1)-0.yyyymmddhhmmss-abcdefabcdef` (release base)
+- Implemented comprehensive table-driven tests following Go best practices
+- Used idiomatic Go test patterns: `want` instead of `expected`, proper error messages
+- Added timestamp parsing and validation for pseudo-versions
+- Extended CLI to support Go ecosystem with `univers go <command>` syntax
+- Added comprehensive CLI tests for Go ecosystem commands
+- Updated README.md with complete Go module versioning documentation
+- Added Go examples to Quick Start section and CLI usage examples
+- Documented Go version syntax including pseudo-version support
