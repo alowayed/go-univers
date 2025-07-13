@@ -54,7 +54,7 @@ Demonstrates native Go sorting capabilities for NPM versions:
 ```go
 import (
     "slices"
-    "github.com/alowayed/go-univers/ecosystem/npm"
+    "github.com/alowayed/go-univers/pkg/ecosystem/npm"
 )
 
 // Parse version

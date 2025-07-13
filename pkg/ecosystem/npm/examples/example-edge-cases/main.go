@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/alowayed/go-univers/ecosystem/npm"
+	"github.com/alowayed/go-univers/pkg/ecosystem/npm"
 )
 
 func main() {

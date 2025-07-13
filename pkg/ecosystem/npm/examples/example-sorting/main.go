@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/alowayed/go-univers/ecosystem/npm"
+	"github.com/alowayed/go-univers/pkg/ecosystem/npm"
 )
 
 func main() {

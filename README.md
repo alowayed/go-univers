@@ -29,7 +29,7 @@ package main
 import (
     "fmt"
     "slices"
-    "github.com/alowayed/go-univers/ecosystem/npm"
+    "github.com/alowayed/go-univers/pkg/ecosystem/npm"
 )
 
 func main() {
@@ -67,7 +67,7 @@ package main
 
 import (
     "fmt"
-    "github.com/alowayed/go-univers/ecosystem/pypi"
+    "github.com/alowayed/go-univers/pkg/ecosystem/pypi"
 )
 
 func main() {
@@ -99,14 +99,17 @@ go-univers uses a **type-safe, ecosystem-isolated architecture** that prevents a
 
 ```
 go-univers/
-├── univers.go                    # Universal interfaces (documentation)
-└── ecosystem/
-    ├── npm/                      # NPM ecosystem package
-    │   ├── npm.go               # Version, VersionRange, Constraint types
-    │   └── npm_test.go          # Comprehensive tests
-    └── pypi/                     # PyPI ecosystem package
-        ├── pypi.go              # Version, VersionRange, Constraint types  
-        └── pypi_test.go         # Comprehensive tests
+├── cmd/
+│   └── main.go                  # CLI application
+└── pkg/
+    ├── univers.go               # Universal interfaces (documentation)
+    └── ecosystem/
+        ├── npm/                 # NPM ecosystem package
+        │   ├── npm.go          # Version, VersionRange, Constraint types
+        │   └── npm_test.go     # Comprehensive tests
+        └── pypi/                # PyPI ecosystem package
+            ├── pypi.go         # Version, VersionRange, Constraint types  
+            └── pypi_test.go    # Comprehensive tests
 ```
 
 ### Key Design Principles
