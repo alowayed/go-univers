@@ -1,3 +1,4 @@
+// Package pypi provides functionality for working with PyPI package versions following PEP 440.
 package pypi
 
 import (
@@ -425,6 +426,7 @@ func (c *Constraint) Matches(version *Version) bool {
 
 // Helper functions
 
+// compareReleaseVersions returns -1, 0, or 1 comparing version arrays element by element
 func compareReleaseVersions(a, b []int) int {
 	maxLen := len(a)
 	if len(b) > maxLen {
@@ -449,6 +451,7 @@ func compareReleaseVersions(a, b []int) int {
 	return 0
 }
 
+// comparePrereleases returns -1, 0, or 1 where no prerelease > prerelease, alpha < beta < rc
 func comparePrereleases(aPre string, aNum int, bPre string, bNum int) int {
 	// No prerelease has higher precedence than prerelease
 	if aPre == "" && bPre == "" {
@@ -473,6 +476,7 @@ func comparePrereleases(aPre string, aNum int, bPre string, bNum int) int {
 	return compareInt(aNum, bNum)
 }
 
+// normalizePrereleaseType returns numeric priority: alpha=1, beta=2, rc=3
 func normalizePrereleaseType(preType string) int {
 	switch strings.ToLower(preType) {
 	case "a", "alpha":
@@ -486,6 +490,7 @@ func normalizePrereleaseType(preType string) int {
 	}
 }
 
+// comparePostReleases returns -1, 0, or 1 where -1 means no post-release (lower precedence)
 func comparePostReleases(a, b int) int {
 	// -1 means no post-release
 	if a == -1 && b == -1 {
@@ -500,6 +505,7 @@ func comparePostReleases(a, b int) int {
 	return compareInt(a, b)
 }
 
+// compareDevReleases returns -1, 0, or 1 where -1 means no dev release (higher precedence) 
 func compareDevReleases(a, b int) int {
 	// -1 means no dev release
 	if a == -1 && b == -1 {
@@ -514,6 +520,7 @@ func compareDevReleases(a, b int) int {
 	return compareInt(a, b)
 }
 
+// compareInt returns -1 if a < b, 0 if a == b, 1 if a > b
 func compareInt(a, b int) int {
 	if a < b {
 		return -1

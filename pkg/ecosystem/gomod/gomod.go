@@ -1,3 +1,4 @@
+// Package gomod provides functionality for working with Go module versions following semantic versioning with Go-specific extensions.
 package gomod
 
 import (
@@ -373,6 +374,7 @@ func (c *constraint) matches(version *Version) bool {
 }
 
 // Helper functions
+// compareInt returns -1 if a < b, 0 if a == b, 1 if a > b
 func compareInt(a, b int) int {
 	if a < b {
 		return -1
@@ -383,6 +385,7 @@ func compareInt(a, b int) int {
 	return 0
 }
 
+// comparePrerelease returns -1, 0, or 1 comparing prereleases where empty string (release) > any prerelease
 func comparePrerelease(a, b string) int {
 	// No prerelease (release) has higher precedence than prerelease
 	if a == "" && b == "" {

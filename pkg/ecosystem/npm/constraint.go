@@ -114,6 +114,7 @@ func comparePrerelease(a, b string) int {
 	return 0
 }
 
+// compareInt returns -1 if a < b, 0 if a == b, 1 if a > b
 func compareInt(a, b int) int {
 	if a < b {
 		return -1
@@ -124,6 +125,7 @@ func compareInt(a, b int) int {
 	return 0
 }
 
+// parseNum returns the integer value and true if s is a valid number, otherwise 0 and false
 func parseNum(s string) (int, bool) {
 	if num, err := strconv.Atoi(s); err == nil {
 		return num, true
