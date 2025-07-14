@@ -1,5 +1,7 @@
 # go-univers: mostly universal version and version ranges comparison and conversion
 
+[![Go](https://github.com/alowayed/go-univers/actions/workflows/go.yml/badge.svg?branch=main)](https://github.com/alowayed/go-univers/actions/workflows/go.yml)
+
 A Go library to:
 1. Parse and compare versions.
 2. Parse ragnes and check if it contains a version.
