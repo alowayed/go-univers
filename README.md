@@ -120,9 +120,9 @@ go-univers/
         └── [OTHER ECOSYSTEMS]
 ```
 
-## NPM Version Syntax
+## Ecosystem specific
 
-go-univers supports the complete NPM semver range syntax:
+### NPM
 
 ```go
 // Exact versions
@@ -152,9 +152,7 @@ npm.NewVersionRange(">=1.0.0 <2.0.0")
 npm.NewVersionRange("1.x || 2.x")
 ```
 
-## PyPI Version Syntax
-
-go-univers is fully PEP 440 compliant and supports all Python versioning features:
+## PyPI
 
 ### Version Formats
 ```go
@@ -206,9 +204,7 @@ pypi.NewVersionRange("===1.2.3")
 pypi.NewVersionRange(">=1.0.0, <2.0.0, !=1.5.0")
 ```
 
-## Go Module Version Syntax
-
-go-univers supports Go module semantic versioning with Go-specific extensions including pseudo-versions:
+## Go
 
 ### Version Formats
 ```go
@@ -251,7 +247,6 @@ gomod.NewVersionRange(">=v1.0.0 <v2.0.0 !=v1.5.0")  // With exclusion
 ```
 
 ### Pseudo-Version Support
-go-univers fully supports Go's pseudo-version format used when no tagged version exists:
 
 ```go
 // Pseudo-versions are automatically recognized and parsed
@@ -264,37 +259,6 @@ fmt.Println(pseudo.Compare(regular)) // -1 (pseudo-versions are pre-release)
 // Pseudo-versions can be used in ranges
 range1, _ := gomod.NewVersionRange(">=v1.0.0-20170915032832-14c0d48ead0c")
 ```
-
-## Testing
-
-Run all tests:
-```bash
-go test ./...
-```
-
-Run tests for a specific ecosystem:
-```bash
-go test ./ecosystem/npm
-go test ./ecosystem/pypi
-```
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Add comprehensive tests for any new functionality
-4. Ensure all tests pass: `go test ./...`
-5. Submit a pull request
-
-When adding new ecosystems:
-1. Create a new package under `ecosystem/`
-2. Implement the core interfaces defined in `univers.go`
-3. Add comprehensive table-driven tests
-4. Update this README with examples
-
-## License
-
-[View License](LICENSE)
 
 ## Related Projects
 
