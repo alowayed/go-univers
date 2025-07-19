@@ -14,6 +14,7 @@ A Go library to:
 | **NPM** | `ecosystem/npm` | Semantic Versioning | `^1.2.3`, `~1.2.3`, `1.x`, `>=1.0.0 <2.0.0` |
 | **PyPI** | `ecosystem/pypi` | PEP 440 | `~=1.2.3`, `>=1.0.0,<2.0.0`, `==1.2.*` |
 | **Go** | `ecosystem/gomod` | Go Module Versioning | `>=v1.2.3`, `<v2.0.0`, `!=v1.3.0` |
+| **Maven** | `ecosystem/maven` | Maven Versioning | `[1.0.0]`, `[1.0.0,2.0.0]`, `(1.0.0,)` |
 
 ## Installation
 
@@ -123,6 +124,56 @@ go-univers/
 ```
 
 ## Ecosystem specific
+
+### Maven
+
+### Version Formats
+```go
+// Basic versions
+maven.NewVersion("1.2.3")
+
+// Versions with qualifiers
+maven.NewVersion("1.2.3-alpha")     // Alpha release
+maven.NewVersion("1.2.3-beta")      // Beta release
+maven.NewVersion("1.2.3-milestone") // Milestone release
+maven.NewVersion("1.2.3-rc")        // Release candidate
+maven.NewVersion("1.2.3-snapshot")  // Snapshot release
+maven.NewVersion("1.2.3-sp")        // Service pack
+
+// Normalized qualifiers (equivalent to release)
+maven.NewVersion("1.2.3-ga")        // General availability (same as 1.2.3)
+maven.NewVersion("1.2.3-final")     // Final release (same as 1.2.3)
+maven.NewVersion("1.2.3-release")   // Release (same as 1.2.3)
+
+// Qualifier shortcuts
+maven.NewVersion("1.2.3-a")         // Short for alpha
+maven.NewVersion("1.2.3-b")         // Short for beta
+maven.NewVersion("1.2.3-m")         // Short for milestone
+```
+
+### Range Operators
+```go
+// Exact version match
+maven.NewVersionRange("[1.2.3]")
+
+// Inclusive ranges
+maven.NewVersionRange("[1.0.0,2.0.0]")  // >=1.0.0 and <=2.0.0
+
+// Exclusive ranges
+maven.NewVersionRange("(1.0.0,2.0.0)")  // >1.0.0 and <2.0.0
+
+// Mixed inclusive/exclusive
+maven.NewVersionRange("[1.0.0,2.0.0)")  // >=1.0.0 and <2.0.0
+maven.NewVersionRange("(1.0.0,2.0.0]")  // >1.0.0 and <=2.0.0
+
+// Unbounded ranges
+maven.NewVersionRange("[1.0.0,)")       // >=1.0.0
+maven.NewVersionRange("(,2.0.0]")       // <=2.0.0
+maven.NewVersionRange("(,2.0.0)")       // <2.0.0
+
+// Simple version (equivalent to exact match)
+maven.NewVersionRange("1.2.3")          // Same as [1.2.3]
+```
 
 ### NPM
 

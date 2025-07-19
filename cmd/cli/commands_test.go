@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/alowayed/go-univers/pkg/ecosystem/gomod"
+	"github.com/alowayed/go-univers/pkg/ecosystem/maven"
 	"github.com/alowayed/go-univers/pkg/ecosystem/npm"
 	"github.com/alowayed/go-univers/pkg/ecosystem/pypi"
 	"github.com/alowayed/go-univers/pkg/univers"
@@ -224,8 +225,46 @@ func TestCompare(t *testing.T) {
 		testCompare(t, &pypi.Ecosystem{}, pypiTests)
 	})
 
+	// Maven-specific tests
+	mavenTests := append(basicTests, []compareTest{
+		{
+			name:    "maven qualifier comparison alpha vs beta",
+			args:    []string{"1.0.0-alpha", "1.0.0-beta"},
+			wantOut: -1,
+			wantErr: false,
+		},
+		{
+			name:    "maven qualifier vs release",
+			args:    []string{"1.0.0-snapshot", "1.0.0"},
+			wantOut: -1,
+			wantErr: false,
+		},
+		{
+			name:    "maven release vs service pack",
+			args:    []string{"1.0.0", "1.0.0-sp"},
+			wantOut: -1,
+			wantErr: false,
+		},
+		{
+			name:    "maven ga equivalent to release",
+			args:    []string{"1.0.0-ga", "1.0.0"},
+			wantOut: 0,
+			wantErr: false,
+		},
+		{
+			name:    "maven qualifier shortcuts",
+			args:    []string{"1.0.0-a", "1.0.0-alpha"},
+			wantOut: 0,
+			wantErr: false,
+		},
+	}...)
+
 	t.Run("go", func(t *testing.T) {
 		testCompare(t, &gomod.Ecosystem{}, goTests)
+	})
+
+	t.Run("maven", func(t *testing.T) {
+		testCompare(t, &maven.Ecosystem{}, mavenTests)
 	})
 }
 
@@ -316,8 +355,34 @@ func TestSort(t *testing.T) {
 		testSort(t, &pypi.Ecosystem{}, basicTests)
 	})
 
+	// Maven-specific tests
+	mavenTests := append(basicTests, []sortTest{
+		{
+			name:    "maven sort with qualifiers",
+			args:    []string{"1.0.0", "1.0.0-alpha", "1.0.0-beta", "1.0.0-snapshot"},
+			wantOut: []string{"1.0.0-alpha", "1.0.0-beta", "1.0.0-snapshot", "1.0.0"},
+			wantErr: false,
+		},
+		{
+			name:    "maven sort complex qualifiers",
+			args:    []string{"1.0.0-sp", "1.0.0", "1.0.0-rc", "1.0.0-alpha"},
+			wantOut: []string{"1.0.0-alpha", "1.0.0-rc", "1.0.0", "1.0.0-sp"},
+			wantErr: false,
+		},
+		{
+			name:    "maven sort with normalization",
+			args:    []string{"1.0.0-ga", "1.0.0-final", "1.0.0"},
+			wantOut: []string{"1.0.0-ga", "1.0.0-final", "1.0.0"},
+			wantErr: false,
+		},
+	}...)
+
 	t.Run("go", func(t *testing.T) {
 		testSort(t, &gomod.Ecosystem{}, goTests)
+	})
+
+	t.Run("maven", func(t *testing.T) {
+		testSort(t, &maven.Ecosystem{}, mavenTests)
 	})
 }
 
@@ -450,7 +515,117 @@ func TestContains(t *testing.T) {
 		testContains(t, &pypi.Ecosystem{}, pypiTests)
 	})
 
+	// Maven tests
+	mavenTests := []containsTest{
+		{
+			name:    "maven exact range true",
+			args:    []string{"[1.0.0]", "1.0.0"},
+			wantOut: true,
+			wantErr: false,
+		},
+		{
+			name:    "maven exact range false",
+			args:    []string{"[1.0.0]", "1.0.1"},
+			wantOut: false,
+			wantErr: false,
+		},
+		{
+			name:    "maven inclusive range true",
+			args:    []string{"[1.0.0,2.0.0]", "1.5.0"},
+			wantOut: true,
+			wantErr: false,
+		},
+		{
+			name:    "maven inclusive range false",
+			args:    []string{"[1.0.0,2.0.0]", "2.5.0"},
+			wantOut: false,
+			wantErr: false,
+		},
+		{
+			name:    "maven lower bound true",
+			args:    []string{"[1.0.0,)", "2.0.0"},
+			wantOut: true,
+			wantErr: false,
+		},
+		{
+			name:    "maven lower bound false",
+			args:    []string{"[1.0.0,)", "0.5.0"},
+			wantOut: false,
+			wantErr: false,
+		},
+		{
+			name:    "maven upper bound true",
+			args:    []string{"(,2.0.0]", "1.0.0"},
+			wantOut: true,
+			wantErr: false,
+		},
+		{
+			name:    "maven upper bound false",
+			args:    []string{"(,2.0.0]", "3.0.0"},
+			wantOut: false,
+			wantErr: false,
+		},
+		{
+			name:    "maven exclusive range true",
+			args:    []string{"(1.0.0,2.0.0)", "1.5.0"},
+			wantOut: true,
+			wantErr: false,
+		},
+		{
+			name:    "maven exclusive range false bounds",
+			args:    []string{"(1.0.0,2.0.0)", "1.0.0"},
+			wantOut: false,
+			wantErr: false,
+		},
+		{
+			name:    "maven with qualifiers",
+			args:    []string{"[1.0.0-alpha,1.0.0]", "1.0.0-beta"},
+			wantOut: true,
+			wantErr: false,
+		},
+		{
+			name:    "maven simple version true",
+			args:    []string{"1.0.0", "1.0.0"},
+			wantOut: true,
+			wantErr: false,
+		},
+		{
+			name:    "maven simple version false",
+			args:    []string{"1.0.0", "1.0.1"},
+			wantOut: false,
+			wantErr: false,
+		},
+		{
+			name:    "maven too few args",
+			args:    []string{"[1.0.0,2.0.0]"},
+			wantOut: false,
+			wantErr: true,
+		},
+		{
+			name:    "maven too many args",
+			args:    []string{"[1.0.0,2.0.0]", "1.5.0", "extra"},
+			wantOut: false,
+			wantErr: true,
+		},
+		{
+			name:    "maven invalid range",
+			args:    []string{"invalid", "1.0.0"},
+			wantOut: false,
+			wantErr: true,
+		},
+		{
+			name:    "maven invalid version",
+			args:    []string{"[1.0.0,2.0.0]", "invalid"},
+			wantOut: false,
+			wantErr: true,
+		},
+	}
+
 	t.Run("go", func(t *testing.T) {
 		testContains(t, &gomod.Ecosystem{}, goTests)
+	})
+
+	t.Run("maven", func(t *testing.T) {
+		testContains(t, &maven.Ecosystem{}, mavenTests)
 	})
 }

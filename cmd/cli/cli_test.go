@@ -60,6 +60,11 @@ func TestRun(t *testing.T) {
 			args:     []string{"go", "compare", "v1.0.0", "v2.0.0"},
 			wantCode: 0,
 		},
+		{
+			name:     "maven ecosystem success",
+			args:     []string{"maven", "compare", "1.0.0", "2.0.0"},
+			wantCode: 0,
+		},
 	}
 
 	for _, tt := range tests {
@@ -204,6 +209,48 @@ func TestRun_Private(t *testing.T) {
 			args:     []string{"go", "compare", "v1.0.0", "v2.0.0"},
 			wantOut:  "-1",
 			wantCode: 0,
+		},
+		{
+			name:     "maven compare success less than",
+			args:     []string{"maven", "compare", "1.0.0-alpha", "1.0.0"},
+			wantOut:  "-1",
+			wantCode: 0,
+		},
+		{
+			name:     "maven compare success greater than",
+			args:     []string{"maven", "compare", "1.0.0-sp", "1.0.0"},
+			wantOut:  "1",
+			wantCode: 0,
+		},
+		{
+			name:     "maven compare success equal",
+			args:     []string{"maven", "compare", "1.0.0-ga", "1.0.0"},
+			wantOut:  "0",
+			wantCode: 0,
+		},
+		{
+			name:     "maven sort success",
+			args:     []string{"maven", "sort", "1.0.0", "1.0.0-alpha", "1.0.0-beta"},
+			wantOut:  "\"1.0.0-alpha\" \"1.0.0-beta\" \"1.0.0\"",
+			wantCode: 0,
+		},
+		{
+			name:     "maven contains success true",
+			args:     []string{"maven", "contains", "[1.0.0,2.0.0]", "1.5.0"},
+			wantOut:  "true",
+			wantCode: 0,
+		},
+		{
+			name:     "maven contains success false",
+			args:     []string{"maven", "contains", "[1.0.0]", "1.0.1"},
+			wantOut:  "false",
+			wantCode: 0,
+		},
+		{
+			name:     "maven contains invalid version",
+			args:     []string{"maven", "contains", "[1.0.0,2.0.0]", "invalid"},
+			wantOut:  "Error running command 'contains': invalid version 'invalid': invalid Maven version format: invalid",
+			wantCode: 1,
 		},
 	}
 

@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/alowayed/go-univers/pkg/ecosystem/gomod"
+	"github.com/alowayed/go-univers/pkg/ecosystem/maven"
 	"github.com/alowayed/go-univers/pkg/ecosystem/npm"
 	"github.com/alowayed/go-univers/pkg/ecosystem/pypi"
 	"github.com/alowayed/go-univers/pkg/univers"
@@ -29,6 +30,9 @@ func run(args []string) (string, int) {
 		},
 		gomod.Name: func(args []string) (string, int) {
 			return runEcosystem(&gomod.Ecosystem{}, args)
+		},
+		maven.Name: func(args []string) (string, int) {
+			return runEcosystem(&maven.Ecosystem{}, args)
 		},
 		pypi.Name: func(args []string) (string, int) {
 			return runEcosystem(&pypi.Ecosystem{}, args)

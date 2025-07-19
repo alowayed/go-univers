@@ -13,6 +13,7 @@ go test ./...
 go test ./pkg/ecosystem/npm/...
 go test ./pkg/ecosystem/pypi/...
 go test ./pkg/ecosystem/gomod/...
+go test ./pkg/ecosystem/maven/...
 
 # Run CLI tests
 go test ./cmd/cli/...
@@ -41,11 +42,11 @@ golangci-lint run
 
 ## Architecture Overview
 
-go-univers is a type-safe library for version comparison across different software package ecosystems (NPM, PyPI, Go modules). The key architectural principle is **ecosystem isolation** - each ecosystem has its own types to prevent accidental cross-ecosystem version mixing at compile time.
+go-univers is a type-safe library for version comparison across different software package ecosystems (NPM, PyPI, Go modules, Maven). The key architectural principle is **ecosystem isolation** - each ecosystem has its own types to prevent accidental cross-ecosystem version mixing at compile time.
 
 ### Core Design Patterns
 
-1. **Type Safety**: Each ecosystem (npm, pypi, gomod) defines its own `Version` and `VersionRange` types
+1. **Type Safety**: Each ecosystem (npm, pypi, gomod, maven) defines its own `Version` and `VersionRange` types
 2. **Generic Interfaces**: Universal interfaces in `pkg/univers/univers.go` define contracts
 3. **Factory Pattern**: Each ecosystem provides `NewVersion()` and `NewVersionRange()` constructors
 4. **Interface Compliance**: `pkg/ecosystem/ecosystem.go` contains compile-time interface checks
@@ -68,10 +69,15 @@ pkg/
     │   ├── version.go         # PEP 440 version parsing
     │   ├── range.go           # PEP 440 range operators
     │   └── *_test.go          # Test suite
-    └── gomod/                  # Go module versioning
-        ├── gomod.go           # Public API
-        ├── version.go         # Semantic + pseudo-version support
-        ├── range.go           # Go module constraints
+    ├── gomod/                  # Go module versioning
+    │   ├── gomod.go           # Public API
+    │   ├── version.go         # Semantic + pseudo-version support
+    │   ├── range.go           # Go module constraints
+    │   └── *_test.go          # Test suite
+    └── maven/                  # Maven versioning
+        ├── maven.go           # Public API
+        ├── version.go         # Maven version parsing with qualifiers
+        ├── range.go           # Maven range operators (brackets)
         └── *_test.go          # Test suite
 
 cmd/
@@ -87,6 +93,7 @@ cmd/
 **NPM**: Full semantic versioning with range operators (`^`, `~`, x-ranges, hyphen ranges, OR logic)
 **PyPI**: Complete PEP 440 support (epochs, prereleases, post-releases, dev releases, local versions)
 **Go**: Go module versioning with all three pseudo-version patterns support
+**Maven**: Maven versioning with qualifier precedence and bracket range notation
 
 ### Testing Strategy
 
@@ -115,7 +122,7 @@ Commands:
 - `sort <v1> <v2> ...` - Sort versions in ascending order
 - `contains <range> <version>` - Check if version satisfies range (outputs true/false)
 
-Ecosystems: `npm`, `pypi`, `go`
+Ecosystems: `npm`, `pypi`, `go`, `maven`
 
 ### Development Guidelines
 
