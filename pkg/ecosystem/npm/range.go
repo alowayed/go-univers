@@ -12,8 +12,14 @@ type VersionRange struct {
 	original         string
 }
 
+// constraint represents a single NPM version constraint
+type constraint struct {
+	operator string
+	version  string
+}
+
 // NewVersionRange creates a new NPM version range from a range string
-func NewVersionRange(rangeStr string) (*VersionRange, error) {
+func (e *Ecosystem) NewVersionRange(rangeStr string) (*VersionRange, error) {
 	rangeStr = strings.TrimSpace(rangeStr)
 	if rangeStr == "" {
 		return nil, fmt.Errorf("empty range string")
@@ -45,7 +51,7 @@ func parseRangeGroups(rangeStr string) ([][]*constraint, error) {
 		}
 		return constraintGroups, nil
 	}
-	
+
 	// Single group (no OR logic)
 	constraints, err := parseRange(rangeStr)
 	if err != nil {
@@ -120,7 +126,8 @@ func parseSingleConstraint(c string) ([]*constraint, error) {
 
 // parseCaretRange handles caret ranges (^1.2.3)
 func parseCaretRange(version string) ([]*constraint, error) {
-	v, err := NewVersion(version)
+	e := &Ecosystem{}
+	v, err := e.NewVersion(version)
 	if err != nil {
 		return nil, err
 	}
@@ -130,34 +137,35 @@ func parseCaretRange(version string) ([]*constraint, error) {
 		if v.minor == 0 {
 			// ^0.0.3 means >=0.0.3 <0.0.4 (only patch changes)
 			return []*constraint{
-				{operator: ">=", version: v.Normalize()},
+				{operator: ">=", version: v.normalize()},
 				{operator: "<", version: fmt.Sprintf("0.0.%d", v.patch+1)},
 			}, nil
 		}
 		// ^0.2.3 means >=0.2.3 <0.3.0-0 (patch and minor changes, excludes prereleases from next minor)
 		return []*constraint{
-			{operator: ">=", version: v.Normalize()},
+			{operator: ">=", version: v.normalize()},
 			{operator: "<", version: fmt.Sprintf("0.%d.0-0", v.minor+1)},
 		}, nil
 	}
 
 	// ^1.2.3 means >=1.2.3 <2.0.0-0 (excludes prereleases from next major)
 	return []*constraint{
-		{operator: ">=", version: v.Normalize()},
+		{operator: ">=", version: v.normalize()},
 		{operator: "<", version: fmt.Sprintf("%d.0.0-0", v.major+1)},
 	}, nil
 }
 
 // parseTildeRange handles tilde ranges (~1.2.3)
 func parseTildeRange(version string) ([]*constraint, error) {
-	v, err := NewVersion(version)
+	e := &Ecosystem{}
+	v, err := e.NewVersion(version)
 	if err != nil {
 		return nil, err
 	}
 
 	// ~1.2.3 means >=1.2.3 <1.3.0-0 (excludes prereleases from next minor)
 	return []*constraint{
-		{operator: ">=", version: v.Normalize()},
+		{operator: ">=", version: v.normalize()},
 		{operator: "<", version: fmt.Sprintf("%d.%d.0-0", v.major, v.minor+1)},
 	}, nil
 }
@@ -203,20 +211,21 @@ func parseHyphenRange(rangeStr string) ([]*constraint, error) {
 	if len(parts) != 2 {
 		return nil, fmt.Errorf("invalid hyphen range: %s", rangeStr)
 	}
-	
+
 	start := strings.TrimSpace(parts[0])
 	end := strings.TrimSpace(parts[1])
-	
+
 	// Both parts must be non-empty and valid versions
 	if start == "" || end == "" {
 		return nil, fmt.Errorf("invalid hyphen range: %s", rangeStr)
 	}
-	
+
 	// Validate that both parts are valid versions
-	if _, err := NewVersion(start); err != nil {
+	e := &Ecosystem{}
+	if _, err := e.NewVersion(start); err != nil {
 		return nil, fmt.Errorf("invalid start version in hyphen range: %s", start)
 	}
-	if _, err := NewVersion(end); err != nil {
+	if _, err := e.NewVersion(end); err != nil {
 		return nil, fmt.Errorf("invalid end version in hyphen range: %s", end)
 	}
 
@@ -266,16 +275,34 @@ func (nr *VersionRange) Contains(version *Version) bool {
 	return false
 }
 
-// constraints returns all constraints in this range
-func (nr *VersionRange) constraints() []*constraint {
-	var allConstraints []*constraint
-	for _, group := range nr.constraintGroups {
-		allConstraints = append(allConstraints, group...)
+// matches checks if the given version matches this constraint
+func (c *constraint) matches(version *Version) bool {
+	if c.operator == "*" {
+		return true
 	}
-	return allConstraints
-}
 
-// isEmpty returns true if the range contains no valid versions
-func (nr *VersionRange) isEmpty() bool {
-	return len(nr.constraintGroups) == 0
+	e := &Ecosystem{}
+	constraintVersion, err := e.NewVersion(c.version)
+	if err != nil {
+		return false
+	}
+
+	comparison := version.Compare(constraintVersion)
+
+	switch c.operator {
+	case "=":
+		return comparison == 0
+	case "!=":
+		return comparison != 0
+	case "<":
+		return comparison < 0
+	case "<=":
+		return comparison <= 0
+	case ">":
+		return comparison > 0
+	case ">=":
+		return comparison >= 0
+	default:
+		return false
+	}
 }

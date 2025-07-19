@@ -6,7 +6,7 @@
 
 Do the following:
 
-1. Read the README.md file in this directory.
+1. Read the README.md and DEVELOPMENT.md files in this directory.
 2. Read https://go.dev/doc/effective_go and https://google.github.io/styleguide/go/best-practices.html.
 3. Read https://ossf.github.io/osv-schema/, focusing on the ecosystems and any information about versioining.
 4. Skim this directory to understand the code. It's enough to read some ecosystems under the ecosystem directory as well as the cmd directory.

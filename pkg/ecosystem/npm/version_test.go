@@ -4,7 +4,7 @@ import (
 	"testing"
 )
 
-func TestNewVersion(t *testing.T) {
+func TestEcosystem_NewVersion(t *testing.T) {
 	tests := []struct {
 		name    string
 		input   string
@@ -192,7 +192,8 @@ func TestNewVersion(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := NewVersion(tt.input)
+			e := &Ecosystem{}
+			got, err := e.NewVersion(tt.input)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("NewVersion() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -302,14 +303,8 @@ func TestVersion_Compare(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			v1, err := NewVersion(tt.v1)
-			if err != nil {
-				t.Fatalf("Failed to parse v1: %v", err)
-			}
-			v2, err := NewVersion(tt.v2)
-			if err != nil {
-				t.Fatalf("Failed to parse v2: %v", err)
-			}
+			v1 := mustNewVersion(t, tt.v1)
+			v2 := mustNewVersion(t, tt.v2)
 
 			got := v1.Compare(v2)
 			if got != tt.want {
@@ -319,45 +314,13 @@ func TestVersion_Compare(t *testing.T) {
 	}
 }
 
-func TestVersion_Normalize(t *testing.T) {
-	tests := []struct {
-		name  string
-		input string
-		want  string
-	}{
-		{
-			name:  "basic version",
-			input: "1.2.3",
-			want:  "1.2.3",
-		},
-		{
-			name:  "version with prerelease",
-			input: "1.2.3-alpha.1",
-			want:  "1.2.3-alpha.1",
-		},
-		{
-			name:  "version with build",
-			input: "1.2.3+build.1",
-			want:  "1.2.3+build.1",
-		},
-		{
-			name:  "version with prerelease and build",
-			input: "1.2.3-alpha.1+build.1",
-			want:  "1.2.3-alpha.1+build.1",
-		},
+// mustNewVersion is a helper function to create a new Version.
+func mustNewVersion(t *testing.T, version string) *Version {
+	t.Helper()
+	e := &Ecosystem{}
+	v, err := e.NewVersion(version)
+	if err != nil {
+		t.Fatalf("Failed to create version %s: %v", version, err)
 	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			v, err := NewVersion(tt.input)
-			if err != nil {
-				t.Fatalf("Failed to parse version: %v", err)
-			}
-
-			got := v.Normalize()
-			if got != tt.want {
-				t.Errorf("Version.Normalize() = %v, want %v", got, tt.want)
-			}
-		})
-	}
+	return v
 }

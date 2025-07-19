@@ -93,12 +93,12 @@ univers go sort "v2.0.0" "v1.2.3" "v1.0.0-20170915032832-14c0d48ead0c"
 #### Check Range Satisfaction
 ```bash
 # PyPI range checking
-univers pypi satisfies "1.2.5" "~=1.2.0"   # Exit 0 (compatible release)
-univers pypi satisfies "1.2.5" "==1.2.*"   # Exit 0 (wildcard match)
+univers pypi contains "~=1.2.0" "1.2.5"   # → true
+univers pypi contains "==1.2.*" "1.2.5"   # → true
 
 # Go module range checking
-univers go satisfies "v1.5.0" ">=v1.2.0 <v2.0.0"  # Exit 0 (multiple constraints)
-univers go satisfies "v2.0.0" "<v1.9.0"    # Exit 1 (does not satisfy)
+univers go contains ">=v1.2.0 <v2.0.0" "v1.5.0"  # → true
+univers go contains "<v1.9.0" "v2.0.0"    # → false
 ```
 
 ## Architecture

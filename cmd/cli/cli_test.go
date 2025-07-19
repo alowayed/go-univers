@@ -1,0 +1,221 @@
+package cli
+
+import (
+	"testing"
+)
+
+func TestRun(t *testing.T) {
+	tests := []struct {
+		name     string
+		args     []string
+		wantCode int
+	}{
+		{
+			name:     "no arguments",
+			args:     []string{},
+			wantCode: 1,
+		},
+		{
+			name:     "unknown ecosystem",
+			args:     []string{"unknown"},
+			wantCode: 1,
+		},
+		{
+			name:     "npm ecosystem no command",
+			args:     []string{"npm"},
+			wantCode: 1,
+		},
+		{
+			name:     "npm ecosystem unknown command",
+			args:     []string{"npm", "unknown"},
+			wantCode: 1,
+		},
+		{
+			name:     "npm compare success",
+			args:     []string{"npm", "compare", "1.0.0", "2.0.0"},
+			wantCode: 0,
+		},
+		{
+			name:     "npm compare invalid version",
+			args:     []string{"npm", "compare", "invalid", "2.0.0"},
+			wantCode: 1,
+		},
+		{
+			name:     "npm sort success",
+			args:     []string{"npm", "sort", "2.0.0", "1.0.0"},
+			wantCode: 0,
+		},
+		{
+			name:     "npm contains success",
+			args:     []string{"npm", "contains", "^1.0.0", "1.5.0"},
+			wantCode: 0,
+		},
+		{
+			name:     "pypi ecosystem success",
+			args:     []string{"pypi", "compare", "1.0.0", "2.0.0"},
+			wantCode: 0,
+		},
+		{
+			name:     "go ecosystem success",
+			args:     []string{"go", "compare", "v1.0.0", "v2.0.0"},
+			wantCode: 0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotCode := Run(tt.args)
+			if gotCode != tt.wantCode {
+				t.Errorf("Run(%+v) = %v, want %v", tt.args, gotCode, tt.wantCode)
+			}
+		})
+	}
+}
+
+func TestRun_Private(t *testing.T) {
+	tests := []struct {
+		name     string
+		args     []string
+		wantOut  string
+		wantCode int
+	}{
+		{
+			name:     "no arguments",
+			args:     []string{},
+			wantOut:  "Usage: univers <ecosystem> <command> [args]",
+			wantCode: 1,
+		},
+		{
+			name:     "unknown ecosystem",
+			args:     []string{"unknown"},
+			wantOut:  "Unknown ecosystem: unknown",
+			wantCode: 1,
+		},
+		{
+			name:     "npm ecosystem no command",
+			args:     []string{"npm"},
+			wantOut:  "No command specified for npm",
+			wantCode: 1,
+		},
+		{
+			name:     "npm ecosystem unknown command",
+			args:     []string{"npm", "unknown"},
+			wantOut:  "Unknown npm command: unknown",
+			wantCode: 1,
+		},
+		{
+			name:     "npm compare success less than",
+			args:     []string{"npm", "compare", "1.0.0", "2.0.0"},
+			wantOut:  "-1",
+			wantCode: 0,
+		},
+		{
+			name:     "npm compare success greater than",
+			args:     []string{"npm", "compare", "2.0.0", "1.0.0"},
+			wantOut:  "1",
+			wantCode: 0,
+		},
+		{
+			name:     "npm compare success equal",
+			args:     []string{"npm", "compare", "1.0.0", "1.0.0"},
+			wantOut:  "0",
+			wantCode: 0,
+		},
+		{
+			name:     "npm compare invalid first version",
+			args:     []string{"npm", "compare", "invalid", "2.0.0"},
+			wantOut:  "Error running command 'compare': invalid version 'invalid': invalid NPM version: invalid",
+			wantCode: 1,
+		},
+		{
+			name:     "npm compare invalid second version",
+			args:     []string{"npm", "compare", "1.0.0", "invalid"},
+			wantOut:  "Error running command 'compare': invalid version 'invalid': invalid NPM version: invalid",
+			wantCode: 1,
+		},
+		{
+			name:     "npm compare wrong number of args",
+			args:     []string{"npm", "compare", "1.0.0"},
+			wantOut:  "Error running command 'compare': compare requires exactly 2 version arguments",
+			wantCode: 1,
+		},
+		{
+			name:     "npm sort success",
+			args:     []string{"npm", "sort", "2.0.0", "1.0.0", "1.5.0"},
+			wantOut:  "\"1.0.0\" \"1.5.0\" \"2.0.0\"",
+			wantCode: 0,
+		},
+		{
+			name:     "npm sort single version",
+			args:     []string{"npm", "sort", "1.0.0"},
+			wantOut:  "\"1.0.0\"",
+			wantCode: 0,
+		},
+		{
+			name:     "npm sort no args",
+			args:     []string{"npm", "sort"},
+			wantOut:  "Error running command 'sort': sort requires at least 1 version argument",
+			wantCode: 1,
+		},
+		{
+			name:     "npm sort invalid version",
+			args:     []string{"npm", "sort", "invalid"},
+			wantOut:  "Error running command 'sort': invalid version 'invalid': invalid NPM version: invalid",
+			wantCode: 1,
+		},
+		{
+			name:     "npm contains success true",
+			args:     []string{"npm", "contains", "^1.0.0", "1.5.0"},
+			wantOut:  "true",
+			wantCode: 0,
+		},
+		{
+			name:     "npm contains success false",
+			args:     []string{"npm", "contains", "^1.0.0", "2.0.0"},
+			wantOut:  "false",
+			wantCode: 0,
+		},
+		{
+			name:     "npm contains invalid range",
+			args:     []string{"npm", "contains", "invalid", "1.0.0"},
+			wantOut:  "false",
+			wantCode: 0,
+		},
+		{
+			name:     "npm contains invalid version",
+			args:     []string{"npm", "contains", "^1.0.0", "invalid"},
+			wantOut:  "Error running command 'contains': invalid version 'invalid': invalid NPM version: invalid",
+			wantCode: 1,
+		},
+		{
+			name:     "npm contains wrong number of args",
+			args:     []string{"npm", "contains", "^1.0.0"},
+			wantOut:  "Error running command 'contains': contains requires exactly 2 arguments: <version> <range>",
+			wantCode: 1,
+		},
+		{
+			name:     "pypi ecosystem success",
+			args:     []string{"pypi", "compare", "1.0.0", "2.0.0"},
+			wantOut:  "-1",
+			wantCode: 0,
+		},
+		{
+			name:     "go ecosystem success",
+			args:     []string{"go", "compare", "v1.0.0", "v2.0.0"},
+			wantOut:  "-1",
+			wantCode: 0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotOut, gotCode := run(tt.args)
+			if gotOut != tt.wantOut {
+				t.Errorf("run(%+v) out = %q, want %q", tt.args, gotOut, tt.wantOut)
+			}
+			if gotCode != tt.wantCode {
+				t.Errorf("run(%+v) code = %v, want %v", tt.args, gotCode, tt.wantCode)
+			}
+		})
+	}
+}

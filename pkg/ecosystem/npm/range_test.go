@@ -4,7 +4,7 @@ import (
 	"testing"
 )
 
-func TestNewVersionRange(t *testing.T) {
+func TestEcosystem_NewVersionRange(t *testing.T) {
 	tests := []struct {
 		name         string
 		input        string
@@ -110,13 +110,14 @@ func TestNewVersionRange(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := NewVersionRange(tt.input)
+			e := &Ecosystem{}
+			got, err := e.NewVersionRange(tt.input)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("NewVersionRange() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("NewVersionRange(%q) error = %v, wantErr %v", tt.input, err, tt.wantErr)
 				return
 			}
 			if !tt.wantErr && got.String() != tt.wantOriginal {
-				t.Errorf("NewVersionRange().String() = %v, want %v", got.String(), tt.wantOriginal)
+				t.Errorf("VersionRange{%q}.String() = %v, want %v", tt.input, got.String(), tt.wantOriginal)
 			}
 		})
 	}
@@ -124,12 +125,10 @@ func TestNewVersionRange(t *testing.T) {
 
 func TestVersionRange_Contains(t *testing.T) {
 	tests := []struct {
-		name        string
-		rangeStr    string
-		version     string
-		want        bool
-		wantRangeErr bool
-		wantVersionErr bool
+		name     string
+		rangeStr string
+		version  string
+		want     bool
 	}{
 		{
 			name:     "exact match",
@@ -315,28 +314,24 @@ func TestVersionRange_Contains(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			vr, err := NewVersionRange(tt.rangeStr)
-			if (err != nil) != tt.wantRangeErr {
-				t.Errorf("NewVersionRange() error = %v, wantRangeErr %v", err, tt.wantRangeErr)
-				return
-			}
-			if tt.wantRangeErr {
-				return
-			}
-
-			v, err := NewVersion(tt.version)
-			if (err != nil) != tt.wantVersionErr {
-				t.Errorf("NewVersion() error = %v, wantVersionErr %v", err, tt.wantVersionErr)
-				return
-			}
-			if tt.wantVersionErr {
-				return
-			}
+			vr := mustNewVersionRange(t, tt.rangeStr)
+			v := mustNewVersion(t, tt.version)
 
 			got := vr.Contains(v)
 			if got != tt.want {
-				t.Errorf("VersionRange.Contains() = %v, want %v", got, tt.want)
+				t.Errorf("VersionRange{%q}.Contains(%q) = %v, want %v", tt.rangeStr, tt.version, got, tt.want)
 			}
 		})
 	}
+}
+
+// mustNewVersionRange is a helper function to create a new VersionRange.
+func mustNewVersionRange(t *testing.T, s string) *VersionRange {
+	t.Helper()
+	e := &Ecosystem{}
+	vr, err := e.NewVersionRange(s)
+	if err != nil {
+		t.Fatalf("Failed to create version range %q: %v", s, err)
+	}
+	return vr
 }

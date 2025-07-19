@@ -7,6 +7,9 @@ import (
 	"strings"
 )
 
+// versionPattern matches NPM version strings
+var versionPattern = regexp.MustCompile(`^v?(\d+)\.(\d+)\.(\d+)(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?(?:\+([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?$`)
+
 // Version represents an NPM package version following semantic versioning
 type Version struct {
 	major      int
@@ -17,11 +20,8 @@ type Version struct {
 	original   string
 }
 
-// versionPattern matches NPM version strings
-var versionPattern = regexp.MustCompile(`^v?(\d+)\.(\d+)\.(\d+)(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?(?:\+([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?$`)
-
 // NewVersion creates a new NPM version from a string
-func NewVersion(version string) (*Version, error) {
+func (e *Ecosystem) NewVersion(version string) (*Version, error) {
 	original := version
 	// Trim whitespace first
 	version = strings.TrimSpace(version)
@@ -64,13 +64,8 @@ func (v *Version) String() string {
 	return v.original
 }
 
-// isValid checks if the version is valid
-func (v *Version) isValid() bool {
-	return v.major >= 0 && v.minor >= 0 && v.patch >= 0
-}
-
-// Normalize returns the normalized form of the version
-func (v *Version) Normalize() string {
+// normalize returns the normalized form of the version
+func (v *Version) normalize() string {
 	result := fmt.Sprintf("%d.%d.%d", v.major, v.minor, v.patch)
 	if v.prerelease != "" {
 		result += "-" + v.prerelease
@@ -98,7 +93,82 @@ func (v *Version) Compare(other *Version) int {
 	return comparePrerelease(v.prerelease, other.prerelease)
 }
 
-// satisfies checks if this version satisfies the given constraint
-func (v *Version) satisfies(constraint *constraint) bool {
-	return constraint.matches(v)
+func comparePrerelease(a, b string) int {
+	// No prerelease has higher precedence than prerelease
+	if a == "" && b == "" {
+		return 0
+	}
+	if a == "" {
+		return 1
+	}
+	if b == "" {
+		return -1
+	}
+
+	// Split by dots and compare each part
+	aParts := strings.Split(a, ".")
+	bParts := strings.Split(b, ".")
+
+	maxLen := len(aParts)
+	if len(bParts) > maxLen {
+		maxLen = len(bParts)
+	}
+
+	for i := 0; i < maxLen; i++ {
+		var aPart, bPart string
+		if i < len(aParts) {
+			aPart = aParts[i]
+		}
+		if i < len(bParts) {
+			bPart = bParts[i]
+		}
+
+		// Missing part has lower precedence
+		if aPart == "" && bPart != "" {
+			return -1
+		}
+		if aPart != "" && bPart == "" {
+			return 1
+		}
+
+		// Try to parse as numbers
+		aNum, aIsNum := parseNum(aPart)
+		bNum, bIsNum := parseNum(bPart)
+
+		if aIsNum && bIsNum {
+			if aNum != bNum {
+				return compareInt(aNum, bNum)
+			}
+		} else if aIsNum {
+			return -1 // Numeric identifiers have lower precedence
+		} else if bIsNum {
+			return 1
+		} else {
+			// Both are strings, compare lexically
+			if aPart != bPart {
+				return strings.Compare(aPart, bPart)
+			}
+		}
+	}
+
+	return 0
+}
+
+// compareInt returns -1 if a < b, 0 if a == b, 1 if a > b
+func compareInt(a, b int) int {
+	if a < b {
+		return -1
+	}
+	if a > b {
+		return 1
+	}
+	return 0
+}
+
+// parseNum returns the integer value and true if s is a valid number, otherwise 0 and false
+func parseNum(s string) (int, bool) {
+	if num, err := strconv.Atoi(s); err == nil {
+		return num, true
+	}
+	return 0, false
 }
