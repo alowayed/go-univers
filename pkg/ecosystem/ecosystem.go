@@ -1,6 +1,7 @@
 package ecosystem
 
 import (
+	"github.com/alowayed/go-univers/pkg/ecosystem/gem"
 	"github.com/alowayed/go-univers/pkg/ecosystem/gomod"
 	"github.com/alowayed/go-univers/pkg/ecosystem/maven"
 	"github.com/alowayed/go-univers/pkg/ecosystem/npm"
@@ -11,6 +12,11 @@ import (
 var (
 
 	// --- Ensure types implement interfaces (Alphabetical) ---
+
+	// gem
+	_ univers.Version[*gem.Version]                      = &gem.Version{}
+	_ univers.VersionRange[*gem.Version]                 = &gem.VersionRange{}
+	_ univers.Ecosystem[*gem.Version, *gem.VersionRange] = &gem.Ecosystem{}
 
 	// go
 	_ univers.Version[*gomod.Version]                        = &gomod.Version{}

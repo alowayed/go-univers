@@ -65,6 +65,11 @@ func TestRun(t *testing.T) {
 			args:     []string{"maven", "compare", "1.0.0", "2.0.0"},
 			wantCode: 0,
 		},
+		{
+			name:     "gem ecosystem success",
+			args:     []string{"gem", "compare", "1.0.0", "2.0.0"},
+			wantCode: 0,
+		},
 	}
 
 	for _, tt := range tests {
@@ -250,6 +255,54 @@ func TestRun_Private(t *testing.T) {
 			name:     "maven contains invalid version",
 			args:     []string{"maven", "contains", "[1.0.0,2.0.0]", "invalid"},
 			wantOut:  "Error running command 'contains': invalid version 'invalid': invalid Maven version format: invalid",
+			wantCode: 1,
+		},
+		{
+			name:     "gem compare success less than",
+			args:     []string{"gem", "compare", "1.0.0", "2.0.0"},
+			wantOut:  "-1",
+			wantCode: 0,
+		},
+		{
+			name:     "gem compare success greater than",
+			args:     []string{"gem", "compare", "2.0.0", "1.0.0"},
+			wantOut:  "1",
+			wantCode: 0,
+		},
+		{
+			name:     "gem compare success equal",
+			args:     []string{"gem", "compare", "1.0.0", "1.0.0"},
+			wantOut:  "0",
+			wantCode: 0,
+		},
+		{
+			name:     "gem compare prerelease vs release",
+			args:     []string{"gem", "compare", "1.0.0-alpha", "1.0.0"},
+			wantOut:  "-1",
+			wantCode: 0,
+		},
+		{
+			name:     "gem sort success",
+			args:     []string{"gem", "sort", "2.0.0", "1.0.0-alpha", "1.0.0"},
+			wantOut:  "\"1.0.0-alpha\" \"1.0.0\" \"2.0.0\"",
+			wantCode: 0,
+		},
+		{
+			name:     "gem contains pessimistic true",
+			args:     []string{"gem", "contains", "~> 1.2.0", "1.2.5"},
+			wantOut:  "true",
+			wantCode: 0,
+		},
+		{
+			name:     "gem contains pessimistic false",
+			args:     []string{"gem", "contains", "~> 1.2.0", "1.3.0"},
+			wantOut:  "false",
+			wantCode: 0,
+		},
+		{
+			name:     "gem contains invalid version",
+			args:     []string{"gem", "contains", "~> 1.0.0", "invalid"},
+			wantOut:  "Error running command 'contains': invalid version 'invalid': invalid Ruby Gem version: invalid",
 			wantCode: 1,
 		},
 	}

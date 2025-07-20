@@ -15,6 +15,7 @@ A Go library to:
 | **PyPI** | `ecosystem/pypi` | PEP 440 | `~=1.2.3`, `>=1.0.0,<2.0.0`, `==1.2.*` |
 | **Go** | `ecosystem/gomod` | Go Module Versioning | `>=v1.2.3`, `<v2.0.0`, `!=v1.3.0` |
 | **Maven** | `ecosystem/maven` | Maven Versioning | `[1.0.0]`, `[1.0.0,2.0.0]`, `(1.0.0,)` |
+| **RubyGems** | `ecosystem/gem` | Ruby Gem Versioning | `~> 1.2.3`, `>= 1.0.0`, `!= 1.5.0` |
 
 ## Installation
 
@@ -82,6 +83,10 @@ The CLI follows the pattern: `univers <ecosystem> <command> [args]`
 univers npm compare "1.2.3" "1.2.4"     # → -1 (first < second)
 univers npm compare "2.0.0" "1.9.9"     # → 1 (first > second)
 univers npm compare "1.2.3" "1.2.3"     # → 0 (equal)
+
+# Compare Ruby Gem versions with prerelease handling
+univers gem compare "1.0.0-alpha" "1.0.0"  # → -1 (prerelease < release)
+univers gem compare "2.0.0" "1.9.9"        # → 1 (first > second)
 ```
 
 #### Sort Versions
@@ -89,6 +94,10 @@ univers npm compare "1.2.3" "1.2.3"     # → 0 (equal)
 # Sort Go module versions including pseudo-versions
 univers go sort "v2.0.0" "v1.2.3" "v1.0.0-20170915032832-14c0d48ead0c"
 # → v1.0.0-20170915032832-14c0d48ead0c, v1.2.3, v2.0.0
+
+# Sort Ruby Gem versions with proper prerelease ordering
+univers gem sort "2.0.0" "1.0.0-alpha" "1.0.0"
+# → "1.0.0-alpha" "1.0.0" "2.0.0"
 ```
 
 #### Check Range Satisfaction
@@ -100,6 +109,10 @@ univers pypi contains "==1.2.*" "1.2.5"   # → true
 # Go module range checking
 univers go contains ">=v1.2.0 <v2.0.0" "v1.5.0"  # → true
 univers go contains "<v1.9.0" "v2.0.0"    # → false
+
+# Ruby Gem pessimistic constraint checking
+univers gem contains "~> 1.2.0" "1.2.5"  # → true (patch increment allowed)
+univers gem contains "~> 1.2.0" "1.3.0"  # → false (minor increment not allowed)
 ```
 
 ## Architecture
@@ -173,6 +186,53 @@ maven.NewVersionRange("(,2.0.0)")       // <2.0.0
 
 // Simple version (equivalent to exact match)
 maven.NewVersionRange("1.2.3")          // Same as [1.2.3]
+```
+
+### RubyGems
+
+### Version Formats
+```go
+// Basic versions
+gem.NewVersion("1.2.3")
+
+// Versions with prerelease identifiers
+gem.NewVersion("1.2.3-alpha")      // Alpha release
+gem.NewVersion("1.2.3-beta")       // Beta release  
+gem.NewVersion("1.2.3-rc1")        // Release candidate
+gem.NewVersion("1.2.3.pre")        // Pre-release format
+gem.NewVersion("2.0.0.rc1")        // RC with numbers
+
+// Build metadata
+gem.NewVersion("1.0.0+build.1")    // Build metadata
+gem.NewVersion("1.0.0-alpha+build") // Prerelease with build
+
+// Complex versions
+gem.NewVersion("1.0.0-beta.1")     // Complex prerelease
+gem.NewVersion("v1.0.0")           // With v prefix
+```
+
+### Range Operators
+```go
+// Equality and inequality
+gem.NewVersionRange("1.2.3")         // Exact match
+gem.NewVersionRange("= 1.2.3")       // Explicit equals
+gem.NewVersionRange("!= 1.2.3")      // Not equal
+
+// Comparison operators
+gem.NewVersionRange(">= 1.2.3")      // Greater than or equal
+gem.NewVersionRange("> 1.2.3")       // Greater than
+gem.NewVersionRange("<= 1.2.3")      // Less than or equal
+gem.NewVersionRange("< 1.2.3")       // Less than
+
+// Pessimistic constraint (twiddle-wakka)
+gem.NewVersionRange("~> 1.2.3")      // >= 1.2.3, < 1.3.0
+gem.NewVersionRange("~> 1.2")        // >= 1.2.0, < 2.0.0
+gem.NewVersionRange("~> 1")          // >= 1.0.0, < 2.0.0
+
+// Multiple constraints (AND logic)
+gem.NewVersionRange("~> 1.2.3, >= 1.2.5")    // Pessimistic with minimum
+gem.NewVersionRange(">= 1.0.0, < 2.0.0")     // Range constraint
+gem.NewVersionRange("~> 2.0, != 2.1.0")      // Pessimistic with exclusion
 ```
 
 ### NPM

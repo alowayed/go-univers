@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/alowayed/go-univers/pkg/ecosystem/gem"
 	"github.com/alowayed/go-univers/pkg/ecosystem/gomod"
 	"github.com/alowayed/go-univers/pkg/ecosystem/maven"
 	"github.com/alowayed/go-univers/pkg/ecosystem/npm"
@@ -25,14 +26,17 @@ func run(args []string) (string, int) {
 	}
 
 	ecosystemToRun := map[string]func([]string) (string, int){
-		npm.Name: func(args []string) (string, int) {
-			return runEcosystem(&npm.Ecosystem{}, args)
+		gem.Name: func(args []string) (string, int) {
+			return runEcosystem(&gem.Ecosystem{}, args)
 		},
 		gomod.Name: func(args []string) (string, int) {
 			return runEcosystem(&gomod.Ecosystem{}, args)
 		},
 		maven.Name: func(args []string) (string, int) {
 			return runEcosystem(&maven.Ecosystem{}, args)
+		},
+		npm.Name: func(args []string) (string, int) {
+			return runEcosystem(&npm.Ecosystem{}, args)
 		},
 		pypi.Name: func(args []string) (string, int) {
 			return runEcosystem(&pypi.Ecosystem{}, args)
