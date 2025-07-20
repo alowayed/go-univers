@@ -1,0 +1,29 @@
+# go-semantic-release configuration
+changelog:
+  templates:
+    title: "{{ .Version }}"
+    item: "- {{ .Subject }}"
+  sections:
+    - name: Features
+      labels: [feat]
+    - name: Bug Fixes
+      labels: [fix]
+    - name: Documentation
+      labels: [docs]
+    - name: Performance Improvements
+      labels: [perf]
+    - name: Code Refactoring
+      labels: [refactor]
+    - name: Tests
+      labels: [test]
+    - name: Build System
+      labels: [build]
+    - name: CI/CD
+      labels: [ci]
+
+release_notes:
+  format: github
+
+hooks:
+  post:
+    - "go mod tidy"

@@ -93,6 +93,57 @@ Date:   Mon Aug 1 11:22:33 2020 -0400
     Signed-off-by: John Doe <john.doe@example.com>
 ```
 
+## Commit Message Format
+
+This project uses [Conventional Commits](https://www.conventionalcommits.org/) for automated versioning and changelog generation.
+
+### Format
+```
+<type>[optional scope]: <description>
+
+[optional body]
+
+[optional footer(s)]
+```
+
+### Types
+- **feat**: A new feature (triggers minor version bump)
+- **fix**: A bug fix (triggers patch version bump)
+- **docs**: Documentation only changes
+- **style**: Changes that do not affect the meaning of the code
+- **refactor**: A code change that neither fixes a bug nor adds a feature
+- **perf**: A code change that improves performance
+- **test**: Adding missing tests or correcting existing tests
+- **build**: Changes that affect the build system or external dependencies
+- **ci**: Changes to our CI configuration files and scripts
+- **chore**: Other changes that don't modify src or test files
+
+### Breaking Changes
+Add `BREAKING CHANGE:` in the footer or `!` after the type to trigger a major version bump:
+```
+feat!: remove deprecated API endpoints
+
+BREAKING CHANGE: The old v1 API has been removed. Use v2 endpoints instead.
+```
+
+### Examples
+```
+feat(gem): add Ruby Gems ecosystem support
+fix(npm): handle caret ranges with zero versions correctly
+docs: update README with gem ecosystem examples
+```
+
+## Release Process
+
+Releases are automated via GitHub Actions:
+1. Commit using conventional commit format
+2. Push to main branch (via PR)
+3. GitHub Actions will automatically:
+   - Run tests
+   - Determine version bump
+   - Create GitHub release
+   - Update CHANGELOG.md
+
 ## Common contributions
 
 ### Adding a new ecosystem
