@@ -1,14 +1,12 @@
 # Development
 
-**go-univers** is a Go port of the Python [aboutcode-org/univers](https://github.com/aboutcode-org/univers) library for type-safe version comparison across software package ecosystems.
-
 ## For AI Agents
 
 Do the following:
 
-1. Read the README.md and DEVELOPMENT.md files in this directory.
+1. Read the README.md, CONTRIBUTING.md, and CLAUDE.md files in this directory.
 2. Read https://go.dev/doc/effective_go and https://google.github.io/styleguide/go/best-practices.html.
-3. Read https://ossf.github.io/osv-schema/, focusing on the ecosystems and any information about versioining.
+3. Read https://ossf.github.io/osv-schema/, focusing on the ecosystems and any information about versioning.
 4. Skim this directory to understand the code. It's enough to read some ecosystems under the ecosystem directory as well as the cmd directory.
 5. Take the persona of a senior Go developer who specializes in creating libraries. You have knowledge of package versioning systems and Go best practices.
 
@@ -41,55 +39,19 @@ Test files mirror source files. Examples organized in subdirectories to avoid pa
 - **Table-driven tests** - Go best practices for maintainable test suites
 - **Modern Go sorting** - Uses `slices.SortFunc()` with existing `Compare()` methods
 
-## Current State
-
-```
-/Users/yousef/dev/go-univers/
-├── LICENSE
-├── README.md
-├── DEVELOPMENT.md
-├── go.mod                       # github.com/alowayed/go-univers
-├── cmd/
-│   └── main.go                 # CLI application
-└── pkg/
-    ├── univers.go              # Universal interfaces (documentation)
-    └── ecosystem/
-        ├── npm/
-        │   ├── npm.go          # Version type (public API)
-        │   ├── range.go        # VersionRange type (public API) 
-        │   ├── constraint.go   # constraint type (private)
-        │   ├── version_test.go # Version tests
-        │   ├── range_test.go   # Range tests
-        │   └── constraint_test.go # Internal tests
-        ├── pypi/
-        │   ├── pypi.go         # PyPI implementation
-        │   └── pypi_test.go    # PyPI tests
-        └── gomod/
-            ├── gomod.go        # Go module implementation
-            └── gomod_test.go   # Go module tests
-```
-
-**NPM**: Semantic versioning with full range syntax (^, ~, x-ranges, hyphen ranges, OR logic)
-**PyPI**: PEP 440 compliant (epochs, prereleases, post-releases, dev releases, local versions)
-**Go**: Go module versioning with pseudo-version support (all three patterns)
-**Tests**: All passing (`go test ./...`)
-
 ## Future Work
 
 ### Ecosystem Additions
-- **Maven** - Java package versioning
 - **RubyGems** - Ruby package versioning  
 - **Debian** - Debian package versioning
 - **Docker** - Container image tags
-- **Go Modules** - Go module versioning
 
 ### Enhancements
 - **Performance optimization** - Benchmark version parsing/comparison
-- **CLI tool** - Command-line interface for version operations
 - **JSON serialization** - Marshal/unmarshal support for versions/ranges
 - **Fuzzing tests** - Property-based testing for edge cases
 
-## Log
+## Development Log
 
 ### Session 1: Initial Implementation
 - Type-safe ecosystem isolation in separate packages
@@ -129,7 +91,7 @@ Test files mirror source files. Examples organized in subdirectories to avoid pa
 - Researched Go CLI best practices focusing on standard library approaches
 - Implemented stateless CLI design using only Go standard library
 - Created `cmd/cli` package with `Run()` function for testable design
-- Implemented core commands: `compare`, `sort`, `satisfies` for npm and pypi ecosystems
+- Implemented core commands: `compare`, `sort`, `contains` for npm and pypi ecosystems
 - Added comprehensive CLI tests covering success and error cases
 - CLI follows pattern: `univers <ecosystem> <command> [args]`
 - Shell-friendly with proper exit codes (0 for success, 1 for failure)
@@ -151,3 +113,8 @@ Test files mirror source files. Examples organized in subdirectories to avoid pa
 - Updated README.md with complete Go module versioning documentation
 - Added Go examples to Quick Start section and CLI usage examples
 - Documented Go version syntax including pseudo-version support
+
+### Session 8: Maven Ecosystem Implementation
+- Added Maven ecosystem support with comprehensive version handling
+- Implemented Maven versioning with qualifier precedence and bracket range notation
+- Added all Maven-specific features documented in README.md

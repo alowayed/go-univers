@@ -2,6 +2,13 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Required Reading
+
+**IMPORTANT**: Always read these files first to understand the project before working on any tasks:
+- README.md - Project overview, supported ecosystems, usage examples, and current capabilities
+- CONTRIBUTING.md - Contribution guidelines and development workflow
+- DEVELOPMENT.md - Extended development documentation and architecture details
+
 ## Development Commands
 
 ### Testing
@@ -54,6 +61,12 @@ go-univers is a type-safe library for version comparison across different softwa
 ### Directory Structure
 
 ```
+├── README.md                   # Project overview, usage examples, and documentation
+├── CONTRIBUTING.md             # Contribution guidelines and development workflow
+├── CLAUDE.md                   # Development guidelines for Claude Code
+├── DEVELOPMENT.md              # Extended development documentation
+├── LICENSE                     # Project license
+├── go.mod                      # Go module dependencies
 pkg/
 ├── univers/
 │   └── univers.go              # Universal interfaces (Version, VersionRange, Ecosystem)
@@ -81,6 +94,7 @@ pkg/
         └── *_test.go          # Test suite
 
 cmd/
+├── README.md                   # CLI usage documentation
 ├── main.go                     # CLI entry point
 └── cli/
     ├── cli.go                 # CLI runner and argument parsing
@@ -132,6 +146,7 @@ Ecosystems: `npm`, `pypi`, `go`, `maven`
 4. **Go Idioms**: Follow golang-standards/project-layout and effective Go practices
 5. **Error Handling**: Provide clear, actionable error messages for invalid input
 6. **Documentation**: Update README.md for any new ecosystem or major feature additions
+7. **Contributing**: Follow guidelines in CONTRIBUTING.md for code submissions and development workflow
 
 ### Adding New Ecosystems
 
@@ -142,6 +157,7 @@ Ecosystems: `npm`, `pypi`, `go`, `maven`
 5. Add interface compliance check in `pkg/ecosystem/ecosystem.go`
 6. Extend CLI to support new ecosystem in `cmd/cli/commands.go`
 7. Update README.md with ecosystem documentation
+8. Follow contribution process outlined in CONTRIBUTING.md
 
 ### Common Patterns
 
@@ -149,3 +165,9 @@ Ecosystems: `npm`, `pypi`, `go`, `maven`
 **Range Operations**: Implement as slice of constraints with AND/OR logic
 **Pseudo-versions**: Handle special version formats (Go module pseudo-versions)
 **Normalization**: Maintain original string while supporting normalized comparison
+
+### References
+
+- @README.md
+- @DEVELOPMENT.md
+- @CONTRIBUTING.md
