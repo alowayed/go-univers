@@ -161,7 +161,7 @@ func TestEcosystem_NewVersion(t *testing.T) {
 	}
 }
 
-func TestVersionCompare(t *testing.T) {
+func TestVersion_Compare(t *testing.T) {
 	tests := []struct {
 		name string
 		v1   string
@@ -246,7 +246,7 @@ func TestVersionCompare(t *testing.T) {
 	}
 }
 
-func TestVersionString(t *testing.T) {
+func TestVersion_String(t *testing.T) {
 	tests := []struct {
 		name  string
 		input string
