@@ -51,6 +51,11 @@ func TestRun(t *testing.T) {
 			wantCode: 0,
 		},
 		{
+			name:     "alpine ecosystem success",
+			args:     []string{"alpine", "compare", "1.0.0", "2.0.0"},
+			wantCode: 0,
+		},
+		{
 			name:     "pypi ecosystem success",
 			args:     []string{"pypi", "compare", "1.0.0", "2.0.0"},
 			wantCode: 0,
@@ -201,6 +206,54 @@ func TestRun_Private(t *testing.T) {
 			name:     "npm contains wrong number of args",
 			args:     []string{"npm", "contains", "^1.0.0"},
 			wantOut:  "Error running command 'contains': contains requires exactly 2 arguments: <version> <range>",
+			wantCode: 1,
+		},
+		{
+			name:     "alpine compare success less than",
+			args:     []string{"alpine", "compare", "1.0.0", "2.0.0"},
+			wantOut:  "-1",
+			wantCode: 0,
+		},
+		{
+			name:     "alpine compare success greater than",
+			args:     []string{"alpine", "compare", "2.0.0", "1.0.0"},
+			wantOut:  "1",
+			wantCode: 0,
+		},
+		{
+			name:     "alpine compare success equal",
+			args:     []string{"alpine", "compare", "1.0.0", "1.0.0"},
+			wantOut:  "0",
+			wantCode: 0,
+		},
+		{
+			name:     "alpine compare suffix vs release",
+			args:     []string{"alpine", "compare", "1.0.0_alpha", "1.0.0"},
+			wantOut:  "-1",
+			wantCode: 0,
+		},
+		{
+			name:     "alpine sort success",
+			args:     []string{"alpine", "sort", "2.0.0", "1.0.0_alpha", "1.0.0"},
+			wantOut:  "\"1.0.0_alpha\" \"1.0.0\" \"2.0.0\"",
+			wantCode: 0,
+		},
+		{
+			name:     "alpine contains true",
+			args:     []string{"alpine", "contains", ">=1.0.0", "1.5.0"},
+			wantOut:  "true",
+			wantCode: 0,
+		},
+		{
+			name:     "alpine contains false",
+			args:     []string{"alpine", "contains", ">=2.0.0", "1.5.0"},
+			wantOut:  "false",
+			wantCode: 0,
+		},
+		{
+			name:     "alpine contains invalid version",
+			args:     []string{"alpine", "contains", ">=1.0.0", "invalid"},
+			wantOut:  "Error running command 'contains': invalid version 'invalid': invalid Alpine version: invalid",
 			wantCode: 1,
 		},
 		{

@@ -11,10 +11,11 @@ A Go library to:
 
 | Ecosystem | Package | Version Format | Range Syntax |
 |-----------|---------|----------------|--------------|
-| **NPM** | `ecosystem/npm` | Semantic Versioning | `^1.2.3`, `~1.2.3`, `1.x`, `>=1.0.0 <2.0.0` |
-| **PyPI** | `ecosystem/pypi` | PEP 440 | `~=1.2.3`, `>=1.0.0,<2.0.0`, `==1.2.*` |
+| **Alpine** | `ecosystem/alpine` | Alpine Package Versioning | `>=1.2.3`, `<2.0.0`, `!=1.5.0` |
 | **Go** | `ecosystem/gomod` | Go Module Versioning | `>=v1.2.3`, `<v2.0.0`, `!=v1.3.0` |
 | **Maven** | `ecosystem/maven` | Maven Versioning | `[1.0.0]`, `[1.0.0,2.0.0]`, `(1.0.0,)` |
+| **NPM** | `ecosystem/npm` | Semantic Versioning | `^1.2.3`, `~1.2.3`, `1.x`, `>=1.0.0 <2.0.0` |
+| **PyPI** | `ecosystem/pypi` | PEP 440 | `~=1.2.3`, `>=1.0.0,<2.0.0`, `==1.2.*` |
 | **RubyGems** | `ecosystem/gem` | Ruby Gem Versioning | `~> 1.2.3`, `>= 1.0.0`, `!= 1.5.0` |
 
 ## Installation
@@ -84,6 +85,10 @@ univers npm compare "1.2.3" "1.2.4"     # → -1 (first < second)
 univers npm compare "2.0.0" "1.9.9"     # → 1 (first > second)
 univers npm compare "1.2.3" "1.2.3"     # → 0 (equal)
 
+# Compare Alpine versions with suffix handling
+univers alpine compare "1.0.0_alpha" "1.0.0"  # → -1 (alpha < release)
+univers alpine compare "2.0.0" "1.9.9"         # → 1 (first > second)
+
 # Compare Ruby Gem versions with prerelease handling
 univers gem compare "1.0.0-alpha" "1.0.0"  # → -1 (prerelease < release)
 univers gem compare "2.0.0" "1.9.9"        # → 1 (first > second)
@@ -91,6 +96,10 @@ univers gem compare "2.0.0" "1.9.9"        # → 1 (first > second)
 
 #### Sort Versions
 ```bash
+# Sort Alpine versions with proper suffix ordering
+univers alpine sort "2.0.0" "1.0.0_alpha" "1.0.0"
+# → "1.0.0_alpha" "1.0.0" "2.0.0"
+
 # Sort Go module versions including pseudo-versions
 univers go sort "v2.0.0" "v1.2.3" "v1.0.0-20170915032832-14c0d48ead0c"
 # → v1.0.0-20170915032832-14c0d48ead0c, v1.2.3, v2.0.0
@@ -102,6 +111,10 @@ univers gem sort "2.0.0" "1.0.0-alpha" "1.0.0"
 
 #### Check Range Satisfaction
 ```bash
+# Alpine range checking  
+univers alpine contains ">=1.2.0" "1.2.5"     # → true
+univers alpine contains "<2.0.0" "1.9.9"      # → true
+
 # PyPI range checking
 univers pypi contains "~=1.2.0" "1.2.5"   # → true
 univers pypi contains "==1.2.*" "1.2.5"   # → true
@@ -137,6 +150,61 @@ go-univers/
 ```
 
 ## Ecosystem specific
+
+### Alpine
+
+### Version Formats
+```go
+// Basic versions
+alpine.NewVersion("1.2.3")
+
+// Versions with letters
+alpine.NewVersion("1.2.3a")         // Letter suffix
+alpine.NewVersion("2.3.0b")         // Letter suffix
+
+// Versions with suffixes
+alpine.NewVersion("1.2.3_alpha")    // Alpha release
+alpine.NewVersion("1.3_alpha2")     // Alpha with number
+alpine.NewVersion("1.2.3_beta")     // Beta release
+alpine.NewVersion("1.2.3_pre")      // Pre-release
+alpine.NewVersion("1.2.3_rc")       // Release candidate
+alpine.NewVersion("0.1.0_alpha_pre2") // Multiple suffixes
+
+// Versions with build components
+alpine.NewVersion("1.0.4-r3")       // Build revision
+alpine.NewVersion("20050718-r2")    // Date-based with build
+
+// Versions with hash components
+alpine.NewVersion("1.2.3~abc123")   // Commit hash
+alpine.NewVersion("1.2.3~abc123-r1") // Hash with build
+
+// Complex versions
+alpine.NewVersion("2.3.0b-r1")      // Letter and build
+alpine.NewVersion("1.2.3a_beta2-r5") // Letter, suffix, and build
+```
+
+### Range Operators
+```go
+// Equality and inequality
+alpine.NewVersionRange("1.2.3")         // Exact match
+alpine.NewVersionRange("= 1.2.3")       // Explicit equals
+alpine.NewVersionRange("!= 1.2.3")      // Not equal
+
+// Comparison operators
+alpine.NewVersionRange(">= 1.2.3")      // Greater than or equal
+alpine.NewVersionRange("> 1.2.3")       // Greater than
+alpine.NewVersionRange("<= 1.2.3")      // Less than or equal
+alpine.NewVersionRange("< 1.2.3")       // Less than
+
+// Multiple constraints (AND logic)
+alpine.NewVersionRange(">= 1.0.0 < 2.0.0")      // Range constraint
+alpine.NewVersionRange(">= 1.2.3 < 2.0.0 != 1.5.0") // With exclusion
+
+// Alpine-specific version formats in ranges
+alpine.NewVersionRange(">= 1.2.0_alpha")        // Suffix versions
+alpine.NewVersionRange(">= 1.2.3-r1")           // Build versions
+alpine.NewVersionRange("> 1.1a")                // Letter versions
+```
 
 ### Maven
 
