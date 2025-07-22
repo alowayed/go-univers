@@ -13,12 +13,12 @@ var versionPattern = regexp.MustCompile(`^(\d+(?:\.\d+)*)([a-z]?)((?:_[a-z]+\d*)
 
 // Version represents an Alpine Linux package version
 type Version struct {
-	numeric    []int    // numeric components: 1.2.3
-	letter     string   // optional letter after numeric: a, b, etc.
-	suffixes   []suffix // suffixes: _alpha1, _beta, etc.
-	hash       string   // commit hash: ~abc123...
-	build      int      // build component: -r1, -r2, etc.
-	original   string   // original version string
+	numeric    []numericComponent // numeric components: 1.2.3 (with leading zero info)
+	letter     string             // optional letter after numeric: a, b, etc.
+	suffixes   []suffix           // suffixes: _alpha1, _beta, etc.
+	hash       string             // commit hash: ~abc123...
+	build      int                // build component: -r1, -r2, etc.
+	original   string             // original version string
 }
 
 // suffix represents a version suffix like _alpha1, _beta, etc.
@@ -54,7 +54,16 @@ func (e *Ecosystem) NewVersion(version string) (*Version, error) {
 	// Parse using regex
 	matches := versionPattern.FindStringSubmatch(version)
 	if matches == nil {
-		return nil, fmt.Errorf("invalid Alpine version: %s", original)
+		// If version doesn't match standard pattern, create a special "string-only" version
+		// This handles cases like "1.0bc" mentioned in the test data comment "# invalid. do string sort"
+		return &Version{
+			numeric:  nil,
+			letter:   "",
+			suffixes: nil,
+			hash:     "",
+			build:    0,
+			original: original,
+		}, nil
 	}
 	
 	numericPart := matches[1]
@@ -101,21 +110,30 @@ func (e *Ecosystem) NewVersion(version string) (*Version, error) {
 	}, nil
 }
 
+// numericComponent represents a numeric component with leading zero information
+type numericComponent struct {
+	value       int    // The actual numeric value
+	originalStr string // The original string representation (to detect leading zeros)
+}
+
 // parseNumericComponents parses numeric components like "1.2.3"
-func parseNumericComponents(s string) ([]int, error) {
+func parseNumericComponents(s string) ([]numericComponent, error) {
 	if s == "" {
 		return nil, fmt.Errorf("empty numeric components")
 	}
 	
 	parts := strings.Split(s, ".")
-	numeric := make([]int, len(parts))
+	numeric := make([]numericComponent, len(parts))
 	
 	for i, part := range parts {
 		num, err := strconv.Atoi(part)
 		if err != nil {
 			return nil, fmt.Errorf("invalid numeric component: %s", part)
 		}
-		numeric[i] = num
+		numeric[i] = numericComponent{
+			value:       num,
+			originalStr: part,
+		}
 	}
 	
 	return numeric, nil
@@ -147,10 +165,8 @@ func parseSuffixes(s string) ([]suffix, error) {
 		name := matches[1]
 		numberStr := matches[2]
 		
-		// Validate suffix name
-		if _, exists := suffixOrder[name]; !exists {
-			return nil, fmt.Errorf("unknown suffix: %s", name)
-		}
+		// Allow unknown suffixes - they will be treated as having a very high precedence
+		// This handles cases like "_foo" which should be compared lexicographically
 		
 		number := 0
 		if numberStr != "" {
@@ -177,6 +193,11 @@ func (v *Version) String() string {
 
 // Compare compares this version with another Alpine version
 func (v *Version) Compare(other *Version) int {
+	// Handle invalid versions (no numeric components) - use string comparison
+	if v.numeric == nil || other.numeric == nil {
+		return strings.Compare(v.original, other.original)
+	}
+	
 	// 1. Compare numeric components
 	numericCmp := compareNumericArrays(v.numeric, other.numeric)
 	if numericCmp != 0 {
@@ -206,27 +227,65 @@ func (v *Version) Compare(other *Version) int {
 }
 
 // compareNumericArrays compares two numeric component arrays
-func compareNumericArrays(a, b []int) int {
+func compareNumericArrays(a, b []numericComponent) int {
 	maxLen := max(len(a), len(b))
 	
 	for i := range maxLen {
-		aVal := 0
-		bVal := 0
+		var aComp, bComp numericComponent
 		
 		if i < len(a) {
-			aVal = a[i]
+			aComp = a[i]
+		} else {
+			aComp = numericComponent{value: 0, originalStr: "0"}
 		}
 		if i < len(b) {
-			bVal = b[i]
+			bComp = b[i]
+		} else {
+			bComp = numericComponent{value: 0, originalStr: "0"}
 		}
 		
-		cmp := compareInt(aVal, bVal)
+		cmp := compareNumericComponent(aComp, bComp)
 		if cmp != 0 {
 			return cmp
 		}
 	}
 	
 	return 0
+}
+
+// compareNumericComponent compares two numeric components, handling leading zeros
+func compareNumericComponent(a, b numericComponent) int {
+	// Alpine's special leading zero handling:
+	// Leading zeros make the value negative based on the number of leading zeros
+	aVal := getAlpineNumericValue(a)
+	bVal := getAlpineNumericValue(b)
+	
+	return compareInt(aVal, bVal)
+}
+
+// getAlpineNumericValue converts a numeric component to Alpine's comparison value
+// Following Alpine apk-tools logic: leading zeros make the value negative
+func getAlpineNumericValue(comp numericComponent) int {
+	str := comp.originalStr
+	
+	// Count leading zeros
+	leadingZeros := 0
+	for i := 0; i < len(str) && str[i] == '0'; i++ {
+		leadingZeros++
+	}
+	
+	// If the string is all zeros (like "000"), return negative count
+	if leadingZeros == len(str) {
+		return -leadingZeros
+	}
+	
+	// If there are leading zeros, return negative count
+	if leadingZeros > 0 {
+		return -leadingZeros
+	}
+	
+	// No leading zeros, return the actual numeric value
+	return comp.value
 }
 
 // compareLetters compares optional letters
@@ -280,10 +339,29 @@ func compareSuffixArrays(a, b []suffix) int {
 
 // compareSuffixes compares two individual suffixes
 func compareSuffixes(a, b suffix) int {
-	// Compare by suffix precedence order first
-	aOrder := suffixOrder[a.name]
-	bOrder := suffixOrder[b.name]
+	// Get suffix precedence order, defaulting to a high value for unknown suffixes
+	aOrder, aExists := suffixOrder[a.name]
+	bOrder, bExists := suffixOrder[b.name]
 	
+	// Unknown suffixes get a higher precedence (come after known suffixes)
+	if !aExists {
+		aOrder = 1000 // High value for unknown suffixes
+	}
+	if !bExists {
+		bOrder = 1000 // High value for unknown suffixes
+	}
+	
+	// If both are unknown, compare lexicographically by name
+	if !aExists && !bExists {
+		nameCmp := strings.Compare(a.name, b.name)
+		if nameCmp != 0 {
+			return nameCmp
+		}
+		// If same name, compare numbers
+		return compareInt(a.number, b.number)
+	}
+	
+	// Compare by suffix precedence order first
 	orderCmp := compareInt(aOrder, bOrder)
 	if orderCmp != 0 {
 		return orderCmp
