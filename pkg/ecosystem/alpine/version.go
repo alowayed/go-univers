@@ -11,6 +11,10 @@ import (
 // Format: number{.number}...{letter}{_suffix{number}}...{~hash}{-r#}
 var versionPattern = regexp.MustCompile(`^(\d+(?:\.\d+)*)([a-z]?)((?:_[a-z]+\d*)*)(\~[a-f0-9]+)?(-r\d+)?$`)
 
+// unknownSuffixPrecedence is the precedence value assigned to unknown suffixes
+// Unknown suffixes are ordered after all known suffixes but before each other lexicographically
+const unknownSuffixPrecedence = 1000
+
 // Version represents an Alpine Linux package version
 type Version struct {
 	numeric    []numericComponent // numeric components: 1.2.3 (with leading zero info)
@@ -56,13 +60,7 @@ func (e *Ecosystem) NewVersion(version string) (*Version, error) {
 	if matches == nil {
 		// Check if this might be a valid version that just doesn't match our regex
 		// Only allow versions that contain at least some digits
-		hasDigits := false
-		for _, r := range version {
-			if r >= '0' && r <= '9' {
-				hasDigits = true
-				break
-			}
-		}
+		hasDigits := strings.ContainsAny(version, "0123456789")
 		
 		if !hasDigits {
 			return nil, fmt.Errorf("invalid Alpine version: %s", original)
@@ -299,10 +297,10 @@ func compareSuffixes(a, b suffix) int {
 	
 	// Unknown suffixes get a higher precedence (come after known suffixes)
 	if !aExists {
-		aOrder = 1000 // High value for unknown suffixes
+		aOrder = unknownSuffixPrecedence
 	}
 	if !bExists {
-		bOrder = 1000 // High value for unknown suffixes
+		bOrder = unknownSuffixPrecedence
 	}
 	
 	// If both are unknown, compare lexicographically by name

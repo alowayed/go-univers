@@ -371,8 +371,5 @@ func removeComments(line string) string {
 	if idx := strings.Index(line, "#"); idx != -1 {
 		line = strings.TrimSpace(line[:idx])
 	}
-	if idx := strings.Index(line, "//"); idx != -1 {
-		line = strings.TrimSpace(line[:idx])
-	}
 	return strings.TrimSpace(line)
 }
