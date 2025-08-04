@@ -54,7 +54,21 @@ func (e *Ecosystem) NewVersion(version string) (*Version, error) {
 	// Parse using regex
 	matches := versionPattern.FindStringSubmatch(version)
 	if matches == nil {
-		// If version doesn't match standard pattern, create a special "string-only" version
+		// Check if this might be a valid version that just doesn't match our regex
+		// Only allow versions that contain at least some digits
+		hasDigits := false
+		for _, r := range version {
+			if r >= '0' && r <= '9' {
+				hasDigits = true
+				break
+			}
+		}
+		
+		if !hasDigits {
+			return nil, fmt.Errorf("invalid Alpine version: %s", original)
+		}
+		
+		// If version has digits but doesn't match standard pattern, create a special "string-only" version
 		// This handles cases like "1.0bc" mentioned in the test data comment "# invalid. do string sort"
 		return &Version{
 			numeric:  nil,
@@ -198,8 +212,8 @@ func (v *Version) Compare(other *Version) int {
 		return strings.Compare(v.original, other.original)
 	}
 	
-	// 1. Compare numeric components
-	numericCmp := compareNumericArrays(v.numeric, other.numeric)
+	// 1. Compare numeric components (leading zeros are ignored - use actual numeric values)
+	numericCmp := compareNumericArraysNumeric(v.numeric, other.numeric)
 	if numericCmp != 0 {
 		return numericCmp
 	}
@@ -226,67 +240,7 @@ func (v *Version) Compare(other *Version) int {
 	return compareInt(v.build, other.build)
 }
 
-// compareNumericArrays compares two numeric component arrays
-func compareNumericArrays(a, b []numericComponent) int {
-	maxLen := max(len(a), len(b))
-	
-	for i := range maxLen {
-		var aComp, bComp numericComponent
-		
-		if i < len(a) {
-			aComp = a[i]
-		} else {
-			aComp = numericComponent{value: 0, originalStr: "0"}
-		}
-		if i < len(b) {
-			bComp = b[i]
-		} else {
-			bComp = numericComponent{value: 0, originalStr: "0"}
-		}
-		
-		cmp := compareNumericComponent(aComp, bComp)
-		if cmp != 0 {
-			return cmp
-		}
-	}
-	
-	return 0
-}
 
-// compareNumericComponent compares two numeric components, handling leading zeros
-func compareNumericComponent(a, b numericComponent) int {
-	// Alpine's special leading zero handling:
-	// Leading zeros make the value negative based on the number of leading zeros
-	aVal := getAlpineNumericValue(a)
-	bVal := getAlpineNumericValue(b)
-	
-	return compareInt(aVal, bVal)
-}
-
-// getAlpineNumericValue converts a numeric component to Alpine's comparison value
-// Following Alpine apk-tools logic: leading zeros make the value negative
-func getAlpineNumericValue(comp numericComponent) int {
-	str := comp.originalStr
-	
-	// Count leading zeros
-	leadingZeros := 0
-	for i := 0; i < len(str) && str[i] == '0'; i++ {
-		leadingZeros++
-	}
-	
-	// If the string is all zeros (like "000"), return negative count
-	if leadingZeros == len(str) {
-		return -leadingZeros
-	}
-	
-	// If there are leading zeros, return negative count
-	if leadingZeros > 0 {
-		return -leadingZeros
-	}
-	
-	// No leading zeros, return the actual numeric value
-	return comp.value
-}
 
 // compareLetters compares optional letters
 func compareLetters(a, b string) int {
@@ -369,6 +323,52 @@ func compareSuffixes(a, b suffix) int {
 	
 	// If same suffix type, compare numbers
 	return compareInt(a.number, b.number)
+}
+
+
+// compareNumericArraysNumeric compares numeric arrays using Alpine's rules
+func compareNumericArraysNumeric(a, b []numericComponent) int {
+	maxLen := max(len(a), len(b))
+	
+	for i := range maxLen {
+		var aComp, bComp numericComponent
+		
+		if i < len(a) {
+			aComp = a[i]
+		} else {
+			aComp = numericComponent{value: 0, originalStr: "0"}
+		}
+		if i < len(b) {
+			bComp = b[i]
+		} else {
+			bComp = numericComponent{value: 0, originalStr: "0"}
+		}
+		
+		var cmp int
+		if i == 0 {
+			// Major component: always compare numerically (ignore leading zeros)
+			cmp = compareInt(aComp.value, bComp.value)
+		} else {
+			// Minor/patch components: if either has leading zeros, use string comparison
+			if hasLeadingZero(aComp.originalStr) || hasLeadingZero(bComp.originalStr) {
+				cmp = strings.Compare(aComp.originalStr, bComp.originalStr)
+			} else {
+				// Both have no leading zeros, use numeric comparison
+				cmp = compareInt(aComp.value, bComp.value)
+			}
+		}
+		
+		if cmp != 0 {
+			return cmp
+		}
+	}
+	
+	return 0
+}
+
+// hasLeadingZero checks if a numeric string has leading zeros
+func hasLeadingZero(s string) bool {
+	return len(s) > 1 && s[0] == '0'
 }
 
 // compareInt returns -1 if a < b, 0 if a == b, 1 if a > b

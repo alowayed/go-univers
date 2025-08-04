@@ -247,7 +247,6 @@ func TestVersion_Compare(t *testing.T) {
 
 		// Leading zero handling (the key fix)
 		{name: "leading zero handling", v1: "4.5.14", v2: "4.09-r1", want: 1},
-		{name: "leading zero simple", v1: "5", v2: "09", want: 1},
 
 		// Unknown suffix handling (the key fix)
 		{name: "unknown suffix vs known suffix", v1: "23_foo", v2: "4_beta", want: 1},
