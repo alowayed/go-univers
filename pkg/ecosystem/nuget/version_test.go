@@ -238,4 +238,4 @@ func TestVersion_String(t *testing.T) {
 			}
 		})
 	}
-}
+
