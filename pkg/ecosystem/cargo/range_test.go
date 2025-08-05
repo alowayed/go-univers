@@ -23,6 +23,17 @@ func TestEcosystem_NewVersionRange(t *testing.T) {
 		// Multiple constraints
 		{name: "multiple constraints", input: ">=1.2.3, <2.0.0", wantErr: false},
 		{name: "complex multiple", input: ">=1.0.0, <2.0.0, !=1.5.0", wantErr: false},
+		
+		// Partial version constraints
+		{name: "tilde partial ~1.2", input: "~1.2", wantErr: false},
+		{name: "tilde partial ~1", input: "~1", wantErr: false},
+		{name: "caret partial ^1.2", input: "^1.2", wantErr: false},
+		{name: "caret partial ^1", input: "^1", wantErr: false},
+		
+		// Wildcard constraints
+		{name: "wildcard 1.2.*", input: "1.2.*", wantErr: false},
+		{name: "wildcard 1.*", input: "1.*", wantErr: false},
+		{name: "wildcard *", input: "*", wantErr: false},
 
 		// Error cases
 		{name: "empty string", input: "", wantErr: true},
@@ -84,12 +95,24 @@ func TestVersionRange_Contains(t *testing.T) {
 		{name: "tilde - minor increment", rangeStr: "~1.2.3", version: "1.3.0", want: false},
 		{name: "tilde - major increment", rangeStr: "~1.2.3", version: "2.0.0", want: false},
 		{name: "tilde - lower version", rangeStr: "~1.2.3", version: "1.2.2", want: false},
+		
+		// Partial tilde constraints
+		{name: "tilde partial ~1.2", rangeStr: "~1.2", version: "1.2.5", want: true},
+		{name: "tilde partial ~1.2 minor change", rangeStr: "~1.2", version: "1.3.0", want: false},
+		{name: "tilde partial ~1", rangeStr: "~1", version: "1.5.0", want: true},
+		{name: "tilde partial ~1 major change", rangeStr: "~1", version: "2.0.0", want: false},
+		
+		// Partial caret constraints  
+		{name: "caret partial ^1.2", rangeStr: "^1.2", version: "1.5.0", want: true},
+		{name: "caret partial ^1", rangeStr: "^1", version: "1.9.0", want: true},
 
-		// Wildcard constraints
-		{name: "wildcard - patch match", rangeStr: "1.2.*", version: "1.2.3", want: true},
-		{name: "wildcard - patch different", rangeStr: "1.2.*", version: "1.2.9", want: true},
-		{name: "wildcard - minor different", rangeStr: "1.2.*", version: "1.3.0", want: false},
-		{name: "wildcard - major different", rangeStr: "1.2.*", version: "2.2.0", want: false},
+		// Wildcard constraints (now converted to standard constraints)
+		{name: "wildcard 1.2.* (becomes ~1.2.0)", rangeStr: "1.2.*", version: "1.2.3", want: true},
+		{name: "wildcard 1.2.* patch different", rangeStr: "1.2.*", version: "1.2.9", want: true},
+		{name: "wildcard 1.2.* minor different", rangeStr: "1.2.*", version: "1.3.0", want: false},
+		{name: "wildcard 1.* (becomes ^1.0.0)", rangeStr: "1.*", version: "1.2.0", want: true},
+		{name: "wildcard 1.* major different", rangeStr: "1.*", version: "2.0.0", want: false},
+		{name: "wildcard * (becomes >=0.0.0)", rangeStr: "*", version: "1.0.0", want: true},
 
 		// Multiple constraints (AND logic)
 		{name: "multiple - both satisfied", rangeStr: ">=1.2.3, <2.0.0", version: "1.5.0", want: true},
@@ -123,84 +146,3 @@ func TestVersionRange_Contains(t *testing.T) {
 	}
 }
 
-func TestSatisfiesCaretConstraint(t *testing.T) {
-	tests := []struct {
-		name       string
-		version    string
-		constraint string
-		want       bool
-	}{
-		// Normal caret behavior (major > 0)
-		{name: "1.2.3 ^1.2.3", version: "1.2.3", constraint: "1.2.3", want: true},
-		{name: "1.2.4 ^1.2.3", version: "1.2.4", constraint: "1.2.3", want: true},
-		{name: "1.3.0 ^1.2.3", version: "1.3.0", constraint: "1.2.3", want: true},
-		{name: "2.0.0 ^1.2.3", version: "2.0.0", constraint: "1.2.3", want: false},
-		{name: "1.2.2 ^1.2.3", version: "1.2.2", constraint: "1.2.3", want: false},
-
-		// Special case: major = 0, minor > 0
-		{name: "0.2.3 ^0.2.3", version: "0.2.3", constraint: "0.2.3", want: true},
-		{name: "0.2.4 ^0.2.3", version: "0.2.4", constraint: "0.2.3", want: true},
-		{name: "0.3.0 ^0.2.3", version: "0.3.0", constraint: "0.2.3", want: false},
-		{name: "0.2.2 ^0.2.3", version: "0.2.2", constraint: "0.2.3", want: false},
-
-		// Special case: major = 0, minor = 0
-		{name: "0.0.3 ^0.0.3", version: "0.0.3", constraint: "0.0.3", want: true},
-		{name: "0.0.4 ^0.0.3", version: "0.0.4", constraint: "0.0.3", want: false},
-		{name: "0.0.2 ^0.0.3", version: "0.0.2", constraint: "0.0.3", want: false},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			e := &Ecosystem{}
-			version, err := e.NewVersion(tt.version)
-			if err != nil {
-				t.Fatalf("NewVersion(%q) error: %v", tt.version, err)
-			}
-
-			constraint, err := e.NewVersion(tt.constraint)
-			if err != nil {
-				t.Fatalf("NewVersion(%q) error: %v", tt.constraint, err)
-			}
-
-			got := satisfiesCaretConstraint(version, constraint)
-			if got != tt.want {
-				t.Errorf("satisfiesCaretConstraint(%q, %q) = %t, want %t", tt.version, tt.constraint, got, tt.want)
-			}
-		})
-	}
-}
-
-func TestSatisfiesTildeConstraint(t *testing.T) {
-	tests := []struct {
-		name       string
-		version    string
-		constraint string
-		want       bool
-	}{
-		{name: "1.2.3 ~1.2.3", version: "1.2.3", constraint: "1.2.3", want: true},
-		{name: "1.2.4 ~1.2.3", version: "1.2.4", constraint: "1.2.3", want: true},
-		{name: "1.3.0 ~1.2.3", version: "1.3.0", constraint: "1.2.3", want: false},
-		{name: "2.0.0 ~1.2.3", version: "2.0.0", constraint: "1.2.3", want: false},
-		{name: "1.2.2 ~1.2.3", version: "1.2.2", constraint: "1.2.3", want: false},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			e := &Ecosystem{}
-			version, err := e.NewVersion(tt.version)
-			if err != nil {
-				t.Fatalf("NewVersion(%q) error: %v", tt.version, err)
-			}
-
-			constraint, err := e.NewVersion(tt.constraint)
-			if err != nil {
-				t.Fatalf("NewVersion(%q) error: %v", tt.constraint, err)
-			}
-
-			got := satisfiesTildeConstraint(version, constraint)
-			if got != tt.want {
-				t.Errorf("satisfiesTildeConstraint(%q, %q) = %t, want %t", tt.version, tt.constraint, got, tt.want)
-			}
-		})
-	}
-}

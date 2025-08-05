@@ -13,8 +13,9 @@ type VersionRange struct {
 
 // constraint represents a single Cargo version constraint
 type constraint struct {
-	operator string
-	version  *Version
+	operator  string
+	version   *Version
+	precision int // number of version components in original constraint (for tilde)
 }
 
 // NewVersionRange creates a new Cargo version range from a range string
@@ -66,24 +67,28 @@ func parseConstraints(rangeStr string, ecosystem *Ecosystem) ([]*constraint, err
 func parseConstraint(constraintStr string, ecosystem *Ecosystem) (*constraint, error) {
 	constraintStr = strings.TrimSpace(constraintStr)
 
-	// Handle caret constraints: ^1.2.3
+	// Handle caret constraints: ^1.2.3, ^1.2, ^1
 	if strings.HasPrefix(constraintStr, "^") {
 		version := strings.TrimSpace(constraintStr[1:])
-		parsedVersion, err := ecosystem.NewVersion(version)
+		normalizedVersion := normalizePartialVersion(version)
+		parsedVersion, err := ecosystem.NewVersion(normalizedVersion)
 		if err != nil {
 			return nil, fmt.Errorf("invalid version in caret constraint: %v", err)
 		}
-		return &constraint{operator: "^", version: parsedVersion}, nil
+		return &constraint{operator: "^", version: parsedVersion, precision: 3}, nil
 	}
 
-	// Handle tilde constraints: ~1.2.3
+	// Handle tilde constraints: ~1.2.3, ~1.2, ~1
 	if strings.HasPrefix(constraintStr, "~") {
 		version := strings.TrimSpace(constraintStr[1:])
-		parsedVersion, err := ecosystem.NewVersion(version)
+		normalizedVersion := normalizePartialVersion(version)
+		parsedVersion, err := ecosystem.NewVersion(normalizedVersion)
 		if err != nil {
 			return nil, fmt.Errorf("invalid version in tilde constraint: %v", err)
 		}
-		return &constraint{operator: "~", version: parsedVersion}, nil
+		// Store precision info for tilde constraint
+		precision := countVersionComponents(version)
+		return &constraint{operator: "~", version: parsedVersion, precision: precision}, nil
 	}
 
 	// Handle comparison operators
@@ -98,13 +103,13 @@ func parseConstraint(constraintStr string, ecosystem *Ecosystem) (*constraint, e
 			if err != nil {
 				return nil, fmt.Errorf("invalid version in %s constraint: %v", op, err)
 			}
-			return &constraint{operator: op, version: parsedVersion}, nil
+			return &constraint{operator: op, version: parsedVersion, precision: 3}, nil
 		}
 	}
 
-	// Handle wildcard patterns: 1.2.*
+	// Handle wildcard patterns: 1.2.*, 1.*, *
 	if strings.Contains(constraintStr, "*") {
-		return parseWildcardConstraint(constraintStr, ecosystem)
+		return convertWildcardToStandardConstraint(constraintStr, ecosystem)
 	}
 
 	// Default to exact match
@@ -112,18 +117,52 @@ func parseConstraint(constraintStr string, ecosystem *Ecosystem) (*constraint, e
 	if err != nil {
 		return nil, fmt.Errorf("invalid version in exact constraint: %v", err)
 	}
-	return &constraint{operator: "=", version: parsedVersion}, nil
+	return &constraint{operator: "=", version: parsedVersion, precision: 3}, nil
 }
 
-// parseWildcardConstraint handles wildcard patterns like 1.2.*
-func parseWildcardConstraint(constraintStr string, ecosystem *Ecosystem) (*constraint, error) {
-	// Replace * with 0 for parsing, then handle specially in Contains
-	normalized := strings.ReplaceAll(constraintStr, "*", "0")
-	parsedVersion, err := ecosystem.NewVersion(normalized)
-	if err != nil {
-		return nil, fmt.Errorf("invalid wildcard constraint: %v", err)
+// convertWildcardToStandardConstraint converts wildcard patterns to equivalent standard constraints
+func convertWildcardToStandardConstraint(constraintStr string, ecosystem *Ecosystem) (*constraint, error) {
+	// According to Cargo documentation:
+	// 1.2.* is equivalent to ~1.2.0
+	// 1.* is equivalent to ^1.0.0  
+	// * is equivalent to >=0.0.0
+	
+	if constraintStr == "*" {
+		// * means any version, equivalent to >=0.0.0
+		parsedVersion, err := ecosystem.NewVersion("0.0.0")
+		if err != nil {
+			return nil, fmt.Errorf("invalid wildcard constraint: %v", err)
+		}
+		return &constraint{operator: ">=", version: parsedVersion, precision: 3}, nil
 	}
-	return &constraint{operator: "*", version: parsedVersion}, nil
+	
+	// Remove the * and any trailing dots
+	baseVersion := strings.TrimSuffix(constraintStr, "*")
+	baseVersion = strings.TrimSuffix(baseVersion, ".")
+	
+	// Count components to determine behavior
+	components := strings.Split(baseVersion, ".")
+	
+	switch len(components) {
+	case 1: // 1.* is equivalent to ^1.0.0
+		normalizedVersion := normalizePartialVersion(baseVersion)
+		parsedVersion, err := ecosystem.NewVersion(normalizedVersion)
+		if err != nil {
+			return nil, fmt.Errorf("invalid wildcard constraint: %v", err)
+		}
+		return &constraint{operator: "^", version: parsedVersion, precision: 3}, nil
+		
+	case 2: // 1.2.* is equivalent to ~1.2.0
+		normalizedVersion := normalizePartialVersion(baseVersion)
+		parsedVersion, err := ecosystem.NewVersion(normalizedVersion)
+		if err != nil {
+			return nil, fmt.Errorf("invalid wildcard constraint: %v", err)
+		}
+		return &constraint{operator: "~", version: parsedVersion, precision: 2}, nil
+		
+	default:
+		return nil, fmt.Errorf("invalid wildcard pattern: %s", constraintStr)
+	}
 }
 
 // String returns the string representation of the version range
@@ -161,9 +200,7 @@ func satisfiesConstraint(version *Version, c *constraint) bool {
 	case "^":
 		return satisfiesCaretConstraint(version, c.version)
 	case "~":
-		return satisfiesTildeConstraint(version, c.version)
-	case "*":
-		return satisfiesWildcardConstraint(version, c.version)
+		return satisfiesTildeConstraint(version, c.version, c.precision)
 	default:
 		return false
 	}
@@ -201,12 +238,11 @@ func satisfiesCaretConstraint(version, constraint *Version) bool {
 	return version.patch == constraint.patch
 }
 
-// satisfiesTildeConstraint checks if version satisfies tilde constraint (~1.2.3)
-// Tilde allows patch-level changes if a minor version is specified
-// ~1.2.3 := >=1.2.3 <1.(2+1).0 := >=1.2.3 <1.3.0
-// ~1.2 := >=1.2.0 <1.(2+1).0 := >=1.2.0 <1.3.0
-// ~1 := >=1.0.0 <(1+1).0.0 := >=1.0.0 <2.0.0
-func satisfiesTildeConstraint(version, constraint *Version) bool {
+// satisfiesTildeConstraint checks if version satisfies tilde constraint based on precision
+// ~1.2.3 := >=1.2.3 <1.3.0 (precision 3)
+// ~1.2 := >=1.2.0 <1.3.0 (precision 2)
+// ~1 := >=1.0.0 <2.0.0 (precision 1)
+func satisfiesTildeConstraint(version, constraint *Version, precision int) bool {
 	// Must be >= constraint version
 	if version.Compare(constraint) < 0 {
 		return false
@@ -217,30 +253,38 @@ func satisfiesTildeConstraint(version, constraint *Version) bool {
 		return false
 	}
 
-	// Minor version must be the same
-	if version.minor != constraint.minor {
-		return false
+	// Behavior depends on precision
+	switch precision {
+	case 1: // ~1 := >=1.0.0 <2.0.0
+		// Only major needs to match
+		return true
+	case 2: // ~1.2 := >=1.2.0 <1.3.0
+		// Major and minor must match
+		return version.minor == constraint.minor
+	default: // ~1.2.3 := >=1.2.3 <1.3.0
+		// Major and minor must match, patch can be anything
+		return version.minor == constraint.minor
 	}
-
-	// Patch can be anything >= constraint patch
-	return true
 }
 
-// satisfiesWildcardConstraint checks if version satisfies wildcard constraint (1.2.*)
-func satisfiesWildcardConstraint(version, constraint *Version) bool {
-	// The original constraint string determines what parts to match
-	// For now, implement basic wildcard matching
+// normalizePartialVersion converts partial versions to full versions
+// e.g., "1.2" -> "1.2.0", "1" -> "1.0.0"
+func normalizePartialVersion(version string) string {
+	parts := strings.Split(version, ".")
 	
-	// Major must match
-	if version.major != constraint.major {
-		return false
+	// Ensure we have exactly 3 parts
+	for len(parts) < 3 {
+		parts = append(parts, "0")
 	}
+	
+	return strings.Join(parts[:3], ".")
+}
 
-	// Minor must match (assuming constraint was like 1.2.*)
-	if version.minor != constraint.minor {
-		return false
+// countVersionComponents counts the number of version components in a string
+// e.g., "1.2.3" -> 3, "1.2" -> 2, "1" -> 1
+func countVersionComponents(version string) int {
+	if version == "" {
+		return 0
 	}
-
-	// Patch can be anything
-	return true
+	return len(strings.Split(version, "."))
 }
