@@ -16,6 +16,7 @@ A Go library to:
 | **Go** | `pkg/ecosystem/gomod` | Go Module Versioning | `>=v1.2.3`, `<v2.0.0`, `!=v1.3.0` |
 | **Maven** | `pkg/ecosystem/maven` | Maven Versioning | `[1.0.0]`, `[1.0.0,2.0.0]`, `(1.0.0,)` |
 | **NPM** | `pkg/ecosystem/npm` | Semantic Versioning | `^1.2.3`, `~1.2.3`, `1.x`, `>=1.0.0 <2.0.0` |
+| **NuGet** | `pkg/ecosystem/nuget` | SemVer 2.0 + .NET Extensions | `[1.0.0]`, `[1.0.0,2.0.0]`, `>=1.0.0,<2.0.0` |
 | **PyPI** | `pkg/ecosystem/pypi` | PEP 440 | `~=1.2.3`, `>=1.0.0,<2.0.0`, `==1.2.*` |
 | **RubyGems** | `pkg/ecosystem/gem` | Ruby Gem Versioning | `~> 1.2.3`, `>= 1.0.0`, `!= 1.5.0` |
 
@@ -100,6 +101,10 @@ univers gem compare "2.0.0" "1.9.9"        # → 1 (first > second)
 # Compare Cargo versions with SemVer 2.0 compliance
 univers cargo compare "1.0.0-alpha" "1.0.0"  # → -1 (prerelease < release)
 univers cargo compare "1.2.3" "1.2.4"        # → -1 (first < second)
+
+# Compare NuGet versions with SemVer 2.0 and .NET extensions
+univers nuget compare "1.0.0-alpha" "1.0.0"  # → -1 (prerelease < release)
+univers nuget compare "1.2.3.4" "1.2.3"      # → 1 (revision > no revision)
 ```
 
 #### Sort Versions
@@ -119,6 +124,10 @@ univers gem sort "2.0.0" "1.0.0-alpha" "1.0.0"
 # Sort Cargo versions with SemVer 2.0 prerelease rules
 univers cargo sort "1.0.0" "1.0.0-beta.1" "1.0.0-beta.11" "1.0.0-alpha"
 # → "1.0.0-alpha" "1.0.0-beta.1" "1.0.0-beta.11" "1.0.0"
+
+# Sort NuGet versions with SemVer 2.0 prerelease and revision handling
+univers nuget sort "1.0.0" "1.0.0-beta" "1.0.0.1" "1.0.0-alpha"
+# → "1.0.0-alpha" "1.0.0-beta" "1.0.0" "1.0.0.1"
 ```
 
 #### Check Range Satisfaction
@@ -143,6 +152,11 @@ univers gem contains "~> 1.2.0" "1.3.0"  # → false (minor increment not allowe
 univers cargo contains "^1.2.0" "1.2.5"   # → true (compatible within major)
 univers cargo contains "^1.2.0" "2.0.0"   # → false (major increment not allowed)
 univers cargo contains "~1.2.0" "1.2.5"   # → true (patch increment allowed)
+
+# NuGet range checking with bracket notation and comma-separated constraints
+univers nuget contains "[1.0.0,2.0.0]" "1.5.0"     # → true (inclusive range)
+univers nuget contains "[1.0.0,)" "2.0.0"          # → true (unbounded range)
+univers nuget contains ">=1.0.0,<2.0.0" "1.5.0"    # → true (comma-separated)
 ```
 
 ## Architecture
@@ -417,6 +431,71 @@ e.NewVersionRange(">=1.0.0 <2.0.0")
 
 // OR logic
 e.NewVersionRange("1.x || 2.x")
+```
+
+### NuGet
+
+#### Version Formats
+```go
+e := &nuget.Ecosystem{}
+
+// Basic versions
+e.NewVersion("1.2.3")
+
+// Versions with v prefix
+e.NewVersion("v1.2.3")
+
+// Versions with revision (.NET 4th component)
+e.NewVersion("1.2.3.4")
+
+// Versions with prerelease identifiers
+e.NewVersion("1.0.0-alpha")         // Alpha release
+e.NewVersion("1.0.0-beta.1")        // Beta with number
+e.NewVersion("1.0.0-rc.1")          // Release candidate
+e.NewVersion("2.0.0-alpha.beta.1")  // Complex prerelease
+
+// Versions with build metadata
+e.NewVersion("1.0.0+build.1")       // Build metadata
+e.NewVersion("1.0.0-alpha+build")   // Prerelease with build
+
+// Complex versions with revision, prerelease, and build
+e.NewVersion("1.2.3.4-beta.1+build.20230101")
+
+// Major only (defaults to .0.0)
+e.NewVersion("1")
+
+// Major and minor only (defaults to .0)
+e.NewVersion("1.2")
+```
+
+#### Range Operators
+```go
+e := &nuget.Ecosystem{}
+
+// Exact version match
+e.NewVersionRange("[1.2.3]")
+
+// Inclusive ranges
+e.NewVersionRange("[1.0.0,2.0.0]")  // >=1.0.0 and <=2.0.0
+
+// Exclusive ranges
+e.NewVersionRange("(1.0.0,2.0.0)")  // >1.0.0 and <2.0.0
+
+// Mixed inclusive/exclusive
+e.NewVersionRange("[1.0.0,2.0.0)")  // >=1.0.0 and <2.0.0
+e.NewVersionRange("(1.0.0,2.0.0]")  // >1.0.0 and <=2.0.0
+
+// Unbounded ranges
+e.NewVersionRange("[1.0.0,)")       // >=1.0.0
+e.NewVersionRange("(,2.0.0]")       // <=2.0.0
+e.NewVersionRange("(,2.0.0)")       // <2.0.0
+
+// Comma-separated constraints (AND logic)
+e.NewVersionRange(">=1.0.0,<2.0.0") // >=1.0.0 AND <2.0.0
+e.NewVersionRange(">=1.0.0,<2.0.0,!=1.5.0") // With exclusion
+
+// Minimum version (default behavior)
+e.NewVersionRange("1.0.0")          // >=1.0.0
 ```
 
 ### PyPI

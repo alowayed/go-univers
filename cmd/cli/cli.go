@@ -10,6 +10,7 @@ import (
 	"github.com/alowayed/go-univers/pkg/ecosystem/gomod"
 	"github.com/alowayed/go-univers/pkg/ecosystem/maven"
 	"github.com/alowayed/go-univers/pkg/ecosystem/npm"
+	"github.com/alowayed/go-univers/pkg/ecosystem/nuget"
 	"github.com/alowayed/go-univers/pkg/ecosystem/pypi"
 	"github.com/alowayed/go-univers/pkg/univers"
 )
@@ -45,6 +46,9 @@ func run(args []string) (string, int) {
 		},
 		npm.Name: func(args []string) (string, int) {
 			return runEcosystem(&npm.Ecosystem{}, args)
+		},
+		nuget.Name: func(args []string) (string, int) {
+			return runEcosystem(&nuget.Ecosystem{}, args)
 		},
 		pypi.Name: func(args []string) (string, int) {
 			return runEcosystem(&pypi.Ecosystem{}, args)
