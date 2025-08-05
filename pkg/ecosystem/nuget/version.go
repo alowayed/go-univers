@@ -79,20 +79,6 @@ func (v *Version) String() string {
 	return v.original
 }
 
-// normalize returns the normalized form of the version
-func (v *Version) normalize() string {
-	result := fmt.Sprintf("%d.%d.%d", v.major, v.minor, v.patch)
-	if v.revision > 0 {
-		result += fmt.Sprintf(".%d", v.revision)
-	}
-	if v.prerelease != "" {
-		result += "-" + v.prerelease
-	}
-	if v.build != "" {
-		result += "+" + v.build
-	}
-	return result
-}
 
 // Compare compares this version with another NuGet version
 func (v *Version) Compare(other *Version) int {
