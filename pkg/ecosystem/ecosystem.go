@@ -7,6 +7,7 @@ import (
 	"github.com/alowayed/go-univers/pkg/ecosystem/gomod"
 	"github.com/alowayed/go-univers/pkg/ecosystem/maven"
 	"github.com/alowayed/go-univers/pkg/ecosystem/npm"
+	"github.com/alowayed/go-univers/pkg/ecosystem/nuget"
 	"github.com/alowayed/go-univers/pkg/ecosystem/pypi"
 	"github.com/alowayed/go-univers/pkg/univers"
 )
@@ -44,6 +45,11 @@ var (
 	_ univers.Version[*npm.Version]                      = &npm.Version{}
 	_ univers.VersionRange[*npm.Version]                 = &npm.VersionRange{}
 	_ univers.Ecosystem[*npm.Version, *npm.VersionRange] = &npm.Ecosystem{}
+
+	// nuget
+	_ univers.Version[*nuget.Version]                        = &nuget.Version{}
+	_ univers.VersionRange[*nuget.Version]                   = &nuget.VersionRange{}
+	_ univers.Ecosystem[*nuget.Version, *nuget.VersionRange] = &nuget.Ecosystem{}
 
 	// pypi
 	_ univers.Version[*pypi.Version]                       = &pypi.Version{}
