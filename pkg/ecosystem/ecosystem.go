@@ -2,6 +2,7 @@ package ecosystem
 
 import (
 	"github.com/alowayed/go-univers/pkg/ecosystem/alpine"
+	"github.com/alowayed/go-univers/pkg/ecosystem/cargo"
 	"github.com/alowayed/go-univers/pkg/ecosystem/gem"
 	"github.com/alowayed/go-univers/pkg/ecosystem/gomod"
 	"github.com/alowayed/go-univers/pkg/ecosystem/maven"
@@ -18,6 +19,11 @@ var (
 	_ univers.Version[*alpine.Version]                          = &alpine.Version{}
 	_ univers.VersionRange[*alpine.Version]                     = &alpine.VersionRange{}
 	_ univers.Ecosystem[*alpine.Version, *alpine.VersionRange] = &alpine.Ecosystem{}
+
+	// cargo
+	_ univers.Version[*cargo.Version]                        = &cargo.Version{}
+	_ univers.VersionRange[*cargo.Version]                   = &cargo.VersionRange{}
+	_ univers.Ecosystem[*cargo.Version, *cargo.VersionRange] = &cargo.Ecosystem{}
 
 	// gem
 	_ univers.Version[*gem.Version]                      = &gem.Version{}

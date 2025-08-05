@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/alowayed/go-univers/pkg/ecosystem/alpine"
+	"github.com/alowayed/go-univers/pkg/ecosystem/cargo"
 	"github.com/alowayed/go-univers/pkg/ecosystem/gem"
 	"github.com/alowayed/go-univers/pkg/ecosystem/gomod"
 	"github.com/alowayed/go-univers/pkg/ecosystem/maven"
@@ -29,6 +30,9 @@ func run(args []string) (string, int) {
 	ecosystemToRun := map[string]func([]string) (string, int){
 		alpine.Name: func(args []string) (string, int) {
 			return runEcosystem(&alpine.Ecosystem{}, args)
+		},
+		cargo.Name: func(args []string) (string, int) {
+			return runEcosystem(&cargo.Ecosystem{}, args)
 		},
 		gem.Name: func(args []string) (string, int) {
 			return runEcosystem(&gem.Ecosystem{}, args)

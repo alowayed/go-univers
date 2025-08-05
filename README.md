@@ -12,6 +12,7 @@ A Go library to:
 | Ecosystem | Package | Version Format | Range Syntax |
 |-----------|---------|----------------|--------------|
 | **Alpine** | `pkg/ecosystem/alpine` | Alpine Package Versioning | `>=1.2.3`, `<2.0.0`, `!=1.5.0` |
+| **Cargo** | `pkg/ecosystem/cargo` | SemVer 2.0 | `^1.2.3`, `~1.2.3`, `>=1.0.0`, `1.2.*` |
 | **Go** | `pkg/ecosystem/gomod` | Go Module Versioning | `>=v1.2.3`, `<v2.0.0`, `!=v1.3.0` |
 | **Maven** | `pkg/ecosystem/maven` | Maven Versioning | `[1.0.0]`, `[1.0.0,2.0.0]`, `(1.0.0,)` |
 | **NPM** | `pkg/ecosystem/npm` | Semantic Versioning | `^1.2.3`, `~1.2.3`, `1.x`, `>=1.0.0 <2.0.0` |
@@ -95,6 +96,10 @@ univers alpine compare "2.0.0" "1.9.9"         # → 1 (first > second)
 # Compare Ruby Gem versions with prerelease handling
 univers gem compare "1.0.0-alpha" "1.0.0"  # → -1 (prerelease < release)
 univers gem compare "2.0.0" "1.9.9"        # → 1 (first > second)
+
+# Compare Cargo versions with SemVer 2.0 compliance
+univers cargo compare "1.0.0-alpha" "1.0.0"  # → -1 (prerelease < release)
+univers cargo compare "1.2.3" "1.2.4"        # → -1 (first < second)
 ```
 
 #### Sort Versions
@@ -110,6 +115,10 @@ univers go sort "v2.0.0" "v1.2.3" "v1.0.0-20170915032832-14c0d48ead0c"
 # Sort Ruby Gem versions with proper prerelease ordering
 univers gem sort "2.0.0" "1.0.0-alpha" "1.0.0"
 # → "1.0.0-alpha" "1.0.0" "2.0.0"
+
+# Sort Cargo versions with SemVer 2.0 prerelease rules
+univers cargo sort "1.0.0" "1.0.0-beta.1" "1.0.0-beta.11" "1.0.0-alpha"
+# → "1.0.0-alpha" "1.0.0-beta.1" "1.0.0-beta.11" "1.0.0"
 ```
 
 #### Check Range Satisfaction
@@ -129,6 +138,11 @@ univers go contains "<v1.9.0" "v2.0.0"    # → false
 # Ruby Gem pessimistic constraint checking
 univers gem contains "~> 1.2.0" "1.2.5"  # → true (patch increment allowed)
 univers gem contains "~> 1.2.0" "1.3.0"  # → false (minor increment not allowed)
+
+# Cargo constraint checking with SemVer 2.0 caret/tilde ranges
+univers cargo contains "^1.2.0" "1.2.5"   # → true (compatible within major)
+univers cargo contains "^1.2.0" "2.0.0"   # → false (major increment not allowed)
+univers cargo contains "~1.2.0" "1.2.5"   # → true (patch increment allowed)
 ```
 
 ## Architecture
@@ -211,6 +225,61 @@ e.NewVersionRange(">= 1.2.3 < 2.0.0 != 1.5.0") // With exclusion
 e.NewVersionRange(">= 1.2.0_alpha")        // Suffix versions
 e.NewVersionRange(">= 1.2.3-r1")           // Build versions
 e.NewVersionRange("> 1.1a")                // Letter versions
+```
+
+### Cargo
+
+#### Version Formats
+```go
+e := &cargo.Ecosystem{}
+
+// Basic SemVer 2.0 versions
+e.NewVersion("1.2.3")
+
+// Versions with prerelease identifiers
+e.NewVersion("1.0.0-alpha")         // Alpha release
+e.NewVersion("1.0.0-beta.1")        // Beta with number
+e.NewVersion("1.0.0-rc.1")          // Release candidate
+e.NewVersion("2.0.0-alpha.beta.1")  // Complex prerelease
+
+// Versions with build metadata
+e.NewVersion("1.0.0+build.1")       // Build metadata
+e.NewVersion("1.0.0-alpha+build")   // Prerelease with build
+
+// Complex versions with all components
+e.NewVersion("1.0.0-beta.1+build.20230101")
+```
+
+#### Range Operators
+```go
+e := &cargo.Ecosystem{}
+
+// Equality and inequality
+e.NewVersionRange("1.2.3")         // Exact match
+e.NewVersionRange("=1.2.3")        // Explicit equals
+e.NewVersionRange("!=1.2.3")       // Not equal
+
+// Comparison operators
+e.NewVersionRange(">=1.2.3")       // Greater than or equal
+e.NewVersionRange(">1.2.3")        // Greater than
+e.NewVersionRange("<=1.2.3")       // Less than or equal
+e.NewVersionRange("<2.0.0")        // Less than
+
+// Caret constraints (compatible within major)
+e.NewVersionRange("^1.2.3")        // >=1.2.3 <2.0.0
+e.NewVersionRange("^0.2.3")        // >=0.2.3 <0.3.0 (special 0.x behavior)
+e.NewVersionRange("^0.0.3")        // =0.0.3 (special 0.0.x behavior)
+
+// Tilde constraints (compatible within minor)
+e.NewVersionRange("~1.2.3")        // >=1.2.3 <1.3.0
+e.NewVersionRange("~1.2")          // >=1.2.0 <1.3.0
+
+// Wildcard matching
+e.NewVersionRange("1.2.*")         // >=1.2.0 <1.3.0
+
+// Multiple constraints (AND logic)
+e.NewVersionRange(">=1.0.0, <2.0.0")      // Range constraint
+e.NewVersionRange(">=1.2.3, <2.0.0, !=1.5.0") // With exclusion
 ```
 
 ### Maven
