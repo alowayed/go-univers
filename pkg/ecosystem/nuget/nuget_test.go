@@ -9,3 +9,4 @@ func TestEcosystem_Name(t *testing.T) {
 		t.Errorf("Ecosystem.Name() = %v, want %v", got, want)
 	}
 }
+

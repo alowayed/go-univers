@@ -41,14 +41,14 @@ func parseRange(e *Ecosystem, rangeStr string) ([]*constraint, error) {
 	rangeStr = strings.TrimSpace(rangeStr)
 
 	// Check for bracket/paren syntax first
-	if (strings.HasPrefix(rangeStr, "[") || strings.HasPrefix(rangeStr, "(")) && 
-	   (strings.HasSuffix(rangeStr, "]") || strings.HasSuffix(rangeStr, ")")) {
-		
+	if (strings.HasPrefix(rangeStr, "[") || strings.HasPrefix(rangeStr, "(")) &&
+		(strings.HasSuffix(rangeStr, "]") || strings.HasSuffix(rangeStr, ")")) {
+
 		// Check for empty brackets/parens
 		if rangeStr == "[]" || rangeStr == "()" {
 			return nil, fmt.Errorf("empty range expression: %s", rangeStr)
 		}
-		
+
 		// Handle exact version match [1.0.0]
 		if strings.HasPrefix(rangeStr, "[") && strings.HasSuffix(rangeStr, "]") && !strings.Contains(rangeStr, ",") {
 			versionStr := strings.TrimSpace(rangeStr[1 : len(rangeStr)-1])
@@ -107,7 +107,7 @@ func parseInclusiveRange(e *Ecosystem, rangeStr string) ([]*constraint, error) {
 	if err != nil {
 		return nil, fmt.Errorf("invalid start version in inclusive range: %w", err)
 	}
-	
+
 	endVersion, err := e.NewVersion(endStr)
 	if err != nil {
 		return nil, fmt.Errorf("invalid end version in inclusive range: %w", err)
@@ -134,7 +134,7 @@ func parseExclusiveRange(e *Ecosystem, rangeStr string) ([]*constraint, error) {
 	if err != nil {
 		return nil, fmt.Errorf("invalid start version in exclusive range: %w", err)
 	}
-	
+
 	endVersion, err := e.NewVersion(endStr)
 	if err != nil {
 		return nil, fmt.Errorf("invalid end version in exclusive range: %w", err)
@@ -187,7 +187,7 @@ func parseMixedRange(e *Ecosystem, rangeStr string) ([]*constraint, error) {
 	if err != nil {
 		return nil, fmt.Errorf("invalid start version in mixed range: %w", err)
 	}
-	
+
 	endVersion, err := e.NewVersion(endStr)
 	if err != nil {
 		return nil, fmt.Errorf("invalid end version in mixed range: %w", err)
@@ -212,16 +212,15 @@ func parseMixedRange(e *Ecosystem, rangeStr string) ([]*constraint, error) {
 	return constraints, nil
 }
 
-
 // parseCommaSeparatedConstraints handles comma-separated constraints
 func parseCommaSeparatedConstraints(e *Ecosystem, rangeStr string) ([]*constraint, error) {
 	// Reject malformed bracket/paren expressions that fall through to here
 	if (strings.HasPrefix(rangeStr, "[") && !strings.HasSuffix(rangeStr, "]")) ||
-	   (strings.HasPrefix(rangeStr, "(") && !strings.HasSuffix(rangeStr, ")")) ||
-	   rangeStr == "[]" || rangeStr == "()" {
+		(strings.HasPrefix(rangeStr, "(") && !strings.HasSuffix(rangeStr, ")")) ||
+		rangeStr == "[]" || rangeStr == "()" {
 		return nil, fmt.Errorf("malformed range expression: %s", rangeStr)
 	}
-	
+
 	parts := strings.Split(rangeStr, ",")
 	var constraints []*constraint
 
@@ -308,3 +307,4 @@ func (c *constraint) matches(version *Version) bool {
 		return false
 	}
 }
+
