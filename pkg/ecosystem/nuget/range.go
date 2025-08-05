@@ -14,7 +14,7 @@ type VersionRange struct {
 // constraint represents a single NuGet version constraint
 type constraint struct {
 	operator string
-	version  *Version
+	version  string
 }
 
 // NewVersionRange creates a new NuGet version range from a range string
@@ -24,7 +24,7 @@ func (e *Ecosystem) NewVersionRange(rangeStr string) (*VersionRange, error) {
 		return nil, fmt.Errorf("empty range string")
 	}
 
-	constraints, err := parseRange(e, rangeStr)
+	constraints, err := parseRange(rangeStr)
 	if err != nil {
 		return nil, err
 	}
@@ -36,191 +36,184 @@ func (e *Ecosystem) NewVersionRange(rangeStr string) (*VersionRange, error) {
 }
 
 // parseRange parses NuGet range syntax into constraints
-func parseRange(e *Ecosystem, rangeStr string) ([]*constraint, error) {
+func parseRange(rangeStr string) ([]*constraint, error) {
 	// Trim whitespace
 	rangeStr = strings.TrimSpace(rangeStr)
 
 	// Check for bracket/paren syntax first
-	if (strings.HasPrefix(rangeStr, "[") || strings.HasPrefix(rangeStr, "(")) &&
-		(strings.HasSuffix(rangeStr, "]") || strings.HasSuffix(rangeStr, ")")) {
-
+	if (strings.HasPrefix(rangeStr, "[") || strings.HasPrefix(rangeStr, "(")) && 
+	   (strings.HasSuffix(rangeStr, "]") || strings.HasSuffix(rangeStr, ")")) {
+		
 		// Check for empty brackets/parens
 		if rangeStr == "[]" || rangeStr == "()" {
 			return nil, fmt.Errorf("empty range expression: %s", rangeStr)
 		}
-
+		
 		// Handle exact version match [1.0.0]
 		if strings.HasPrefix(rangeStr, "[") && strings.HasSuffix(rangeStr, "]") && !strings.Contains(rangeStr, ",") {
-			versionStr := strings.TrimSpace(rangeStr[1 : len(rangeStr)-1])
-			if versionStr == "" {
+			version := strings.TrimSpace(rangeStr[1 : len(rangeStr)-1])
+			if version == "" {
 				return nil, fmt.Errorf("empty version in exact match: %s", rangeStr)
-			}
-			version, err := e.NewVersion(versionStr)
-			if err != nil {
-				return nil, fmt.Errorf("invalid version in exact match: %w", err)
 			}
 			return []*constraint{{operator: "=", version: version}}, nil
 		}
 
 		// Handle inclusive ranges [1.0.0,2.0.0]
 		if strings.HasPrefix(rangeStr, "[") && strings.HasSuffix(rangeStr, "]") && strings.Contains(rangeStr, ",") {
-			return parseInclusiveRange(e, rangeStr)
+			return parseInclusiveRange(rangeStr)
 		}
 
 		// Handle exclusive ranges (1.0.0,2.0.0)
 		if strings.HasPrefix(rangeStr, "(") && strings.HasSuffix(rangeStr, ")") && strings.Contains(rangeStr, ",") {
-			return parseExclusiveRange(e, rangeStr)
+			return parseExclusiveRange(rangeStr)
 		}
 
 		// Handle mixed ranges [1.0.0,2.0.0) or (1.0.0,2.0.0]
 		if ((strings.HasPrefix(rangeStr, "[") && strings.HasSuffix(rangeStr, ")")) ||
 			(strings.HasPrefix(rangeStr, "(") && strings.HasSuffix(rangeStr, "]"))) && strings.Contains(rangeStr, ",") {
-			return parseMixedRange(e, rangeStr)
+			return parseMixedRange(rangeStr)
+		}
+
+		// Handle unbounded ranges [1.0.0,) or (,2.0.0]  
+		if strings.Contains(rangeStr, ",") {
+			return parseUnboundedRange(rangeStr)
 		}
 	}
 
 	// Handle multiple constraints separated by commas (NuGet allows comma-separated constraints)
 	if strings.Contains(rangeStr, ",") {
-		return parseCommaSeparatedConstraints(e, rangeStr)
+		return parseCommaSeparatedConstraints(rangeStr)
 	}
 
 	// Handle single constraint (minimum version)
-	version, err := e.NewVersion(rangeStr)
-	if err != nil {
-		return nil, fmt.Errorf("invalid version in minimum constraint: %w", err)
-	}
-	return []*constraint{{operator: ">=", version: version}}, nil
+	return []*constraint{{operator: ">=", version: rangeStr}}, nil
 }
 
 // parseInclusiveRange handles inclusive ranges [1.0.0,2.0.0]
-func parseInclusiveRange(e *Ecosystem, rangeStr string) ([]*constraint, error) {
+func parseInclusiveRange(rangeStr string) ([]*constraint, error) {
 	content := rangeStr[1 : len(rangeStr)-1] // Remove [ and ]
 	parts := strings.Split(content, ",")
 	if len(parts) != 2 {
 		return nil, fmt.Errorf("invalid inclusive range: %s", rangeStr)
 	}
 
-	startStr := strings.TrimSpace(parts[0])
-	endStr := strings.TrimSpace(parts[1])
-
-	startVersion, err := e.NewVersion(startStr)
-	if err != nil {
-		return nil, fmt.Errorf("invalid start version in inclusive range: %w", err)
-	}
-
-	endVersion, err := e.NewVersion(endStr)
-	if err != nil {
-		return nil, fmt.Errorf("invalid end version in inclusive range: %w", err)
-	}
+	start := strings.TrimSpace(parts[0])
+	end := strings.TrimSpace(parts[1])
 
 	return []*constraint{
-		{operator: ">=", version: startVersion},
-		{operator: "<=", version: endVersion},
+		{operator: ">=", version: start},
+		{operator: "<=", version: end},
 	}, nil
 }
 
 // parseExclusiveRange handles exclusive ranges (1.0.0,2.0.0)
-func parseExclusiveRange(e *Ecosystem, rangeStr string) ([]*constraint, error) {
+func parseExclusiveRange(rangeStr string) ([]*constraint, error) {
 	content := rangeStr[1 : len(rangeStr)-1] // Remove ( and )
 	parts := strings.Split(content, ",")
 	if len(parts) != 2 {
 		return nil, fmt.Errorf("invalid exclusive range: %s", rangeStr)
 	}
 
-	startStr := strings.TrimSpace(parts[0])
-	endStr := strings.TrimSpace(parts[1])
-
-	startVersion, err := e.NewVersion(startStr)
-	if err != nil {
-		return nil, fmt.Errorf("invalid start version in exclusive range: %w", err)
-	}
-
-	endVersion, err := e.NewVersion(endStr)
-	if err != nil {
-		return nil, fmt.Errorf("invalid end version in exclusive range: %w", err)
-	}
+	start := strings.TrimSpace(parts[0])
+	end := strings.TrimSpace(parts[1])
 
 	return []*constraint{
-		{operator: ">", version: startVersion},
-		{operator: "<", version: endVersion},
+		{operator: ">", version: start},
+		{operator: "<", version: end},
 	}, nil
 }
 
-// parseMixedRange handles mixed ranges [1.0.0,2.0.0) or (1.0.0,2.0.0] and unbounded ranges [1.0.0,) or (,2.0.0]
-func parseMixedRange(e *Ecosystem, rangeStr string) ([]*constraint, error) {
+// parseMixedRange handles mixed ranges [1.0.0,2.0.0) or (1.0.0,2.0.0]
+func parseMixedRange(rangeStr string) ([]*constraint, error) {
 	content := rangeStr[1 : len(rangeStr)-1] // Remove brackets
 	parts := strings.Split(content, ",")
 	if len(parts) != 2 {
 		return nil, fmt.Errorf("invalid mixed range: %s", rangeStr)
 	}
 
-	startStr := strings.TrimSpace(parts[0])
-	endStr := strings.TrimSpace(parts[1])
+	start := strings.TrimSpace(parts[0])
+	end := strings.TrimSpace(parts[1])
 
 	// Check if this is actually an unbounded range
-	if startStr == "" && endStr != "" {
+	if start == "" && end != "" {
 		// (,2.0.0] or (,2.0.0)
-		endVersion, err := e.NewVersion(endStr)
-		if err != nil {
-			return nil, fmt.Errorf("invalid end version in unbounded range: %w", err)
-		}
 		if strings.HasSuffix(rangeStr, "]") {
-			return []*constraint{{operator: "<=", version: endVersion}}, nil
+			return []*constraint{{operator: "<=", version: end}}, nil
 		} else {
-			return []*constraint{{operator: "<", version: endVersion}}, nil
+			return []*constraint{{operator: "<", version: end}}, nil
 		}
-	} else if startStr != "" && endStr == "" {
+	} else if start != "" && end == "" {
 		// [1.0.0,) or (1.0.0,)
-		startVersion, err := e.NewVersion(startStr)
-		if err != nil {
-			return nil, fmt.Errorf("invalid start version in unbounded range: %w", err)
-		}
 		if strings.HasPrefix(rangeStr, "[") {
-			return []*constraint{{operator: ">=", version: startVersion}}, nil
+			return []*constraint{{operator: ">=", version: start}}, nil
 		} else {
-			return []*constraint{{operator: ">", version: startVersion}}, nil
+			return []*constraint{{operator: ">", version: start}}, nil
 		}
 	}
 
 	// Both start and end are non-empty, handle as normal mixed range
-	startVersion, err := e.NewVersion(startStr)
-	if err != nil {
-		return nil, fmt.Errorf("invalid start version in mixed range: %w", err)
-	}
-
-	endVersion, err := e.NewVersion(endStr)
-	if err != nil {
-		return nil, fmt.Errorf("invalid end version in mixed range: %w", err)
-	}
-
 	var constraints []*constraint
 
 	// Start constraint
 	if strings.HasPrefix(rangeStr, "[") {
-		constraints = append(constraints, &constraint{operator: ">=", version: startVersion})
+		constraints = append(constraints, &constraint{operator: ">=", version: start})
 	} else {
-		constraints = append(constraints, &constraint{operator: ">", version: startVersion})
+		constraints = append(constraints, &constraint{operator: ">", version: start})
 	}
 
 	// End constraint
 	if strings.HasSuffix(rangeStr, "]") {
-		constraints = append(constraints, &constraint{operator: "<=", version: endVersion})
+		constraints = append(constraints, &constraint{operator: "<=", version: end})
 	} else {
-		constraints = append(constraints, &constraint{operator: "<", version: endVersion})
+		constraints = append(constraints, &constraint{operator: "<", version: end})
 	}
 
 	return constraints, nil
 }
 
-// parseCommaSeparatedConstraints handles comma-separated constraints
-func parseCommaSeparatedConstraints(e *Ecosystem, rangeStr string) ([]*constraint, error) {
-	// Reject malformed bracket/paren expressions that fall through to here
-	if (strings.HasPrefix(rangeStr, "[") && !strings.HasSuffix(rangeStr, "]")) ||
-		(strings.HasPrefix(rangeStr, "(") && !strings.HasSuffix(rangeStr, ")")) ||
-		rangeStr == "[]" || rangeStr == "()" {
-		return nil, fmt.Errorf("malformed range expression: %s", rangeStr)
+// parseUnboundedRange handles unbounded ranges [1.0.0,) or (,2.0.0]
+func parseUnboundedRange(rangeStr string) ([]*constraint, error) {
+	if len(rangeStr) < 3 {
+		return nil, fmt.Errorf("invalid unbounded range: %s", rangeStr)
+	}
+	
+	content := rangeStr[1 : len(rangeStr)-1] // Remove brackets
+	parts := strings.Split(content, ",")
+	if len(parts) != 2 {
+		return nil, fmt.Errorf("invalid unbounded range: %s", rangeStr)
 	}
 
+	start := strings.TrimSpace(parts[0])
+	end := strings.TrimSpace(parts[1])
+
+	if start == "" && end != "" {
+		// (,2.0.0] or (,2.0.0)
+		if strings.HasSuffix(rangeStr, "]") {
+			return []*constraint{{operator: "<=", version: end}}, nil
+		} else {
+			return []*constraint{{operator: "<", version: end}}, nil
+		}
+	} else if start != "" && end == "" {
+		// [1.0.0,) or (1.0.0,)
+		if strings.HasPrefix(rangeStr, "[") {
+			return []*constraint{{operator: ">=", version: start}}, nil
+		} else {
+			return []*constraint{{operator: ">", version: start}}, nil
+		}
+	}
+
+	return nil, fmt.Errorf("invalid unbounded range: %s", rangeStr)
+}
+
+// parseCommaSeparatedConstraints handles comma-separated constraints
+func parseCommaSeparatedConstraints(rangeStr string) ([]*constraint, error) {
+	// Reject malformed bracket/paren expressions that fall through to here
+	if (strings.HasPrefix(rangeStr, "[") && !strings.HasSuffix(rangeStr, "]")) ||
+	   (strings.HasPrefix(rangeStr, "(") && !strings.HasSuffix(rangeStr, ")")) ||
+	   rangeStr == "[]" || rangeStr == "()" {
+		return nil, fmt.Errorf("malformed range expression: %s", rangeStr)
+	}
+	
 	parts := strings.Split(rangeStr, ",")
 	var constraints []*constraint
 
@@ -231,7 +224,7 @@ func parseCommaSeparatedConstraints(e *Ecosystem, rangeStr string) ([]*constrain
 		}
 
 		// Parse each part as a single constraint
-		partConstraints, err := parseSingleConstraint(e, part)
+		partConstraints, err := parseSingleConstraint(part)
 		if err != nil {
 			return nil, err
 		}
@@ -246,28 +239,20 @@ func parseCommaSeparatedConstraints(e *Ecosystem, rangeStr string) ([]*constrain
 }
 
 // parseSingleConstraint parses a single NuGet constraint
-func parseSingleConstraint(e *Ecosystem, c string) ([]*constraint, error) {
+func parseSingleConstraint(c string) ([]*constraint, error) {
 	c = strings.TrimSpace(c)
 
 	// Handle comparison operators
 	operators := []string{">=", "<=", "!=", ">", "<", "="}
 	for _, op := range operators {
 		if strings.HasPrefix(c, op) {
-			versionStr := strings.TrimSpace(c[len(op):])
-			version, err := e.NewVersion(versionStr)
-			if err != nil {
-				return nil, fmt.Errorf("invalid version in constraint %s: %w", c, err)
-			}
+			version := strings.TrimSpace(c[len(op):])
 			return []*constraint{{operator: op, version: version}}, nil
 		}
 	}
 
 	// Default to minimum version (>=)
-	version, err := e.NewVersion(c)
-	if err != nil {
-		return nil, fmt.Errorf("invalid version in constraint %s: %w", c, err)
-	}
-	return []*constraint{{operator: ">=", version: version}}, nil
+	return []*constraint{{operator: ">=", version: c}}, nil
 }
 
 // String returns the string representation of the range
@@ -288,7 +273,13 @@ func (nr *VersionRange) Contains(version *Version) bool {
 
 // matches checks if the given version matches this constraint
 func (c *constraint) matches(version *Version) bool {
-	comparison := version.Compare(c.version)
+	e := &Ecosystem{}
+	constraintVersion, err := e.NewVersion(c.version)
+	if err != nil {
+		return false
+	}
+
+	comparison := version.Compare(constraintVersion)
 
 	switch c.operator {
 	case "=":
@@ -307,4 +298,3 @@ func (c *constraint) matches(version *Version) bool {
 		return false
 	}
 }
-

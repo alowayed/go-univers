@@ -42,10 +42,10 @@ func TestVersionRange_Contains(t *testing.T) {
 	e := &Ecosystem{}
 
 	tests := []struct {
-		name     string
+		name    string
 		rangeStr string
-		version  string
-		want     bool
+		version string
+		want    bool
 	}{
 		// Exact version matches
 		{"exact match", "[1.2.3]", "1.2.3", true},
@@ -163,7 +163,7 @@ func TestVersionRange_ParseEdgeCases(t *testing.T) {
 		{"mismatched brackets", "[1.0.0,2.0.0)", false}, // This should work (mixed range)
 		{"empty brackets", "[]", true},
 		{"empty parens", "()", true},
-		{"single comma", ",", true},                // Should fail - no valid constraints
+		{"single comma", ",", true}, // Should fail - no valid constraints
 		{"multiple commas", "1.0.0,,2.0.0", false}, // Should handle gracefully
 		{"whitespace in brackets", "[ 1.0.0 , 2.0.0 ]", false},
 	}
@@ -177,4 +177,3 @@ func TestVersionRange_ParseEdgeCases(t *testing.T) {
 		})
 	}
 }
-
