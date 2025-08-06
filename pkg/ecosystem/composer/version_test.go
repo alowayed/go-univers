@@ -194,6 +194,80 @@ func TestNewVersion(t *testing.T) {
 			},
 		},
 
+		// Additional real-world version formats from test data
+		{
+			name:  "pl suffix version",
+			input: "1.0pl1",
+			want: &Version{
+				major: 1, minor: 0, patch: 0,
+				stability: stabilityStable, stabilityNum: 1,
+				original:  "1.0pl1",
+			},
+		},
+		{
+			name:  "version with v prefix and pl",
+			input: "v1.0pl1",
+			want: &Version{
+				major: 1, minor: 0, patch: 0,
+				stability: stabilityStable, stabilityNum: 1,
+				original:  "v1.0pl1",
+			},
+		},
+		{
+			name:  "long numeric version",
+			input: "1.2.3.4.5",
+			want: &Version{
+				major: 1, minor: 2, patch: 3, extra: 4,
+				stability: stabilityStable,
+				original:  "1.2.3.4.5",
+			},
+		},
+		{
+			name:  "alpha without separator",
+			input: "1.0a1",
+			want: &Version{
+				major: 1, minor: 0, patch: 0,
+				stability: stabilityAlpha, stabilityNum: 1,
+				original: "1.0a1",
+			},
+		},
+		{
+			name:  "beta without separator",
+			input: "1.0b2",
+			want: &Version{
+				major: 1, minor: 0, patch: 0,
+				stability: stabilityBeta, stabilityNum: 2,
+				original: "1.0b2",
+			},
+		},
+		{
+			name:  "RC without separator",
+			input: "1.0RC1",
+			want: &Version{
+				major: 1, minor: 0, patch: 0,
+				stability: stabilityRC, stabilityNum: 1,
+				original: "1.0RC1",
+			},
+		},
+		{
+			name:  "version equality with different formats",
+			input: "1.0.0",
+			want: &Version{
+				major: 1, minor: 0, patch: 0,
+				stability: stabilityStable,
+				original:  "1.0.0",
+			},
+		},
+		{
+			name:  "patch version format",
+			input: "1.0.0-patch1",
+			want: &Version{
+				major: 1, minor: 0, patch: 0,
+				stability: stabilityStable, stabilityNum: 1, // Patch is treated as stable
+				original:  "1.0.0-patch1",
+			},
+		},
+
 		// Edge cases and error cases
 		{
 			name:    "empty string",
@@ -322,9 +396,29 @@ func TestVersionCompare(t *testing.T) {
 		{"different major with stability", "2.0.0-alpha", "1.9.9", 1},
 		{"same version different stability", "1.2.3-alpha.1", "1.2.3-alpha.2", -1},
 
-		// Edge cases
+		// Version normalization/equivalence tests
 		{"v prefix comparison", "v1.2.3", "1.2.3", 0},
 		{"zero versions", "0.0.1", "0.0.2", -1},
+		{"version normalization 1.0 vs 1.0.0", "1.0", "1.0.0", 0},
+		{"version normalization v1 vs 1.0.0", "v1", "1.0.0", 0},
+		
+		// pl/patch version comparisons  
+		{"pl version vs normal", "1.0pl1", "1.0.0", 1}, // pl1 > normal (has stability number)
+		{"pl version vs pl version", "1.0pl1", "1.0pl2", -1}, // pl1 vs pl2 by stability number
+		
+		// Mixed format stability comparisons
+		{"alpha without hyphen vs with hyphen", "1.0a1", "1.0.0-alpha.1", 0},
+		{"beta without hyphen vs with hyphen", "1.0b1", "1.0.0-beta.1", 0},
+		{"RC without hyphen vs with hyphen", "1.0RC1", "1.0.0-RC.1", 0},
+		
+		// Complex prerelease ordering
+		{"alpha vs beta same base", "1.0.0-alpha", "1.0.0-beta", -1},
+		{"beta vs RC same base", "1.0.0-beta", "1.0.0-RC", -1},
+		{"RC vs stable same base", "1.0.0-RC", "1.0.0", -1},
+		
+		// Numeric prerelease ordering
+		{"alpha.1 vs alpha.10", "1.0.0-alpha.1", "1.0.0-alpha.10", -1},
+		{"beta.2 vs beta.11", "1.0.0-beta.2", "1.0.0-beta.11", -1},
 	}
 
 	e := &Ecosystem{}

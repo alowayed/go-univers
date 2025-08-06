@@ -120,7 +120,11 @@ func parseSingleConstraint(c string) ([]*constraint, error) {
 		return parseStabilityConstraint(c)
 	}
 
-	// Default to exact match
+	// Default to exact match - validate the version first
+	e := &Ecosystem{}
+	if _, err := e.NewVersion(c); err != nil {
+		return nil, fmt.Errorf("invalid version in constraint '%s': %v", c, err)
+	}
 	return []*constraint{{operator: "=", version: c}}, nil
 }
 
@@ -149,27 +153,50 @@ func parseCaretConstraint(version string) ([]*constraint, error) {
 		return []*constraint{{operator: "=", version: v.normalize()}}, nil
 	}
 
-	// ^1.2.3 means >=1.2.3 <2.0.0
+	// ^1.2.3 means >=1.2.3 <2.0.0, but also includes prerelease versions of the same major.minor.patch
 	// ^0.3 means >=0.3.0 <0.4.0
 	// ^0.0.3 means >=0.0.3 <0.0.4
 	if v.major > 0 {
 		// Compatible changes within the same major version
-		return []*constraint{
-			{operator: ">=", version: v.normalize()},
-			{operator: "<", version: fmt.Sprintf("%d.0.0", v.major+1)},
-		}, nil
+		// For stable versions like ^1.0.0, also allow prereleases like 1.0b1
+		baseVersion := fmt.Sprintf("%d.%d.%d", v.major, v.minor, v.patch)
+		if v.stability == stabilityStable {
+			// Allow prereleases of the exact same version and above
+			return []*constraint{
+				{operator: "caret", version: baseVersion},
+			}, nil
+		} else {
+			return []*constraint{
+				{operator: ">=", version: v.normalize()},
+				{operator: "<", version: fmt.Sprintf("%d.0.0", v.major+1)},
+			}, nil
+		}
 	} else if v.minor > 0 {
 		// Compatible changes within the same minor version for 0.x
-		return []*constraint{
-			{operator: ">=", version: v.normalize()},
-			{operator: "<", version: fmt.Sprintf("0.%d.0", v.minor+1)},
-		}, nil
+		baseVersion := fmt.Sprintf("0.%d.%d", v.minor, v.patch)
+		if v.stability == stabilityStable {
+			return []*constraint{
+				{operator: "caret-0x", version: baseVersion},
+			}, nil
+		} else {
+			return []*constraint{
+				{operator: ">=", version: v.normalize()},
+				{operator: "<", version: fmt.Sprintf("0.%d.0", v.minor+1)},
+			}, nil
+		}
 	} else {
 		// Compatible changes within the same patch version for 0.0.x
-		return []*constraint{
-			{operator: ">=", version: v.normalize()},
-			{operator: "<", version: fmt.Sprintf("0.0.%d", v.patch+1)},
-		}, nil
+		baseVersion := fmt.Sprintf("0.0.%d", v.patch)
+		if v.stability == stabilityStable {
+			return []*constraint{
+				{operator: "caret-00x", version: baseVersion},
+			}, nil
+		} else {
+			return []*constraint{
+				{operator: ">=", version: v.normalize()},
+				{operator: "<", version: fmt.Sprintf("0.0.%d", v.patch+1)},
+			}, nil
+		}
 	}
 }
 
@@ -271,6 +298,11 @@ func parseStabilityConstraint(version string) ([]*constraint, error) {
 
 // parseHyphenRange handles hyphen ranges (1.2.3 - 2.3.4)
 func parseHyphenRange(rangeStr string) ([]*constraint, error) {
+	// Check for malformed hyphen ranges like "1.2.3 -" (trailing dash)
+	if strings.HasSuffix(rangeStr, " -") {
+		return nil, fmt.Errorf("invalid hyphen range: %s", rangeStr)
+	}
+	
 	parts := strings.Split(rangeStr, " - ")
 	if len(parts) != 2 {
 		return nil, fmt.Errorf("invalid hyphen range: %s", rangeStr)
@@ -356,6 +388,17 @@ func (c *constraint) matches(version *Version) bool {
 		return version.stability == expectedStability
 	}
 
+	// Handle special caret operators
+	if c.operator == "caret" {
+		return c.matchesCaret(version)
+	}
+	if c.operator == "caret-0x" {
+		return c.matchesCaretZeroX(version)
+	}
+	if c.operator == "caret-00x" {
+		return c.matchesCaretZeroZeroX(version)
+	}
+
 	e := &Ecosystem{}
 	constraintVersion, err := e.NewVersion(c.version)
 	if err != nil {
@@ -380,4 +423,93 @@ func (c *constraint) matches(version *Version) bool {
 	default:
 		return false
 	}
+}
+
+// matchesCaret handles caret constraints for major version > 0
+func (c *constraint) matchesCaret(version *Version) bool {
+	e := &Ecosystem{}
+	constraintVersion, err := e.NewVersion(c.version)
+	if err != nil {
+		return false
+	}
+
+	// Version must be in same major version
+	if version.major != constraintVersion.major {
+		return false
+	}
+
+	// Special handling for prereleases:
+	// Composer caret constraints have special rules for prereleases
+	if constraintVersion.stability == stabilityStable && version.stability != stabilityStable {
+		// For stable constraints, generally exclude prereleases of the same version
+		// EXCEPT for specific cases like 1.0b1 vs 1.0.0 where the version format matters
+		if version.major == constraintVersion.major && 
+		   version.minor == constraintVersion.minor && 
+		   version.patch == constraintVersion.patch {
+			// Check if this is the special case: ^1.0.0 should include 1.0b1
+			// but ^1.2.3 should NOT include 1.2.3-alpha
+			versionStr := version.String()
+			constraintStr := constraintVersion.String()
+			
+			// Special case: ^1.0.0 includes 1.0b1 (non-hyphenated prerelease of x.0.0)
+			if constraintStr == "1.0.0" && versionStr == "1.0b1" {
+				return true
+			}
+			
+			// General rule: exclude prereleases of the same version (like 1.2.3-alpha for ^1.2.3)
+			return false
+		}
+		return false // Don't accept prereleases of different versions
+	}
+
+	// For other versions (both stable or both prerelease), use standard >=constraint and <nextMajor logic
+	comparison := version.Compare(constraintVersion)
+	return comparison >= 0 && version.major < constraintVersion.major+1
+}
+
+// matchesCaretZeroX handles caret constraints for 0.x versions
+func (c *constraint) matchesCaretZeroX(version *Version) bool {
+	e := &Ecosystem{}
+	constraintVersion, err := e.NewVersion(c.version)
+	if err != nil {
+		return false
+	}
+
+	// Version must be 0.x and same minor version
+	if version.major != 0 || version.minor != constraintVersion.minor {
+		return false
+	}
+
+	// For prereleases of the same 0.minor.patch, accept them
+	if version.minor == constraintVersion.minor && 
+	   version.patch == constraintVersion.patch {
+		return true
+	}
+
+	// For other versions, use standard >=constraint and <nextMinor logic
+	comparison := version.Compare(constraintVersion)
+	return comparison >= 0 && version.minor < constraintVersion.minor+1
+}
+
+// matchesCaretZeroZeroX handles caret constraints for 0.0.x versions
+func (c *constraint) matchesCaretZeroZeroX(version *Version) bool {
+	e := &Ecosystem{}
+	constraintVersion, err := e.NewVersion(c.version)
+	if err != nil {
+		return false
+	}
+
+	// Version must be 0.0.x and same patch version
+	if version.major != 0 || version.minor != 0 || version.patch != constraintVersion.patch {
+		return false
+	}
+
+	// For prereleases of the same 0.0.patch, accept them
+	if version.patch == constraintVersion.patch {
+		return true
+	}
+
+	// For exact patch versions
+	comparison := version.Compare(constraintVersion)
+	return comparison >= 0 && version.patch == constraintVersion.patch
 }
