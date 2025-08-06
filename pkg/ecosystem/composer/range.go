@@ -14,8 +14,9 @@ type VersionRange struct {
 
 // constraint represents a single Composer version constraint
 type constraint struct {
-	operator string
-	version  *Version // Store parsed version to avoid re-parsing in matches()
+	operator  string
+	version   *Version // Store parsed version to avoid re-parsing in matches()
+	stability string   // Store stability flag for stability-only constraints
 }
 
 // NewVersionRange creates a new Composer version range from a range string
@@ -368,7 +369,7 @@ func parseStabilityConstraint(version string) ([]*constraint, error) {
 
 	// If no version part, match any version with specified stability
 	if versionPart == "" {
-		return []*constraint{{operator: "@", version: nil}}, nil // Store stability flag separately
+		return []*constraint{{operator: "@", version: nil, stability: stabilityPart}}, nil
 	}
 
 	// Match specific version with specific stability
@@ -467,10 +468,11 @@ func (c *constraint) matches(version *Version) bool {
 
 	// Handle stability-only constraints (where version is nil)
 	if c.operator == "@" {
-		// For stability-only constraints, we need to get the stability from somewhere
-		// This is a design issue - we need to store the stability flag separately
-		// For now, return false as this case needs more thought
-		return false
+		expectedStability, exists := stabilityMap[c.stability]
+		if !exists {
+			return false
+		}
+		return version.stability == expectedStability
 	}
 
 	// Handle special caret operators
