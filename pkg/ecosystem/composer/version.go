@@ -13,6 +13,7 @@ var (
 	devVersionPattern = regexp.MustCompile(`^dev-(.+)$`)
 	// Match standard semantic versions with optional stability suffixes
 	// Examples: 1.2.3, 1.2.3-alpha, 1.2.3-alpha.1, 1.2.3-RC1, 1.0a1, 1.0pl1
+	// Capture groups: (1)major (2)minor (3)patch (4)extra (5)extra2 (6)stability1 (7)stabilityNum1 (8)stability2 (9)stabilityNum2 (10)build
 	semanticVersionPattern = regexp.MustCompile(`^(?:v?)(\d+)(?:\.(\d+))?(?:\.(\d+))?(?:\.(\d+))?(?:\.(\d+))?(?:(?:-(alpha|beta|RC|a|b|rc|dev|patch)(?:\.?(\d+))?)|(?:(alpha|beta|RC|a|b|rc|dev|pl)(\d+)?))?(?:\+([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?$`)
 	// Match branch names that are not semantic versions (must contain letters)
 	branchNamePattern = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9-_./]*$`)
