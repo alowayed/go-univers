@@ -14,9 +14,8 @@ type VersionRange struct {
 
 // constraint represents a single Composer version constraint
 type constraint struct {
-	operator  string
-	version   *Version // Store parsed version to avoid re-parsing in matches()
-	stability string   // Store stability flag for stability-only constraints
+	operator string
+	version  string
 }
 
 // NewVersionRange creates a new Composer version range from a range string
@@ -85,7 +84,7 @@ func parseSingleConstraint(c string) ([]*constraint, error) {
 
 	// Handle wildcard
 	if c == "*" {
-		return []*constraint{{operator: "*", version: nil}}, nil
+		return []*constraint{{operator: "*", version: "*"}}, nil
 	}
 
 	// Handle caret constraint (^1.2.3)
@@ -107,15 +106,10 @@ func parseSingleConstraint(c string) ([]*constraint, error) {
 	operators := []string{">=", "<=", "!=", "<>", ">", "<", "=", "=="}
 	for _, op := range operators {
 		if strings.HasPrefix(c, op) {
-			versionStr := strings.TrimSpace(c[len(op):])
+			version := strings.TrimSpace(c[len(op):])
 			// Handle stability flags (@dev, @stable, etc.)
-			if strings.Contains(versionStr, "@") {
-				return parseStabilityConstraint(versionStr)
-			}
-			e := &Ecosystem{}
-			version, err := e.NewVersion(versionStr)
-			if err != nil {
-				return nil, fmt.Errorf("invalid version in constraint '%s': %v", c, err)
+			if strings.Contains(version, "@") {
+				return parseStabilityConstraint(version)
 			}
 			return []*constraint{{operator: normalizeOperator(op), version: version}}, nil
 		}
@@ -126,13 +120,8 @@ func parseSingleConstraint(c string) ([]*constraint, error) {
 		return parseStabilityConstraint(c)
 	}
 
-	// Default to exact match - parse the version
-	e := &Ecosystem{}
-	version, err := e.NewVersion(c)
-	if err != nil {
-		return nil, fmt.Errorf("invalid version in constraint '%s': %v", c, err)
-	}
-	return []*constraint{{operator: "=", version: version}}, nil
+	// Default to exact match
+	return []*constraint{{operator: "=", version: c}}, nil
 }
 
 // normalizeOperator normalizes operators for consistency
@@ -157,80 +146,30 @@ func parseCaretConstraint(version string) ([]*constraint, error) {
 
 	if v.isDev {
 		// Dev versions with caret just match exactly
-		return []*constraint{{operator: "=", version: v}}, nil
+		return []*constraint{{operator: "=", version: v.normalize()}}, nil
 	}
 
-	// ^1.2.3 means >=1.2.3 <2.0.0, but also includes prerelease versions of the same major.minor.patch
+	// ^1.2.3 means >=1.2.3 <2.0.0
 	// ^0.3 means >=0.3.0 <0.4.0
 	// ^0.0.3 means >=0.0.3 <0.0.4
 	if v.major > 0 {
 		// Compatible changes within the same major version
-		// For stable versions like ^1.0.0, also allow prereleases like 1.0b1
-		if v.stability == stabilityStable {
-			// Allow prereleases of the exact same version and above
-			baseVersionStr := fmt.Sprintf("%d.%d.%d", v.major, v.minor, v.patch)
-			baseVersion, err := e.NewVersion(baseVersionStr)
-			if err != nil {
-				return nil, err
-			}
-			return []*constraint{
-				{operator: "caret", version: baseVersion},
-			}, nil
-		} else {
-			upperVersionStr := fmt.Sprintf("%d.0.0", v.major+1)
-			upperVersion, err := e.NewVersion(upperVersionStr)
-			if err != nil {
-				return nil, err
-			}
-			return []*constraint{
-				{operator: ">=", version: v},
-				{operator: "<", version: upperVersion},
-			}, nil
-		}
+		return []*constraint{
+			{operator: ">=", version: v.normalize()},
+			{operator: "<", version: fmt.Sprintf("%d.0.0", v.major+1)},
+		}, nil
 	} else if v.minor > 0 {
 		// Compatible changes within the same minor version for 0.x
-		if v.stability == stabilityStable {
-			baseVersionStr := fmt.Sprintf("0.%d.%d", v.minor, v.patch)
-			baseVersion, err := e.NewVersion(baseVersionStr)
-			if err != nil {
-				return nil, err
-			}
-			return []*constraint{
-				{operator: "caret-0x", version: baseVersion},
-			}, nil
-		} else {
-			upperVersionStr := fmt.Sprintf("0.%d.0", v.minor+1)
-			upperVersion, err := e.NewVersion(upperVersionStr)
-			if err != nil {
-				return nil, err
-			}
-			return []*constraint{
-				{operator: ">=", version: v},
-				{operator: "<", version: upperVersion},
-			}, nil
-		}
+		return []*constraint{
+			{operator: ">=", version: v.normalize()},
+			{operator: "<", version: fmt.Sprintf("0.%d.0", v.minor+1)},
+		}, nil
 	} else {
 		// Compatible changes within the same patch version for 0.0.x
-		if v.stability == stabilityStable {
-			baseVersionStr := fmt.Sprintf("0.0.%d", v.patch)
-			baseVersion, err := e.NewVersion(baseVersionStr)
-			if err != nil {
-				return nil, err
-			}
-			return []*constraint{
-				{operator: "caret-00x", version: baseVersion},
-			}, nil
-		} else {
-			upperVersionStr := fmt.Sprintf("0.0.%d", v.patch+1)
-			upperVersion, err := e.NewVersion(upperVersionStr)
-			if err != nil {
-				return nil, err
-			}
-			return []*constraint{
-				{operator: ">=", version: v},
-				{operator: "<", version: upperVersion},
-			}, nil
-		}
+		return []*constraint{
+			{operator: ">=", version: v.normalize()},
+			{operator: "<", version: fmt.Sprintf("0.0.%d", v.patch+1)},
+		}, nil
 	}
 }
 
@@ -244,7 +183,7 @@ func parseTildeConstraint(version string) ([]*constraint, error) {
 
 	if v.isDev {
 		// Dev versions with tilde just match exactly
-		return []*constraint{{operator: "=", version: v}}, nil
+		return []*constraint{{operator: "=", version: v.normalize()}}, nil
 	}
 
 	// ~1.2.3 means >=1.2.3 <1.3.0
@@ -253,46 +192,21 @@ func parseTildeConstraint(version string) ([]*constraint, error) {
 	switch len(parts) {
 	case 1:
 		// ~1 means >=1.0.0 <2.0.0
-		lowerVersionStr := fmt.Sprintf("%d.0.0", v.major)
-		lowerVersion, err := e.NewVersion(lowerVersionStr)
-		if err != nil {
-			return nil, err
-		}
-		upperVersionStr := fmt.Sprintf("%d.0.0", v.major+1)
-		upperVersion, err := e.NewVersion(upperVersionStr)
-		if err != nil {
-			return nil, err
-		}
 		return []*constraint{
-			{operator: ">=", version: lowerVersion},
-			{operator: "<", version: upperVersion},
+			{operator: ">=", version: fmt.Sprintf("%d.0.0", v.major)},
+			{operator: "<", version: fmt.Sprintf("%d.0.0", v.major+1)},
 		}, nil
 	case 2:
 		// ~1.2 means >=1.2.0 <2.0.0
-		lowerVersionStr := fmt.Sprintf("%d.%d.0", v.major, v.minor)
-		lowerVersion, err := e.NewVersion(lowerVersionStr)
-		if err != nil {
-			return nil, err
-		}
-		upperVersionStr := fmt.Sprintf("%d.0.0", v.major+1)
-		upperVersion, err := e.NewVersion(upperVersionStr)
-		if err != nil {
-			return nil, err
-		}
 		return []*constraint{
-			{operator: ">=", version: lowerVersion},
-			{operator: "<", version: upperVersion},
+			{operator: ">=", version: fmt.Sprintf("%d.%d.0", v.major, v.minor)},
+			{operator: "<", version: fmt.Sprintf("%d.0.0", v.major+1)},
 		}, nil
 	default:
 		// ~1.2.3 means >=1.2.3 <1.3.0
-		upperVersionStr := fmt.Sprintf("%d.%d.0", v.major, v.minor+1)
-		upperVersion, err := e.NewVersion(upperVersionStr)
-		if err != nil {
-			return nil, err
-		}
 		return []*constraint{
-			{operator: ">=", version: v},
-			{operator: "<", version: upperVersion},
+			{operator: ">=", version: v.normalize()},
+			{operator: "<", version: fmt.Sprintf("%d.%d.0", v.major, v.minor+1)},
 		}, nil
 	}
 }
@@ -300,7 +214,6 @@ func parseTildeConstraint(version string) ([]*constraint, error) {
 // parseWildcardConstraint handles wildcard constraints (1.2.* or 1.x)
 func parseWildcardConstraint(rangeStr string) ([]*constraint, error) {
 	parts := strings.Split(rangeStr, ".")
-	e := &Ecosystem{}
 	
 	// Replace * or x with appropriate range
 	for i, part := range parts {
@@ -311,19 +224,9 @@ func parseWildcardConstraint(rangeStr string) ([]*constraint, error) {
 				if err != nil {
 					return nil, fmt.Errorf("invalid major version: %s", parts[0])
 				}
-				lowerVersionStr := fmt.Sprintf("%d.0.0", major)
-				lowerVersion, err := e.NewVersion(lowerVersionStr)
-				if err != nil {
-					return nil, err
-				}
-				upperVersionStr := fmt.Sprintf("%d.0.0", major+1)
-				upperVersion, err := e.NewVersion(upperVersionStr)
-				if err != nil {
-					return nil, err
-				}
 				return []*constraint{
-					{operator: ">=", version: lowerVersion},
-					{operator: "<", version: upperVersion},
+					{operator: ">=", version: fmt.Sprintf("%d.0.0", major)},
+					{operator: "<", version: fmt.Sprintf("%d.0.0", major+1)},
 				}, nil
 			case 2: // 1.2.* or 1.2.x
 				major, err := strconv.Atoi(parts[0])
@@ -334,19 +237,9 @@ func parseWildcardConstraint(rangeStr string) ([]*constraint, error) {
 				if err != nil {
 					return nil, fmt.Errorf("invalid minor version: %s", parts[1])
 				}
-				lowerVersionStr := fmt.Sprintf("%d.%d.0", major, minor)
-				lowerVersion, err := e.NewVersion(lowerVersionStr)
-				if err != nil {
-					return nil, err
-				}
-				upperVersionStr := fmt.Sprintf("%d.%d.0", major, minor+1)
-				upperVersion, err := e.NewVersion(upperVersionStr)
-				if err != nil {
-					return nil, err
-				}
 				return []*constraint{
-					{operator: ">=", version: lowerVersion},
-					{operator: "<", version: upperVersion},
+					{operator: ">=", version: fmt.Sprintf("%d.%d.0", major, minor)},
+					{operator: "<", version: fmt.Sprintf("%d.%d.0", major, minor+1)},
 				}, nil
 			default:
 				return nil, fmt.Errorf("unsupported wildcard position: %s", rangeStr)
@@ -369,26 +262,15 @@ func parseStabilityConstraint(version string) ([]*constraint, error) {
 
 	// If no version part, match any version with specified stability
 	if versionPart == "" {
-		return []*constraint{{operator: "@", version: nil, stability: stabilityPart}}, nil
+		return []*constraint{{operator: "@", version: stabilityPart}}, nil
 	}
 
 	// Match specific version with specific stability
-	e := &Ecosystem{}
-	versionWithStability := versionPart + "-" + stabilityPart
-	parsedVersion, err := e.NewVersion(versionWithStability)
-	if err != nil {
-		return nil, fmt.Errorf("invalid version with stability: %v", err)
-	}
-	return []*constraint{{operator: "=", version: parsedVersion}}, nil
+	return []*constraint{{operator: "=", version: versionPart + "-" + stabilityPart}}, nil
 }
 
 // parseHyphenRange handles hyphen ranges (1.2.3 - 2.3.4)
 func parseHyphenRange(rangeStr string) ([]*constraint, error) {
-	// Check for malformed hyphen ranges like "1.2.3 -" (trailing dash)
-	if strings.HasSuffix(rangeStr, " -") {
-		return nil, fmt.Errorf("invalid hyphen range: %s", rangeStr)
-	}
-	
 	parts := strings.Split(rangeStr, " - ")
 	if len(parts) != 2 {
 		return nil, fmt.Errorf("invalid hyphen range: %s", rangeStr)
@@ -401,20 +283,18 @@ func parseHyphenRange(rangeStr string) ([]*constraint, error) {
 		return nil, fmt.Errorf("invalid hyphen range: %s", rangeStr)
 	}
 
-	// Parse and validate versions
+	// Validate versions
 	e := &Ecosystem{}
-	startVersion, err := e.NewVersion(start)
-	if err != nil {
+	if _, err := e.NewVersion(start); err != nil {
 		return nil, fmt.Errorf("invalid start version in hyphen range: %s", start)
 	}
-	endVersion, err := e.NewVersion(end)
-	if err != nil {
+	if _, err := e.NewVersion(end); err != nil {
 		return nil, fmt.Errorf("invalid end version in hyphen range: %s", end)
 	}
 
 	return []*constraint{
-		{operator: ">=", version: startVersion},
-		{operator: "<=", version: endVersion},
+		{operator: ">=", version: start},
+		{operator: "<=", version: end},
 	}, nil
 }
 
@@ -466,32 +346,23 @@ func (c *constraint) matches(version *Version) bool {
 		return true
 	}
 
-	// Handle stability-only constraints (where version is nil)
+	// Handle stability-only constraints
 	if c.operator == "@" {
-		expectedStability, exists := stabilityMap[c.stability]
+		stabilityName := c.version
+		expectedStability, exists := stabilityMap[stabilityName]
 		if !exists {
 			return false
 		}
 		return version.stability == expectedStability
 	}
 
-	// Handle special caret operators
-	if c.operator == "caret" {
-		return c.matchesCaret(version)
-	}
-	if c.operator == "caret-0x" {
-		return c.matchesCaretZeroX(version)
-	}
-	if c.operator == "caret-00x" {
-		return c.matchesCaretZeroZeroX(version)
-	}
-
-	// c.version is now already parsed, no need to re-parse
-	if c.version == nil {
+	e := &Ecosystem{}
+	constraintVersion, err := e.NewVersion(c.version)
+	if err != nil {
 		return false
 	}
 
-	comparison := version.Compare(c.version)
+	comparison := version.Compare(constraintVersion)
 
 	switch c.operator {
 	case "=":
@@ -510,90 +381,3 @@ func (c *constraint) matches(version *Version) bool {
 		return false
 	}
 }
-
-// matchesCaret handles caret constraints for major version > 0
-func (c *constraint) matchesCaret(version *Version) bool {
-	constraintVersion := c.version
-	if constraintVersion == nil {
-		return false
-	}
-
-	// Version must be in same major version
-	if version.major != constraintVersion.major {
-		return false
-	}
-
-	// Special handling for prereleases:
-	// Composer caret constraints have special rules for prereleases
-	if constraintVersion.stability == stabilityStable && version.stability != stabilityStable {
-		// For stable constraints, generally exclude prereleases of the same version
-		// EXCEPT for specific cases like 1.0b1 vs 1.0.0 where the version format matters
-		if version.major == constraintVersion.major && 
-		   version.minor == constraintVersion.minor && 
-		   version.patch == constraintVersion.patch {
-			// Check if this is the special case: ^1.0.0 should include 1.0b1
-			// but ^1.2.3 should NOT include 1.2.3-alpha
-			versionStr := version.String()
-			constraintStr := constraintVersion.String()
-			
-			// Special case: ^1.0.0 includes 1.0b1 (non-hyphenated prerelease of x.0.0)
-			if constraintStr == "1.0.0" && versionStr == "1.0b1" {
-				return true
-			}
-			
-			// General rule: exclude prereleases of the same version (like 1.2.3-alpha for ^1.2.3)
-			return false
-		}
-		return false // Don't accept prereleases of different versions
-	}
-
-	// For other versions (both stable or both prerelease), use standard >=constraint and <nextMajor logic
-	comparison := version.Compare(constraintVersion)
-	return comparison >= 0 && version.major < constraintVersion.major+1
-}
-
-// matchesCaretZeroX handles caret constraints for 0.x versions
-func (c *constraint) matchesCaretZeroX(version *Version) bool {
-	constraintVersion := c.version
-	if constraintVersion == nil {
-		return false
-	}
-
-	// Version must be 0.x and same minor version
-	if version.major != 0 || version.minor != constraintVersion.minor {
-		return false
-	}
-
-	// For prereleases of the same 0.minor.patch, accept them
-	if version.minor == constraintVersion.minor && 
-	   version.patch == constraintVersion.patch {
-		return true
-	}
-
-	// For other versions, use standard >=constraint and <nextMinor logic
-	comparison := version.Compare(constraintVersion)
-	return comparison >= 0 && version.minor < constraintVersion.minor+1
-}
-
-// matchesCaretZeroZeroX handles caret constraints for 0.0.x versions
-func (c *constraint) matchesCaretZeroZeroX(version *Version) bool {
-	constraintVersion := c.version
-	if constraintVersion == nil {
-		return false
-	}
-
-	// Version must be 0.0.x and same patch version
-	if version.major != 0 || version.minor != 0 || version.patch != constraintVersion.patch {
-		return false
-	}
-
-	// For prereleases of the same 0.0.patch, accept them
-	if version.patch == constraintVersion.patch {
-		return true
-	}
-
-	// For exact patch versions
-	comparison := version.Compare(constraintVersion)
-	return comparison >= 0 && version.patch == constraintVersion.patch
-}
-

@@ -12,9 +12,8 @@ var (
 	// Match dev versions: dev-branch
 	devVersionPattern = regexp.MustCompile(`^dev-(.+)$`)
 	// Match standard semantic versions with optional stability suffixes
-	// Examples: 1.2.3, 1.2.3-alpha, 1.2.3-alpha.1, 1.2.3-RC1, 1.0a1, 1.0pl1
-	// Capture groups: (1)major (2)minor (3)patch (4)extra (5)extra2 (6)stability1 (7)stabilityNum1 (8)stability2 (9)stabilityNum2 (10)build
-	semanticVersionPattern = regexp.MustCompile(`^(?:v?)(\d+)(?:\.(\d+))?(?:\.(\d+))?(?:\.(\d+))?(?:\.(\d+))?(?:(?:-(alpha|beta|RC|a|b|rc|dev|patch)(?:\.?(\d+))?)|(?:(alpha|beta|RC|a|b|rc|dev|pl)(\d+)?))?(?:\+([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?$`)
+	// Examples: 1.2.3, 1.2.3-alpha, 1.2.3-alpha.1, 1.2.3-RC1
+	semanticVersionPattern = regexp.MustCompile(`^(?:v?)(\d+)(?:\.(\d+))?(?:\.(\d+))?(?:\.(\d+))?(?:-(alpha|beta|RC|a|b|rc)(?:\.?(\d+))?)?(?:\+([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?$`)
 	// Match branch names that are not semantic versions (must contain letters)
 	branchNamePattern = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9-_./]*$`)
 )
@@ -109,47 +108,20 @@ func (e *Ecosystem) NewVersion(version string) (*Version, error) {
 			v.extra = extra
 		}
 
-		// Handle 5th component (rare but exists in some versions)
+		// Parse stability suffix
 		if matches[5] != "" {
-			// Just ignore additional components beyond the 4th for now
-		}
-
-		// Parse stability suffix - handle both formats
-		// Format 1: -alpha.1 (matches[6] and matches[7])
-		// Format 2: alpha1 (matches[8] and matches[9])
-		if matches[6] != "" { // Hyphenated format: -alpha.1
-			stabilityStr := strings.ToLower(matches[6])
-			if stabilityStr == "patch" || stabilityStr == "pl" {
-				v.stability = stabilityStable // Treat patch/pl as stable
-			} else if stability, exists := stabilityMap[stabilityStr]; exists {
+			stabilityStr := strings.ToLower(matches[5])
+			if stability, exists := stabilityMap[stabilityStr]; exists {
 				v.stability = stability
 			} else {
 				v.stability = stabilityStable
 			}
 
 			// Parse stability number (alpha.1, beta.2, RC.3)
-			if matches[7] != "" {
-				stabilityNum, err := strconv.Atoi(matches[7])
+			if matches[6] != "" {
+				stabilityNum, err := strconv.Atoi(matches[6])
 				if err != nil {
-					return nil, fmt.Errorf("invalid stability number: %s", matches[7])
-				}
-				v.stabilityNum = stabilityNum
-			}
-		} else if matches[8] != "" { // Direct format: alpha1
-			stabilityStr := strings.ToLower(matches[8])
-			if stabilityStr == "pl" {
-				v.stability = stabilityStable // Treat pl as stable
-			} else if stability, exists := stabilityMap[stabilityStr]; exists {
-				v.stability = stability
-			} else {
-				v.stability = stabilityStable
-			}
-
-			// Parse stability number (alpha1, beta2, RC1)
-			if matches[9] != "" {
-				stabilityNum, err := strconv.Atoi(matches[9])
-				if err != nil {
-					return nil, fmt.Errorf("invalid stability number: %s", matches[9])
+					return nil, fmt.Errorf("invalid stability number: %s", matches[6])
 				}
 				v.stabilityNum = stabilityNum
 			}
@@ -158,8 +130,8 @@ func (e *Ecosystem) NewVersion(version string) (*Version, error) {
 		}
 
 		// Parse build metadata
-		if matches[10] != "" {
-			v.build = matches[10]
+		if matches[7] != "" {
+			v.build = matches[7]
 		}
 
 		return v, nil
@@ -176,59 +148,19 @@ func (e *Ecosystem) NewVersion(version string) (*Version, error) {
 	return nil, fmt.Errorf("invalid Composer version: %s", original)
 }
 
-// isBranchName checks if a string looks like a valid branch name following Composer conventions
+// isBranchName checks if a string looks like a valid branch name
 func isBranchName(version string) bool {
-	// Empty strings are not valid branch names
-	if version == "" {
-		return false
-	}
-	
-	// Don't accept strings that look too much like malformed versions
-	// This prevents false positives for invalid version strings
-	if strings.Contains(version, ".") && (len(strings.Split(version, ".")) >= 2) {
-		// If it contains dots and looks like it could be a version, be more strict
-		if !strings.Contains(version, "/") && !strings.Contains(version, "-") {
-			return false
-		}
-	}
-	
-	// Reject common invalid version patterns
-	invalidPatterns := []string{"invalid", "test", "example"}
-	for _, invalid := range invalidPatterns {
-		if version == invalid || strings.HasPrefix(version, invalid+"-") {
-			return false
-		}
-	}
-	
-	// Common branch name patterns used in Git repositories
-	commonBranches := []string{
-		"main", "master", "develop", "development", "trunk", 
-		"stable", "staging", "production", "prod",
-	}
+	// Only accept very common branch name patterns to avoid false positives
+	commonBranches := []string{"main", "master", "develop", "trunk"}
 	for _, branch := range commonBranches {
 		if version == branch {
 			return true
 		}
 	}
 	
-	// Accept conventional Git Flow and GitHub Flow patterns
-	branchPrefixes := []string{
-		"feature/", "feature-", "feat/", "feat-",
-		"bugfix/", "bugfix-", "fix/", "fix-",
-		"hotfix/", "hotfix-", "patch/", "patch-",
-		"release/", "release-", "rel/", "rel-",
-		"chore/", "chore-", "docs/", "docs-", "doc/", "doc-",
-		"refactor/", "refactor-", "style/", "style-",
-	}
-	
-	for _, prefix := range branchPrefixes {
-		if strings.HasPrefix(version, prefix) && len(version) > len(prefix) {
-			return true
-		}
-	}
-	
-	// Accept version branches (like v1.x, 1.x-dev, etc.)
-	if strings.HasSuffix(version, "-dev") && len(version) > 4 {
+	// Accept patterns like "feature-xyz", "bugfix-123", etc.
+	if strings.HasPrefix(version, "feature-") || strings.HasPrefix(version, "bugfix-") ||
+		strings.HasPrefix(version, "hotfix-") || strings.HasPrefix(version, "release-") {
 		return true
 	}
 	
@@ -330,4 +262,3 @@ func compareInt(a, b int) int {
 	}
 	return 0
 }
-
