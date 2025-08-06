@@ -13,6 +13,7 @@ A Go library to:
 |-----------|---------|----------------|--------------|
 | **Alpine** | `pkg/ecosystem/alpine` | Alpine Package Versioning | `>=1.2.3`, `<2.0.0`, `!=1.5.0` |
 | **Cargo** | `pkg/ecosystem/cargo` | SemVer 2.0 | `^1.2.3`, `~1.2.3`, `>=1.0.0`, `1.2.*` |
+| **Composer** | `pkg/ecosystem/composer` | Composer Versioning | `^1.2.3`, `~1.2.3`, `1.2.*`, `>=1.0.0,<2.0.0` |
 | **Go** | `pkg/ecosystem/gomod` | Go Module Versioning | `>=v1.2.3`, `<v2.0.0`, `!=v1.3.0` |
 | **Maven** | `pkg/ecosystem/maven` | Maven Versioning | `[1.0.0]`, `[1.0.0,2.0.0]`, `(1.0.0,)` |
 | **NPM** | `pkg/ecosystem/npm` | Semantic Versioning | `^1.2.3`, `~1.2.3`, `1.x`, `>=1.0.0 <2.0.0` |
@@ -102,6 +103,10 @@ univers gem compare "2.0.0" "1.9.9"        # → 1 (first > second)
 univers cargo compare "1.0.0-alpha" "1.0.0"  # → -1 (prerelease < release)
 univers cargo compare "1.2.3" "1.2.4"        # → -1 (first < second)
 
+# Compare Composer versions with stability flags
+univers composer compare "1.2.3-alpha" "1.2.3"  # → -1 (prerelease < stable)
+univers composer compare "2.0.0" "1.9.9"         # → 1 (first > second)
+
 # Compare NuGet versions with SemVer 2.0 and .NET extensions
 univers nuget compare "1.0.0-alpha" "1.0.0"  # → -1 (prerelease < release)
 univers nuget compare "1.2.3.4" "1.2.3"      # → 1 (revision > no revision)
@@ -124,6 +129,10 @@ univers gem sort "2.0.0" "1.0.0-alpha" "1.0.0"
 # Sort Cargo versions with SemVer 2.0 prerelease rules
 univers cargo sort "1.0.0" "1.0.0-beta.1" "1.0.0-beta.11" "1.0.0-alpha"
 # → "1.0.0-alpha" "1.0.0-beta.1" "1.0.0-beta.11" "1.0.0"
+
+# Sort Composer versions with stability ordering (dev < alpha < beta < RC < stable)
+univers composer sort "1.2.3" "1.2.3-beta" "dev-main" "1.2.3-alpha"
+# → "dev-main" "1.2.3-alpha" "1.2.3-beta" "1.2.3"
 
 # Sort NuGet versions with SemVer 2.0 prerelease and revision handling
 univers nuget sort "1.0.0" "1.0.0-beta" "1.0.0.1" "1.0.0-alpha"
@@ -152,6 +161,11 @@ univers gem contains "~> 1.2.0" "1.3.0"  # → false (minor increment not allowe
 univers cargo contains "^1.2.0" "1.2.5"   # → true (compatible within major)
 univers cargo contains "^1.2.0" "2.0.0"   # → false (major increment not allowed)
 univers cargo contains "~1.2.0" "1.2.5"   # → true (patch increment allowed)
+
+# Composer constraint checking with caret, tilde, and wildcard ranges
+univers composer contains "^1.2.0" "1.3.0"   # → true (compatible within major)
+univers composer contains "~1.2.0" "1.2.5"   # → true (compatible within minor)
+univers composer contains "1.2.*" "1.2.9"    # → true (wildcard match)
 
 # NuGet range checking with bracket notation and comma-separated constraints
 univers nuget contains "[1.0.0,2.0.0]" "1.5.0"     # → true (inclusive range)
@@ -294,6 +308,91 @@ e.NewVersionRange("1.2.*")         // >=1.2.0 <1.3.0
 // Multiple constraints (AND logic)
 e.NewVersionRange(">=1.0.0, <2.0.0")      // Range constraint
 e.NewVersionRange(">=1.2.3, <2.0.0, !=1.5.0") // With exclusion
+```
+
+### Composer
+
+#### Version Formats
+```go
+e := &composer.Ecosystem{}
+
+// Basic semantic versions
+e.NewVersion("1.2.3")
+
+// Versions with v prefix
+e.NewVersion("v1.2.3")
+
+// Versions with stability suffixes
+e.NewVersion("1.2.3-alpha")      // Alpha release
+e.NewVersion("1.2.3-alpha.1")    // Alpha with number
+e.NewVersion("1.2.3-beta")       // Beta release
+e.NewVersion("1.2.3-beta.2")     // Beta with number
+e.NewVersion("1.2.3-RC")         // Release candidate
+e.NewVersion("1.2.3-RC.1")       // RC with number
+
+// Short stability forms
+e.NewVersion("1.2.3-a")          // Alpha short form
+e.NewVersion("1.2.3-b")          // Beta short form
+
+// Dev versions
+e.NewVersion("dev-main")          // Dev version with branch
+e.NewVersion("dev-feature-auth")  // Dev version with feature branch
+e.NewVersion("main")              // Branch name only
+
+// Versions with build metadata
+e.NewVersion("1.2.3+build.1")           // Build metadata
+e.NewVersion("1.2.3-alpha.1+build.2")   // Prerelease with build
+
+// Four-component versions (.NET style)
+e.NewVersion("1.2.3.4")          // With revision number
+```
+
+#### Range Operators
+```go
+e := &composer.Ecosystem{}
+
+// Equality and inequality
+e.NewVersionRange("1.2.3")         // Exact match
+e.NewVersionRange("= 1.2.3")       // Explicit equals
+e.NewVersionRange("!= 1.2.3")      // Not equal
+e.NewVersionRange("<> 1.2.3")      // Not equal (alternative syntax)
+
+// Comparison operators
+e.NewVersionRange(">= 1.2.3")      // Greater than or equal
+e.NewVersionRange("> 1.2.3")       // Greater than
+e.NewVersionRange("<= 1.2.3")      // Less than or equal
+e.NewVersionRange("< 2.0.0")       // Less than
+
+// Caret constraints (compatible within major version)
+e.NewVersionRange("^1.2.3")        // >=1.2.3 <2.0.0
+e.NewVersionRange("^0.2.3")        // >=0.2.3 <0.3.0 (special 0.x behavior)
+e.NewVersionRange("^0.0.3")        // =0.0.3 (special 0.0.x behavior)
+
+// Tilde constraints (compatible within minor version)
+e.NewVersionRange("~1.2.3")        // >=1.2.3 <1.3.0
+e.NewVersionRange("~1.2")          // >=1.2.0 <2.0.0
+
+// Wildcard matching
+e.NewVersionRange("1.2.*")         // >=1.2.0 <1.3.0
+e.NewVersionRange("1.*")           // >=1.0.0 <2.0.0
+
+// Hyphen ranges
+e.NewVersionRange("1.2.3 - 2.3.4") // >=1.2.3 <=2.3.4
+
+// Multiple constraints (AND logic)
+e.NewVersionRange(">=1.0.0 <2.0.0")         // Range constraint
+e.NewVersionRange(">=1.0.0, <2.0.0")        // Comma-separated
+e.NewVersionRange(">=1.2.3, <2.0.0, !=1.5.0") // With exclusion
+
+// OR logic
+e.NewVersionRange("1.x || 2.x")    // Multiple constraint groups
+
+// Stability constraints
+e.NewVersionRange("1.2.3@dev")     // Specific version with stability
+e.NewVersionRange("@stable")       // Any stable version
+
+// Wildcard all
+e.NewVersionRange("*")             // Any version
 ```
 
 ### Maven
