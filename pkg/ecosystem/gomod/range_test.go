@@ -172,4 +172,3 @@ func mustNewVersionRange(t *testing.T, s string) *VersionRange {
 	}
 	return vr
 }
-

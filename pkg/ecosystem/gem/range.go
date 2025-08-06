@@ -24,12 +24,12 @@ func (e *Ecosystem) NewVersionRange(rangeStr string) (*VersionRange, error) {
 	if rangeStr == "" {
 		return nil, fmt.Errorf("empty range string")
 	}
-	
+
 	constraints, err := parseConstraints(rangeStr)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return &VersionRange{
 		constraints: constraints,
 		original:    original,
@@ -41,31 +41,31 @@ func parseConstraints(rangeStr string) ([]*constraint, error) {
 	// Handle multiple constraints separated by commas
 	parts := strings.Split(rangeStr, ",")
 	var constraints []*constraint
-	
+
 	for _, part := range parts {
 		part = strings.TrimSpace(part)
 		if part == "" {
 			continue
 		}
-		
+
 		constraint, err := parseConstraint(part)
 		if err != nil {
 			return nil, err
 		}
 		constraints = append(constraints, constraint)
 	}
-	
+
 	if len(constraints) == 0 {
 		return nil, fmt.Errorf("no valid constraints found")
 	}
-	
+
 	return constraints, nil
 }
 
 // parseConstraint parses a single constraint
 func parseConstraint(constraintStr string) (*constraint, error) {
 	constraintStr = strings.TrimSpace(constraintStr)
-	
+
 	// Pessimistic constraint (~>)
 	if strings.HasPrefix(constraintStr, "~>") {
 		version := strings.TrimSpace(constraintStr[2:])
@@ -74,7 +74,7 @@ func parseConstraint(constraintStr string) (*constraint, error) {
 		}
 		return &constraint{operator: "~>", version: version}, nil
 	}
-	
+
 	// Other operators
 	operators := []string{">=", "<=", "!=", ">", "<", "="}
 	for _, op := range operators {
@@ -86,7 +86,7 @@ func parseConstraint(constraintStr string) (*constraint, error) {
 			return &constraint{operator: op, version: version}, nil
 		}
 	}
-	
+
 	// Default to exact match
 	return &constraint{operator: "=", version: constraintStr}, nil
 }
@@ -99,14 +99,14 @@ func (vr *VersionRange) String() string {
 // Contains checks if a version satisfies this range
 func (vr *VersionRange) Contains(version *Version) bool {
 	ecosystem := &Ecosystem{}
-	
+
 	// All constraints must be satisfied (AND logic)
 	for _, c := range vr.constraints {
 		if !satisfiesConstraint(version, c, ecosystem) {
 			return false
 		}
 	}
-	
+
 	return true
 }
 
@@ -116,9 +116,9 @@ func satisfiesConstraint(version *Version, c *constraint, ecosystem *Ecosystem) 
 	if err != nil {
 		return false
 	}
-	
+
 	cmp := version.Compare(constraintVersion)
-	
+
 	switch c.operator {
 	case "=":
 		return cmp == 0
@@ -143,16 +143,16 @@ func satisfiesConstraint(version *Version, c *constraint, ecosystem *Ecosystem) 
 func satisfiesPessimistic(version, constraint *Version) bool {
 	// ~> 1.2.3 means >= 1.2.3 and < 1.3.0
 	// ~> 1.2 means >= 1.2.0 and < 2.0.0
-	
+
 	// Must be >= constraint version
 	if version.Compare(constraint) < 0 {
 		return false
 	}
-	
+
 	// Get the numeric parts of both version and constraint for comparison
 	versionNumeric, _ := version.splitNumericAndPrerelease()
 	constraintNumeric, constraintPrerelease := constraint.splitNumericAndPrerelease()
-	
+
 	// For range calculations, we need to understand the original precision
 	// Count numeric segments from the original constraint string
 	constraintStr := constraint.String()
@@ -162,21 +162,21 @@ func satisfiesPessimistic(version, constraint *Version) bool {
 	}
 	originalSegments := strings.Split(mainPart, ".")
 	numericSegments := len(originalSegments)
-	
+
 	// For pessimistic constraints, all segments except the last must match exactly
 	numSegmentsToCheck := numericSegments - 1
-	
+
 	// Special case: single segment constraint (~> 1)
 	if numericSegments == 1 {
 		numSegmentsToCheck = 1
 	}
-	
+
 	// Special case: constraint has prerelease (~> 1.0.0-alpha)
 	// When constraint has prerelease, all numeric segments must match exactly
 	if len(constraintPrerelease) > 0 {
 		numSegmentsToCheck = numericSegments
 	}
-	
+
 	// Check that the required segments match exactly
 	for i := 0; i < numSegmentsToCheck; i++ {
 		var vSeg, cSeg int
@@ -186,13 +186,11 @@ func satisfiesPessimistic(version, constraint *Version) bool {
 		if i < len(constraintNumeric) {
 			cSeg = constraintNumeric[i].numValue
 		}
-		
+
 		if vSeg != cSeg {
 			return false
 		}
 	}
-	
+
 	return true
 }
-
-
