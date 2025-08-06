@@ -233,22 +233,22 @@ func TestComparePrereleaseIdentifiers(t *testing.T) {
 		// Numeric vs non-numeric
 		{name: "numeric vs non-numeric", a: "1", b: "alpha", want: -1},
 		{name: "non-numeric vs numeric", a: "alpha", b: "1", want: 1},
-		
+
 		// Numeric comparisons
 		{name: "numeric equal", a: "1", b: "1", want: 0},
 		{name: "numeric 1 vs 2", a: "1", b: "2", want: -1},
 		{name: "numeric 2 vs 1", a: "2", b: "1", want: 1},
 		{name: "numeric 2 vs 11", a: "2", b: "11", want: -1},
-		
+
 		// String comparisons
 		{name: "string equal", a: "alpha", b: "alpha", want: 0},
 		{name: "alpha vs beta", a: "alpha", b: "beta", want: -1},
 		{name: "beta vs alpha", a: "beta", b: "alpha", want: 1},
-		
+
 		// Different lengths
 		{name: "shorter vs longer", a: "alpha", b: "alpha.1", want: -1},
 		{name: "longer vs shorter", a: "alpha.1", b: "alpha", want: 1},
-		
+
 		// Complex cases
 		{name: "alpha.1 vs alpha.beta", a: "alpha.1", b: "alpha.beta", want: -1},
 		{name: "alpha.beta vs alpha.1", a: "alpha.beta", b: "alpha.1", want: 1},
@@ -273,4 +273,3 @@ func equalVersions(a, b *Version) bool {
 		a.build == b.build &&
 		a.original == b.original
 }
-

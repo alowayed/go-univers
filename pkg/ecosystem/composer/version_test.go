@@ -6,10 +6,10 @@ import (
 
 func TestNewVersion(t *testing.T) {
 	tests := []struct {
-		name     string
-		input    string
-		want     *Version
-		wantErr  bool
+		name    string
+		input   string
+		want    *Version
+		wantErr bool
 	}{
 		// Basic semantic versions
 		{
@@ -201,7 +201,7 @@ func TestNewVersion(t *testing.T) {
 			want: &Version{
 				major: 1, minor: 0, patch: 0,
 				stability: stabilityStable, stabilityNum: 1,
-				original:  "1.0pl1",
+				original: "1.0pl1",
 			},
 		},
 		{
@@ -210,7 +210,7 @@ func TestNewVersion(t *testing.T) {
 			want: &Version{
 				major: 1, minor: 0, patch: 0,
 				stability: stabilityStable, stabilityNum: 1,
-				original:  "v1.0pl1",
+				original: "v1.0pl1",
 			},
 		},
 		{
@@ -264,7 +264,7 @@ func TestNewVersion(t *testing.T) {
 			want: &Version{
 				major: 1, minor: 0, patch: 0,
 				stability: stabilityStable, stabilityNum: 1, // Patch is treated as stable
-				original:  "1.0.0-patch1",
+				original: "1.0.0-patch1",
 			},
 		},
 
@@ -401,21 +401,21 @@ func TestVersionCompare(t *testing.T) {
 		{"zero versions", "0.0.1", "0.0.2", -1},
 		{"version normalization 1.0 vs 1.0.0", "1.0", "1.0.0", 0},
 		{"version normalization v1 vs 1.0.0", "v1", "1.0.0", 0},
-		
-		// pl/patch version comparisons  
-		{"pl version vs normal", "1.0pl1", "1.0.0", 1}, // pl1 > normal (has stability number)
+
+		// pl/patch version comparisons
+		{"pl version vs normal", "1.0pl1", "1.0.0", 1},       // pl1 > normal (has stability number)
 		{"pl version vs pl version", "1.0pl1", "1.0pl2", -1}, // pl1 vs pl2 by stability number
-		
+
 		// Mixed format stability comparisons
 		{"alpha without hyphen vs with hyphen", "1.0a1", "1.0.0-alpha.1", 0},
 		{"beta without hyphen vs with hyphen", "1.0b1", "1.0.0-beta.1", 0},
 		{"RC without hyphen vs with hyphen", "1.0RC1", "1.0.0-RC.1", 0},
-		
+
 		// Complex prerelease ordering
 		{"alpha vs beta same base", "1.0.0-alpha", "1.0.0-beta", -1},
 		{"beta vs RC same base", "1.0.0-beta", "1.0.0-RC", -1},
 		{"RC vs stable same base", "1.0.0-RC", "1.0.0", -1},
-		
+
 		// Numeric prerelease ordering
 		{"alpha.1 vs alpha.10", "1.0.0-alpha.1", "1.0.0-alpha.10", -1},
 		{"beta.2 vs beta.11", "1.0.0-beta.2", "1.0.0-beta.11", -1},

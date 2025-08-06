@@ -141,4 +141,3 @@ func (v *Version) Compare(other *Version) int {
 
 	return compareDevReleases(v.dev, other.dev)
 }
-

@@ -43,10 +43,10 @@ func TestNewVersionRange(t *testing.T) {
 
 func TestVersionRangeContains(t *testing.T) {
 	tests := []struct {
-		name      string
-		rangeStr  string
-		version   string
-		want      bool
+		name     string
+		rangeStr string
+		version  string
+		want     bool
 	}{
 		// Exact version matches
 		{"exact match", "1.2.3", "1.2.3", true},
@@ -123,21 +123,21 @@ func TestVersionRangeContains(t *testing.T) {
 		// Edge cases with stability
 		{"prerelease in caret", "^1.2.3", "1.2.3-alpha", false}, // Pre-releases don't satisfy caret
 		{"prerelease exact", "1.2.3-alpha", "1.2.3-alpha", true},
-		
+
 		// Advanced constraint combinations from real-world data
 		{"complex OR constraint", "1.0.* || >=2.0.0,<3.0.0", "1.0.5", true},
 		{"complex OR constraint no match", "1.0.* || >=2.0.0,<3.0.0", "1.1.0", false},
 		{"multiple exclusions", ">=1.0.0,<2.0.0,!=1.2.0,!=1.3.0", "1.1.0", true},
 		{"multiple exclusions match excluded", ">=1.0.0,<2.0.0,!=1.2.0,!=1.3.0", "1.2.0", false},
-		
+
 		// pl version constraints
 		{"pl version in range", ">=1.0.0", "1.0pl1", true},
 		{"pl version caret", "^1.0.0", "1.0pl1", true},
-		
+
 		// Alternative stability suffix formats
 		{"alpha without hyphen in range", ">=1.0.0-alpha", "1.0a1", true},
 		{"beta without hyphen in caret", "^1.0.0", "1.0b1", true},
-		
+
 		// Complex prerelease ranges
 		{"prerelease range", ">=1.0.0-alpha,<1.0.0", "1.0.0-beta", true},
 		{"prerelease range boundary", ">=1.0.0-alpha,<1.0.0", "1.0.0", false},
@@ -203,7 +203,7 @@ func TestCaretConstraintEdgeCases(t *testing.T) {
 		{"caret 0.x.y blocks minor", "^0.2.3", "0.3.0", false},
 		{"caret 0.0.x exact only", "^0.0.3", "0.0.3", true},
 		{"caret 0.0.x blocks patch", "^0.0.3", "0.0.4", false},
-		
+
 		// Regular caret behavior
 		{"caret 1.x.y allows minor", "^1.2.3", "1.3.0", true},
 		{"caret 1.x.y allows patch", "^1.2.3", "1.2.4", true},

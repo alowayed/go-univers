@@ -26,7 +26,7 @@ func (e *Ecosystem) NewVersion(version string) (*Version, error) {
 	original := version
 	// Trim whitespace first
 	version = strings.TrimSpace(version)
-	
+
 	if version == "" {
 		return nil, fmt.Errorf("empty version string")
 	}
@@ -109,7 +109,7 @@ func comparePrereleaseIdentifiers(a, b string) int {
 
 	for i := 0; i < maxLen; i++ {
 		var aPart, bPart string
-		
+
 		// Missing parts are considered smaller
 		if i >= len(aParts) {
 			return -1 // a has fewer parts, so a < b
@@ -117,7 +117,7 @@ func comparePrereleaseIdentifiers(a, b string) int {
 		if i >= len(bParts) {
 			return 1 // b has fewer parts, so a > b
 		}
-		
+
 		aPart = aParts[i]
 		bPart = bParts[i]
 
@@ -163,4 +163,3 @@ func compareInt(a, b int) int {
 	}
 	return 0
 }
-

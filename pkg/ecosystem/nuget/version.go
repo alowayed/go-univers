@@ -15,7 +15,7 @@ type Version struct {
 	major      int
 	minor      int
 	patch      int
-	revision   int    // .NET-specific 4th component
+	revision   int // .NET-specific 4th component
 	prerelease string
 	build      string
 	original   string
@@ -77,21 +77,6 @@ func (e *Ecosystem) NewVersion(version string) (*Version, error) {
 // String returns the string representation of the version
 func (v *Version) String() string {
 	return v.original
-}
-
-// normalize returns the normalized form of the version
-func (v *Version) normalize() string {
-	result := fmt.Sprintf("%d.%d.%d", v.major, v.minor, v.patch)
-	if v.revision > 0 {
-		result += fmt.Sprintf(".%d", v.revision)
-	}
-	if v.prerelease != "" {
-		result += "-" + v.prerelease
-	}
-	if v.build != "" {
-		result += "+" + v.build
-	}
-	return result
 }
 
 // Compare compares this version with another NuGet version
@@ -192,4 +177,4 @@ func parseNum(s string) (int, bool) {
 		return num, true
 	}
 	return 0, false
-
+}
