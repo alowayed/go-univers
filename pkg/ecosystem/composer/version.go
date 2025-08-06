@@ -12,8 +12,8 @@ var (
 	// Match dev versions: dev-branch
 	devVersionPattern = regexp.MustCompile(`^dev-(.+)$`)
 	// Match standard semantic versions with optional stability suffixes
-	// Examples: 1.2.3, 1.2.3-alpha, 1.2.3-alpha.1, 1.2.3-RC1
-	semanticVersionPattern = regexp.MustCompile(`^(?:v?)(\d+)(?:\.(\d+))?(?:\.(\d+))?(?:\.(\d+))?(?:-(alpha|beta|RC|a|b|rc)(?:\.?(\d+))?)?(?:\+([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?$`)
+	// Examples: 1.2.3, 1.2.3-alpha, 1.2.3-alpha.1, 1.2.3-RC1, 1.0a1, 1.0pl1
+	semanticVersionPattern = regexp.MustCompile(`^(?:v?)(\d+)(?:\.(\d+))?(?:\.(\d+))?(?:\.(\d+))?(?:\.(\d+))?(?:(?:-(alpha|beta|RC|a|b|rc|patch)(?:\.?(\d+))?)|(?:(alpha|beta|RC|a|b|rc|pl)(\d+)?))?(?:\+([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?$`)
 	// Match branch names that are not semantic versions (must contain letters)
 	branchNamePattern = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9-_./]*$`)
 )
@@ -108,20 +108,47 @@ func (e *Ecosystem) NewVersion(version string) (*Version, error) {
 			v.extra = extra
 		}
 
-		// Parse stability suffix
+		// Handle 5th component (rare but exists in some versions)
 		if matches[5] != "" {
-			stabilityStr := strings.ToLower(matches[5])
-			if stability, exists := stabilityMap[stabilityStr]; exists {
+			// Just ignore additional components beyond the 4th for now
+		}
+
+		// Parse stability suffix - handle both formats
+		// Format 1: -alpha.1 (matches[6] and matches[7])
+		// Format 2: alpha1 (matches[8] and matches[9])
+		if matches[6] != "" { // Hyphenated format: -alpha.1
+			stabilityStr := strings.ToLower(matches[6])
+			if stabilityStr == "patch" || stabilityStr == "pl" {
+				v.stability = stabilityStable // Treat patch/pl as stable
+			} else if stability, exists := stabilityMap[stabilityStr]; exists {
 				v.stability = stability
 			} else {
 				v.stability = stabilityStable
 			}
 
 			// Parse stability number (alpha.1, beta.2, RC.3)
-			if matches[6] != "" {
-				stabilityNum, err := strconv.Atoi(matches[6])
+			if matches[7] != "" {
+				stabilityNum, err := strconv.Atoi(matches[7])
 				if err != nil {
-					return nil, fmt.Errorf("invalid stability number: %s", matches[6])
+					return nil, fmt.Errorf("invalid stability number: %s", matches[7])
+				}
+				v.stabilityNum = stabilityNum
+			}
+		} else if matches[8] != "" { // Direct format: alpha1
+			stabilityStr := strings.ToLower(matches[8])
+			if stabilityStr == "pl" {
+				v.stability = stabilityStable // Treat pl as stable
+			} else if stability, exists := stabilityMap[stabilityStr]; exists {
+				v.stability = stability
+			} else {
+				v.stability = stabilityStable
+			}
+
+			// Parse stability number (alpha1, beta2, RC1)
+			if matches[9] != "" {
+				stabilityNum, err := strconv.Atoi(matches[9])
+				if err != nil {
+					return nil, fmt.Errorf("invalid stability number: %s", matches[9])
 				}
 				v.stabilityNum = stabilityNum
 			}
@@ -130,8 +157,8 @@ func (e *Ecosystem) NewVersion(version string) (*Version, error) {
 		}
 
 		// Parse build metadata
-		if matches[7] != "" {
-			v.build = matches[7]
+		if matches[10] != "" {
+			v.build = matches[10]
 		}
 
 		return v, nil
