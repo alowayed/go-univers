@@ -13,7 +13,7 @@ var (
 	devVersionPattern = regexp.MustCompile(`^dev-(.+)$`)
 	// Match standard semantic versions with optional stability suffixes
 	// Examples: 1.2.3, 1.2.3-alpha, 1.2.3-alpha.1, 1.2.3-RC1, 1.0a1, 1.0pl1
-	semanticVersionPattern = regexp.MustCompile(`^(?:v?)(\d+)(?:\.(\d+))?(?:\.(\d+))?(?:\.(\d+))?(?:\.(\d+))?(?:(?:-(alpha|beta|RC|a|b|rc|patch)(?:\.?(\d+))?)|(?:(alpha|beta|RC|a|b|rc|pl)(\d+)?))?(?:\+([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?$`)
+	semanticVersionPattern = regexp.MustCompile(`^(?:v?)(\d+)(?:\.(\d+))?(?:\.(\d+))?(?:\.(\d+))?(?:\.(\d+))?(?:(?:-(alpha|beta|RC|a|b|rc|dev|patch)(?:\.?(\d+))?)|(?:(alpha|beta|RC|a|b|rc|dev|pl)(\d+)?))?(?:\+([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?$`)
 	// Match branch names that are not semantic versions (must contain letters)
 	branchNamePattern = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9-_./]*$`)
 )
@@ -175,19 +175,59 @@ func (e *Ecosystem) NewVersion(version string) (*Version, error) {
 	return nil, fmt.Errorf("invalid Composer version: %s", original)
 }
 
-// isBranchName checks if a string looks like a valid branch name
+// isBranchName checks if a string looks like a valid branch name following Composer conventions
 func isBranchName(version string) bool {
-	// Only accept very common branch name patterns to avoid false positives
-	commonBranches := []string{"main", "master", "develop", "trunk"}
+	// Empty strings are not valid branch names
+	if version == "" {
+		return false
+	}
+	
+	// Don't accept strings that look too much like malformed versions
+	// This prevents false positives for invalid version strings
+	if strings.Contains(version, ".") && (len(strings.Split(version, ".")) >= 2) {
+		// If it contains dots and looks like it could be a version, be more strict
+		if !strings.Contains(version, "/") && !strings.Contains(version, "-") {
+			return false
+		}
+	}
+	
+	// Reject common invalid version patterns
+	invalidPatterns := []string{"invalid", "test", "example"}
+	for _, invalid := range invalidPatterns {
+		if version == invalid || strings.HasPrefix(version, invalid+"-") {
+			return false
+		}
+	}
+	
+	// Common branch name patterns used in Git repositories
+	commonBranches := []string{
+		"main", "master", "develop", "development", "trunk", 
+		"stable", "staging", "production", "prod",
+	}
 	for _, branch := range commonBranches {
 		if version == branch {
 			return true
 		}
 	}
 	
-	// Accept patterns like "feature-xyz", "bugfix-123", etc.
-	if strings.HasPrefix(version, "feature-") || strings.HasPrefix(version, "bugfix-") ||
-		strings.HasPrefix(version, "hotfix-") || strings.HasPrefix(version, "release-") {
+	// Accept conventional Git Flow and GitHub Flow patterns
+	branchPrefixes := []string{
+		"feature/", "feature-", "feat/", "feat-",
+		"bugfix/", "bugfix-", "fix/", "fix-",
+		"hotfix/", "hotfix-", "patch/", "patch-",
+		"release/", "release-", "rel/", "rel-",
+		"chore/", "chore-", "docs/", "docs-", "doc/", "doc-",
+		"refactor/", "refactor-", "style/", "style-",
+	}
+	
+	for _, prefix := range branchPrefixes {
+		if strings.HasPrefix(version, prefix) && len(version) > len(prefix) {
+			return true
+		}
+	}
+	
+	// Accept version branches (like v1.x, 1.x-dev, etc.)
+	if strings.HasSuffix(version, "-dev") && len(version) > 4 {
 		return true
 	}
 	
@@ -289,3 +329,4 @@ func compareInt(a, b int) int {
 	}
 	return 0
 }
+

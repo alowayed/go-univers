@@ -287,3 +287,4 @@ func mustNewVersion(t *testing.T, input string) *Version {
 	}
 	return v
 }
+

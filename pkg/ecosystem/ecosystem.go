@@ -62,3 +62,4 @@ var (
 	_ univers.VersionRange[*pypi.Version]                  = &pypi.VersionRange{}
 	_ univers.Ecosystem[*pypi.Version, *pypi.VersionRange] = &pypi.Ecosystem{}
 )
+
