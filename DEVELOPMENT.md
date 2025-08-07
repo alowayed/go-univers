@@ -41,91 +41,25 @@ Test files mirror source files. Examples organized in subdirectories to avoid pa
 
 ## Future Work
 
-### Ecosystem Additions
-- **RubyGems** - Ruby package versioning  
-- **Debian** - Debian package versioning
-- **Docker** - Container image tags
+See [GitHub Issues](https://github.com/alowayed/go-univers/issues) for planned features and improvements. Look for issues labeled "good first issue" for contribution opportunities.
 
-### Enhancements
-- **Performance optimization** - Benchmark version parsing/comparison
-- **JSON serialization** - Marshal/unmarshal support for versions/ranges
-- **Fuzzing tests** - Property-based testing for edge cases
+## Recent Major Changes
 
-## Development Log
+### Added Ecosystems (2025)
+- **Alpine**: Alpine Linux package versioning with suffix and build components
+- **Cargo**: Rust/Cargo SemVer 2.0 with caret/tilde constraints
+- **Composer**: PHP/Composer versioning with stability flags and branch names
+- **NuGet**: .NET/NuGet SemVer 2.0 with revision components and bracket notation
+- **RubyGems**: Ruby Gem versioning with pessimistic constraints
 
-### Session 1: Initial Implementation
-- Type-safe ecosystem isolation in separate packages
-- NPM semantic versioning with all range operators
-- PyPI PEP 440 compliance with all version components and operators
-- Universal interfaces documentation pattern
+### Enhanced CI/CD Pipeline
+- Multi-OS testing (Linux, macOS, Windows) for cross-platform compatibility
+- Comprehensive linting with golangci-lint (~60+ linters)
+- Automated code formatting verification (gofmt, go mod tidy)
+- Security scanning and Go best practices enforcement
 
-### Session 2: NPM Edge Cases & Test Coverage
-- Edge case tests from Google's deps.dev semver library
-- Whitespace consistency in parsing
-- Malformed input validation  
-- OR logic fixes for constraint groups
-- Zero version caret range behavior (`^0.0.1`, `^0.1.0`)
-
-### Session 3: Go Idiomatic Cleanup
-- File modularization (npm.go → npm.go, range.go, constraint.go)
-- Public API analysis to minimize surface area
-- X-range prerelease fixes for NPM spec compliance
-- Example reorganization into subdirectories
-- Private constraint types and implementation hiding
-
-### Session 4: Native Go Sorting
-- `slices.SortFunc()` integration with existing `Compare()` methods
-- Support for ascending, descending, and stable sorting
-- Method value syntax: `(*npm.Version).Compare`
-- No wrapper types or convenience functions needed
-
-### Session 5: Project Structure for Library + CLI
-- Adopted golang-standards/project-layout conventions
-- Moved `ecosystem/` → `pkg/ecosystem/` for library code
-- Moved `univers.go` → `pkg/univers.go` 
-- Created `cmd/` directory for CLI application
-- Updated all import paths in examples and documentation
-- Project now ready for both library and CLI development
-
-### Session 6: CLI Implementation
-- Researched Go CLI best practices focusing on standard library approaches
-- Implemented stateless CLI design using only Go standard library
-- Created `cmd/cli` package with `Run()` function for testable design
-- Implemented core commands: `compare`, `sort`, `contains` for npm and pypi ecosystems
-- Added comprehensive CLI tests covering success and error cases
-- CLI follows pattern: `univers <ecosystem> <command> [args]`
-- Shell-friendly with proper exit codes (0 for success, 1 for failure)
-- Updated README.md with CLI build instructions and usage examples
-
-### Session 7: Go Module Versioning Implementation
-- Researched Go module versioning specification from go.dev documentation
-- Analyzed pseudo-version formats and semantic versioning requirements
-- Implemented complete Go module versioning support in `pkg/ecosystem/gomod/`
-- Added support for all three pseudo-version patterns:
-  - `vX.0.0-yyyymmddhhmmss-abcdefabcdef` (no base version)
-  - `vX.Y.Z-pre.0.yyyymmddhhmmss-abcdefabcdef` (prerelease base)
-  - `vX.Y.(Z+1)-0.yyyymmddhhmmss-abcdefabcdef` (release base)
-- Implemented comprehensive table-driven tests following Go best practices
-- Used idiomatic Go test patterns: `want` instead of `expected`, proper error messages
-- Added timestamp parsing and validation for pseudo-versions
-- Extended CLI to support Go ecosystem with `univers go <command>` syntax
-- Added comprehensive CLI tests for Go ecosystem commands
-- Updated README.md with complete Go module versioning documentation
-- Added Go examples to Quick Start section and CLI usage examples
-- Documented Go version syntax including pseudo-version support
-
-### Session 8: Maven Ecosystem Implementation
-- Added Maven ecosystem support with comprehensive version handling
-- Implemented Maven versioning with qualifier precedence and bracket range notation
-- Added all Maven-specific features documented in README.md
-
-### Session 9: Ruby Gems Ecosystem Implementation
-- Researched Ruby Gem versioning specification and pessimistic constraint (~>) behavior
-- Implemented complete Ruby Gem versioning support in `pkg/ecosystem/gem/`
-- Added type-safe version parsing with proper prerelease handling
-- Implemented the pessimistic constraint (twiddle-wakka ~>) operator with precision-aware logic
-- Added comprehensive table-driven tests covering edge cases and constraint combinations
-- Extended CLI to support gem ecosystem with `univers gem <command>` syntax
-- Added gem-specific CLI tests and examples
-- Updated documentation with Ruby Gem version formats and constraint examples
-- Added gem ecosystem to interface compliance checks
+### Architecture Improvements
+- All ecosystems follow consistent patterns (table-driven tests, type safety)
+- Performance optimizations (pre-parsed version objects in constraints)
+- Comprehensive edge case testing and error handling
+- Modern Go idioms (slices.Contains, proper error wrapping)

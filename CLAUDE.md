@@ -16,12 +16,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 # Run all tests
 go test ./...
 
-# Run tests for specific ecosystem
+# Run tests for specific ecosystem (see pkg/ecosystem/ for all available ecosystems)
 go test ./pkg/ecosystem/npm/...
 go test ./pkg/ecosystem/pypi/...
-go test ./pkg/ecosystem/gomod/...
-go test ./pkg/ecosystem/maven/...
-go test ./pkg/ecosystem/gem/...
 
 # Run CLI tests
 go test ./cmd/cli/...
@@ -44,17 +41,17 @@ go fmt ./...
 # Vet code for potential issues
 go vet ./...
 
-# Run static analysis (if golangci-lint is available)
+# Run linting (configured with golangci-lint)
 golangci-lint run
 ```
 
 ## Architecture Overview
 
-go-univers is a type-safe library for version comparison across different software package ecosystems (NPM, PyPI, Go modules, Maven). The key architectural principle is **ecosystem isolation** - each ecosystem has its own types to prevent accidental cross-ecosystem version mixing at compile time.
+go-univers is a type-safe library for version comparison across different software package ecosystems. The key architectural principle is **ecosystem isolation** - each ecosystem has its own types to prevent accidental cross-ecosystem version mixing at compile time.
 
 ### Core Design Patterns
 
-1. **Type Safety**: Each ecosystem (npm, pypi, gomod, maven, gem) defines its own `Version` and `VersionRange` types
+1. **Type Safety**: Each ecosystem (see `pkg/ecosystem/` directory) defines its own `Version` and `VersionRange` types
 2. **Generic Interfaces**: Universal interfaces in `pkg/univers/univers.go` define contracts
 3. **Factory Pattern**: Each ecosystem provides `NewVersion()` and `NewVersionRange()` constructors
 4. **Interface Compliance**: `pkg/ecosystem/ecosystem.go` contains compile-time interface checks
@@ -105,10 +102,15 @@ cmd/
 
 ### Key Implementation Details
 
-**NPM**: Full semantic versioning with range operators (`^`, `~`, x-ranges, hyphen ranges, OR logic)
-**PyPI**: Complete PEP 440 support (epochs, prereleases, post-releases, dev releases, local versions)
-**Go**: Go module versioning with all three pseudo-version patterns support
-**Maven**: Maven versioning with qualifier precedence and bracket range notation
+- **Alpine**: Alpine package versioning with suffix and build component support
+- **Cargo**: SemVer 2.0 with Rust-specific caret/tilde constraints and wildcard matching
+- **Composer**: PHP package versioning with stability flags and branch name support
+- **Go**: Go module versioning with pseudo-version pattern support
+- **Maven**: Maven versioning with qualifier precedence and bracket range notation
+- **NPM**: Semantic versioning with range operators and OR logic
+- **NuGet**: SemVer 2.0 with .NET extensions (revision component, bracket notation)
+- **PyPI**: Complete PEP 440 support (epochs, prereleases, post-releases, local versions)
+- **RubyGems**: Ruby gem versioning with pessimistic constraint (~>) operator
 
 ### Testing Strategy
 
@@ -137,7 +139,7 @@ Commands:
 - `sort <v1> <v2> ...` - Sort versions in ascending order
 - `contains <range> <version>` - Check if version satisfies range (outputs true/false)
 
-Ecosystems: `npm`, `pypi`, `go`, `maven`
+See `pkg/ecosystem/` directory for all supported ecosystems.
 
 ### Development Guidelines
 
