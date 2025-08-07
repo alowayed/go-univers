@@ -145,11 +145,90 @@ See `pkg/ecosystem/` directory for all supported ecosystems.
 
 1. **Type Safety First**: Never allow cross-ecosystem version operations
 2. **Test Coverage**: All new functionality requires comprehensive table-driven tests
+   - Test function names must follow the pattern `TestStructName_MethodName` (e.g., `TestEcosystem_NewVersion`, `TestVersion_Compare`)
+   - Only test PUBLIC methods and functions - never test private/internal functions
+   - Follow existing test patterns in other ecosystems for consistency
 3. **API Stability**: Keep public APIs minimal and stable
 4. **Go Idioms**: Follow golang-standards/project-layout and effective Go practices
 5. **Error Handling**: Provide clear, actionable error messages for invalid input
 6. **Documentation**: Update README.md for any new ecosystem or major feature additions
 7. **Contributing**: Follow guidelines in CONTRIBUTING.md for code submissions and development workflow
+
+### Issue Completion Process
+
+When asked to complete a GitHub issue, ALWAYS follow this standardized process:
+
+1. **Branch Management**:
+   ```bash
+   git checkout -b feat/descriptive-feature-name
+   ```
+
+2. **Issue Analysis**:
+   - Fetch issue details using `gh issue view <issue-number>`
+   - Create todo list to track all required tasks
+   - Research requirements from issue description and any linked resources
+
+3. **Research Phase**:
+   - Study linked documentation, specifications, or reference implementations
+   - Examine existing ecosystem patterns in the codebase for consistency
+   - Use WebFetch tool for external documentation when needed
+
+4. **Implementation**:
+   - Follow existing architectural patterns (see directory structure above)
+   - Create new ecosystem under `pkg/ecosystem/<ecosystem>/` with:
+     - `<ecosystem>.go` - Public API (Ecosystem struct with Name constant)
+     - `version.go` - Version implementation 
+     - `range.go` - VersionRange implementation
+     - `<ecosystem>_test.go` - Ecosystem.Name() test
+     - `version_test.go` - Version parsing and comparison tests
+     - `range_test.go` - Range parsing and Contains() tests
+
+5. **Integration**:
+   - Add ecosystem to CLI in `cmd/cli/cli.go` (import and ecosystemToRun map)
+   - Add interface compliance checks in `pkg/ecosystem/ecosystem.go`
+   - Update README.md supported ecosystems table and add usage examples
+
+6. **Quality Assurance** (ALWAYS run in this order):
+   ```bash
+   go fmt ./...           # Format code
+   go vet ./...           # Check for issues
+   go test ./...          # Run all tests
+   golangci-lint run      # Comprehensive linting
+   ```
+
+7. **Documentation Updates**:
+   - Add ecosystem to README.md supported ecosystems table
+   - Add CLI usage examples (compare, sort, contains commands)
+   - Add code example in ecosystem examples section
+   - Keep examples concise but demonstrative of key features
+
+8. **Commit and PR**:
+   ```bash
+   git add .
+   git commit -s -m "feat: add <ecosystem> ecosystem support
+
+   - Implement <ecosystem> version parsing following <specification>
+   - Add comprehensive test coverage with table-driven tests
+   - Support <key features> with proper <behavior> handling
+   - Add CLI integration (compare/sort/contains commands)
+   - Update documentation with usage examples
+   
+   Fixes #<issue-number>
+   
+   🤖 Generated with [Claude Code](https://claude.ai/code)
+   
+   Co-Authored-By: Claude <noreply@anthropic.com>"
+   
+   git push -u origin feat/descriptive-feature-name
+   gh pr create --title "feat: add <ecosystem> ecosystem support" --body "Implements <ecosystem> ecosystem support as requested in #<issue-number>"
+   ```
+
+9. **Verification**:
+   - Test CLI commands manually to ensure they work correctly
+   - Verify all quality checks pass
+   - Ensure documentation examples are accurate
+
+This process ensures consistency, quality, and completeness for all ecosystem additions.
 
 ### Adding New Ecosystems
 
