@@ -1,0 +1,116 @@
+run:
+  timeout: 5m
+  modules-download-mode: readonly
+
+linters:
+  # Enable all linters by default, then selectively disable
+  default: all
+  disable:
+    # Disable overly strict/noisy linters that don't add value for a library
+    - cyclop           # Cyclomatic complexity (gocyclo is sufficient)
+    - depguard         # Dependency guard (not needed for this project)
+    - exhaustive       # Exhaustive switch statements (too strict)
+    - exhaustruct      # Exhaustive struct initialization (too strict)
+    - forcetypeassert  # Force type assertions (sometimes needed)
+    - funcorder        # Function ordering (stylistic preference)
+    - funlen           # Function length (too strict)
+    - gochecknoglobals # Global variables (sometimes needed)
+    - gocognit         # Cognitive complexity (gocyclo is sufficient)
+    - goconst          # Constants from strings (too strict)
+    - godot            # Comments end with period (too strict)
+    - godox            # TODO comments (we want them)
+    - ireturn          # Interface returns (sometimes valid pattern)
+    - lll              # Line length (gofmt handles formatting)
+    - maintidx         # Maintainability index (too strict)
+    - mnd              # Magic numbers (not every number is magic)
+    - nestif           # Nested if statements (sometimes needed)
+    - nilnil           # nil, nil returns (valid pattern)
+    - nlreturn         # New line before return (stylistic)
+    - noinlineerr      # No inline errors (sometimes useful)
+    - nonamedreturns   # Named returns (sometimes useful)
+    - paralleltest     # Parallel tests (can complicate debugging)
+    - prealloc         # Slice preallocation (not always beneficial)
+    - tagliatelle      # Struct tag naming (not relevant)
+    - testpackage      # Test package naming (too strict)
+    - tparallel        # Test parallelization (can complicate debugging)
+    - varnamelen       # Variable name length (too strict)
+    - wrapcheck        # Error wrapping (too strict)
+    - wsl              # Whitespace linter (gofmt handles this)
+
+linters-settings:
+  staticcheck:
+    checks:
+      - all
+      - -QF1001  # De Morgan's law (stylistic)
+      - -QF1003  # Tagged switch (stylistic) 
+      - -ST1023  # Type inference (sometimes explicit is better)
+  
+  gocritic:
+    disabled-checks:
+      - ifElseChain    # Sometimes if-else chains are clearer
+      - whyNoLint      # Allow missing lint comments
+    enabled-tags:
+      - performance
+      - style
+      - diagnostic
+      
+  revive:
+    rules:
+      - name: blank-imports
+      - name: context-as-argument
+      - name: context-keys-type
+      - name: dot-imports
+      - name: empty-block
+      - name: error-naming
+      - name: error-return
+      - name: error-strings
+      - name: errorf
+      - name: exported
+      - name: import-alias-naming
+      - name: indent-error-flow
+      - name: package-comments
+      - name: range
+      - name: receiver-naming
+      - name: redefines-builtin-id
+      - name: superfluous-else
+      - name: time-naming
+      - name: unreachable-code
+      - name: use-any
+      - name: var-declaration
+      - name: var-naming
+
+  dupl:
+    threshold: 100
+    
+  gocyclo:
+    min-complexity: 15
+
+issues:
+  exclude-rules:
+    # Allow code duplication in test files
+    - path: _test\.go
+      linters:
+        - dupl
+        
+    # Allow longer lines in test files for table-driven tests
+    - path: _test\.go
+      linters:
+        - lll
+        
+    # Allow underscore in test function names
+    - path: _test\.go
+      linters:
+        - revive
+      text: "don't use underscores in Go names"
+
+  max-issues-per-linter: 0
+  max-same-issues: 0
+
+# Separate formatter configuration
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  settings:
+    gofmt:
+      simplify: true  # Enable simplification
