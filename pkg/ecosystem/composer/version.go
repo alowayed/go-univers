@@ -234,7 +234,6 @@ func (v *Version) String() string {
 	return v.original
 }
 
-
 // Compare compares this version with another Composer version following Composer rules
 func (v *Version) Compare(other *Version) int {
 	// Dev versions are always less than stable versions
