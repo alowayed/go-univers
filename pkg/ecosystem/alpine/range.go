@@ -24,12 +24,12 @@ func (e *Ecosystem) NewVersionRange(rangeStr string) (*VersionRange, error) {
 	if rangeStr == "" {
 		return nil, fmt.Errorf("empty range string")
 	}
-	
+
 	constraints, err := parseConstraints(rangeStr)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return &VersionRange{
 		constraints: constraints,
 		original:    original,
@@ -41,31 +41,31 @@ func parseConstraints(rangeStr string) ([]*constraint, error) {
 	// Handle multiple constraints separated by spaces (AND logic)
 	parts := strings.Fields(rangeStr)
 	var constraints []*constraint
-	
+
 	for _, part := range parts {
 		part = strings.TrimSpace(part)
 		if part == "" {
 			continue
 		}
-		
+
 		constraint, err := parseConstraint(part)
 		if err != nil {
 			return nil, err
 		}
 		constraints = append(constraints, constraint)
 	}
-	
+
 	if len(constraints) == 0 {
 		return nil, fmt.Errorf("no valid constraints found")
 	}
-	
+
 	return constraints, nil
 }
 
 // parseConstraint parses a single constraint
 func parseConstraint(constraintStr string) (*constraint, error) {
 	constraintStr = strings.TrimSpace(constraintStr)
-	
+
 	// Alpine supports standard comparison operators
 	operators := []string{">=", "<=", "!=", ">", "<", "="}
 	for _, op := range operators {
@@ -77,7 +77,7 @@ func parseConstraint(constraintStr string) (*constraint, error) {
 			return &constraint{operator: op, version: version}, nil
 		}
 	}
-	
+
 	// Default to exact match
 	return &constraint{operator: "=", version: constraintStr}, nil
 }
@@ -90,14 +90,14 @@ func (vr *VersionRange) String() string {
 // Contains checks if a version satisfies this range
 func (vr *VersionRange) Contains(version *Version) bool {
 	ecosystem := &Ecosystem{}
-	
+
 	// All constraints must be satisfied (AND logic)
 	for _, c := range vr.constraints {
 		if !satisfiesConstraint(version, c, ecosystem) {
 			return false
 		}
 	}
-	
+
 	return true
 }
 
@@ -107,9 +107,9 @@ func satisfiesConstraint(version *Version, c *constraint, ecosystem *Ecosystem) 
 	if err != nil {
 		return false
 	}
-	
+
 	cmp := version.Compare(constraintVersion)
-	
+
 	switch c.operator {
 	case "=":
 		return cmp == 0

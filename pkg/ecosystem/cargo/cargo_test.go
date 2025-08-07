@@ -10,4 +10,3 @@ func TestEcosystem_Name(t *testing.T) {
 		t.Errorf("Name() = %v, want cargo", got)
 	}
 }
-

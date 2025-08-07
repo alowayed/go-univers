@@ -3,6 +3,7 @@ package composer
 import (
 	"fmt"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 )
@@ -15,8 +16,6 @@ var (
 	// Examples: 1.2.3, 1.2.3-alpha, 1.2.3-alpha.1, 1.2.3-RC1, 1.0a1, 1.0pl1
 	// Capture groups: (1)major (2)minor (3)patch (4)extra (5)extra2 (6)stability1 (7)stabilityNum1 (8)stability2 (9)stabilityNum2 (10)build
 	semanticVersionPattern = regexp.MustCompile(`^(?:v?)(\d+)(?:\.(\d+))?(?:\.(\d+))?(?:\.(\d+))?(?:\.(\d+))?(?:(?:-(alpha|beta|RC|a|b|rc|dev|patch)(?:\.?(\d+))?)|(?:(alpha|beta|RC|a|b|rc|dev|pl)(\d+)?))?(?:\+([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?$`)
-	// Match branch names that are not semantic versions (must contain letters)
-	branchNamePattern = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9-_./]*$`)
 )
 
 // Stability levels ordered from least to most stable
@@ -41,16 +40,16 @@ var stabilityMap = map[string]int{
 
 // Version represents a Composer package version following Composer specification
 type Version struct {
-	major         int
-	minor         int
-	patch         int
-	extra         int    // Fourth component (for .NET-style versions)
-	stability     int    // Stability level (dev, alpha, beta, RC, stable)
-	stabilityNum  int    // Stability version number (e.g., alpha.2)
-	build         string // Build metadata
-	isDev         bool   // True for dev- prefixed versions
-	devBranch     string // Branch name for dev versions
-	original      string
+	major        int
+	minor        int
+	patch        int
+	extra        int    // Fourth component (for .NET-style versions)
+	stability    int    // Stability level (dev, alpha, beta, RC, stable)
+	stabilityNum int    // Stability version number (e.g., alpha.2)
+	build        string // Build metadata
+	isDev        bool   // True for dev- prefixed versions
+	devBranch    string // Branch name for dev versions
+	original     string
 }
 
 // NewVersion creates a new Composer version from a string
@@ -182,7 +181,7 @@ func isBranchName(version string) bool {
 	if version == "" {
 		return false
 	}
-	
+
 	// Don't accept strings that look too much like malformed versions
 	// This prevents false positives for invalid version strings
 	if strings.Contains(version, ".") && (len(strings.Split(version, ".")) >= 2) {
@@ -191,26 +190,19 @@ func isBranchName(version string) bool {
 			return false
 		}
 	}
-	
-	// Reject common invalid version patterns
-	invalidPatterns := []string{"invalid", "test", "example"}
-	for _, invalid := range invalidPatterns {
-		if version == invalid || strings.HasPrefix(version, invalid+"-") {
-			return false
-		}
-	}
-	
+
+	// Allow most strings that look like branch names
+	// Let the validation logic handle truly invalid cases
+
 	// Common branch name patterns used in Git repositories
 	commonBranches := []string{
-		"main", "master", "develop", "development", "trunk", 
+		"main", "master", "develop", "development", "trunk",
 		"stable", "staging", "production", "prod",
 	}
-	for _, branch := range commonBranches {
-		if version == branch {
-			return true
-		}
+	if slices.Contains(commonBranches, version) {
+		return true
 	}
-	
+
 	// Accept conventional Git Flow and GitHub Flow patterns
 	branchPrefixes := []string{
 		"feature/", "feature-", "feat/", "feat-",
@@ -220,66 +212,24 @@ func isBranchName(version string) bool {
 		"chore/", "chore-", "docs/", "docs-", "doc/", "doc-",
 		"refactor/", "refactor-", "style/", "style-",
 	}
-	
+
 	for _, prefix := range branchPrefixes {
 		if strings.HasPrefix(version, prefix) && len(version) > len(prefix) {
 			return true
 		}
 	}
-	
+
 	// Accept version branches (like v1.x, 1.x-dev, etc.)
 	if strings.HasSuffix(version, "-dev") && len(version) > 4 {
 		return true
 	}
-	
+
 	return false
 }
 
 // String returns the string representation of the version
 func (v *Version) String() string {
 	return v.original
-}
-
-// normalize returns the normalized form of the version for comparison
-func (v *Version) normalize() string {
-	if v.isDev {
-		if v.devBranch != "" {
-			return fmt.Sprintf("dev-%s", v.devBranch)
-		}
-		return "dev"
-	}
-
-	result := fmt.Sprintf("%d.%d.%d", v.major, v.minor, v.patch)
-	if v.extra > 0 {
-		result += fmt.Sprintf(".%d", v.extra)
-	}
-
-	// Add stability suffix
-	if v.stability != stabilityStable {
-		var stabilityStr string
-		switch v.stability {
-		case stabilityAlpha:
-			stabilityStr = "alpha"
-		case stabilityBeta:
-			stabilityStr = "beta"
-		case stabilityRC:
-			stabilityStr = "RC"
-		case stabilityDev:
-			stabilityStr = "dev"
-		}
-
-		if v.stabilityNum > 0 {
-			result += fmt.Sprintf("-%s.%d", stabilityStr, v.stabilityNum)
-		} else {
-			result += fmt.Sprintf("-%s", stabilityStr)
-		}
-	}
-
-	if v.build != "" {
-		result += "+" + v.build
-	}
-
-	return result
 }
 
 // Compare compares this version with another Composer version following Composer rules
@@ -330,4 +280,3 @@ func compareInt(a, b int) int {
 	}
 	return 0
 }
-

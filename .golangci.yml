@@ -1,0 +1,67 @@
+version: "2"
+
+run:
+  timeout: 5m
+  modules-download-mode: readonly
+
+linters:
+  # Enable all linters by default, then selectively disable
+  default: all
+  disable:
+    # Disable overly strict/noisy linters that don't add value for a library
+    - cyclop           # Cyclomatic complexity (gocyclo is sufficient)
+    - depguard         # Dependency guard (not needed for this project)
+    - exhaustive       # Exhaustive switch statements (too strict)
+    - exhaustruct      # Exhaustive struct initialization (too strict)
+    - forcetypeassert  # Force type assertions (sometimes needed)
+    - funcorder        # Function ordering (stylistic preference)
+    - funlen           # Function length (too strict)
+    - gochecknoglobals # Global variables (sometimes needed)
+    - gocognit         # Cognitive complexity (gocyclo is sufficient)
+    - goconst          # Constants from strings (too strict)
+    - godot            # Comments end with period (too strict)
+    - godox            # TODO comments (we want them)
+    - ireturn          # Interface returns (sometimes valid pattern)
+    - lll              # Line length linting enabled for source files, disabled for test files via exclude-rules
+    - maintidx         # Maintainability index (too strict)
+    - mnd              # Magic numbers (not every number is magic)
+    - nestif           # Nested if statements (sometimes needed)
+    - nilnil           # nil, nil returns (valid pattern)
+    - nlreturn         # New line before return (stylistic)
+    - noinlineerr      # No inline errors (sometimes useful)
+    - nonamedreturns   # Named returns (sometimes useful)
+    - paralleltest     # Parallel tests (can complicate debugging)
+    - prealloc         # Slice preallocation (not always beneficial)
+    - tagliatelle      # Struct tag naming (not relevant)
+    - testpackage      # Test package naming (too strict)
+    - tparallel        # Test parallelization (can complicate debugging)
+    - varnamelen       # Variable name length (too strict)
+    - wrapcheck        # Error wrapping (too strict)
+    - wsl              # Whitespace linter (gofmt handles this)
+    - wsl_v5           # Whitespace linter v5 (gofmt handles this)
+    - thelper          # TODO: add back later
+    - revive           # TODO: add back later
+    - perfsprint       # TODO: add back later
+    - dupl             # TODO: add back later
+    - err113           # TODO: add back later
+    - embeddedstructfieldcheck # TODO: add back later
+    - errcheck         # TODO: add back later
+    - errorlint        # TODO: add back later
+    - forbidigo        # TODO: add back later
+    - gocritic         # TODO: add back later
+    - intrange         # TODO: add back later
+    - staticcheck      # TODO: add back later
+    - unparam          # TODO: add back later
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
+
+# Separate formatter configuration
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  settings:
+    gofmt:
+      simplify: true  # Enable simplification

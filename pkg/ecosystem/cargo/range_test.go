@@ -23,13 +23,13 @@ func TestEcosystem_NewVersionRange(t *testing.T) {
 		// Multiple constraints
 		{name: "multiple constraints", input: ">=1.2.3, <2.0.0", wantErr: false},
 		{name: "complex multiple", input: ">=1.0.0, <2.0.0, !=1.5.0", wantErr: false},
-		
+
 		// Partial version constraints
 		{name: "tilde partial ~1.2", input: "~1.2", wantErr: false},
 		{name: "tilde partial ~1", input: "~1", wantErr: false},
 		{name: "caret partial ^1.2", input: "^1.2", wantErr: false},
 		{name: "caret partial ^1", input: "^1", wantErr: false},
-		
+
 		// Wildcard constraints
 		{name: "wildcard 1.2.*", input: "1.2.*", wantErr: false},
 		{name: "wildcard 1.*", input: "1.*", wantErr: false},
@@ -95,14 +95,14 @@ func TestVersionRange_Contains(t *testing.T) {
 		{name: "tilde - minor increment", rangeStr: "~1.2.3", version: "1.3.0", want: false},
 		{name: "tilde - major increment", rangeStr: "~1.2.3", version: "2.0.0", want: false},
 		{name: "tilde - lower version", rangeStr: "~1.2.3", version: "1.2.2", want: false},
-		
+
 		// Partial tilde constraints
 		{name: "tilde partial ~1.2", rangeStr: "~1.2", version: "1.2.5", want: true},
 		{name: "tilde partial ~1.2 minor change", rangeStr: "~1.2", version: "1.3.0", want: false},
 		{name: "tilde partial ~1", rangeStr: "~1", version: "1.5.0", want: true},
 		{name: "tilde partial ~1 major change", rangeStr: "~1", version: "2.0.0", want: false},
-		
-		// Partial caret constraints  
+
+		// Partial caret constraints
 		{name: "caret partial ^1.2", rangeStr: "^1.2", version: "1.5.0", want: true},
 		{name: "caret partial ^1", rangeStr: "^1", version: "1.9.0", want: true},
 
@@ -118,7 +118,7 @@ func TestVersionRange_Contains(t *testing.T) {
 		{name: "multiple - both satisfied", rangeStr: ">=1.2.3, <2.0.0", version: "1.5.0", want: true},
 		{name: "multiple - first not satisfied", rangeStr: ">=1.2.3, <2.0.0", version: "1.2.2", want: false},
 		{name: "multiple - second not satisfied", rangeStr: ">=1.2.3, <2.0.0", version: "2.0.0", want: false},
-		
+
 		// Prerelease handling
 		{name: "prerelease in range", rangeStr: ">=1.0.0-alpha", version: "1.0.0-beta", want: true},
 		{name: "prerelease vs release", rangeStr: ">=1.0.0", version: "1.0.0-alpha", want: false},
@@ -145,5 +145,3 @@ func TestVersionRange_Contains(t *testing.T) {
 		})
 	}
 }
-
-

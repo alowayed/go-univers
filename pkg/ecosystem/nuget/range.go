@@ -43,7 +43,6 @@ func parseRange(e *Ecosystem, rangeStr string) ([]*constraint, error) {
 	// Check for bracket/paren syntax first
 	if (strings.HasPrefix(rangeStr, "[") || strings.HasPrefix(rangeStr, "(")) &&
 		(strings.HasSuffix(rangeStr, "]") || strings.HasSuffix(rangeStr, ")")) {
-
 		// Check for empty brackets/parens
 		if rangeStr == "[]" || rangeStr == "()" {
 			return nil, fmt.Errorf("empty range expression: %s", rangeStr)
@@ -307,5 +306,3 @@ func (c *constraint) matches(version *Version) bool {
 		return false
 	}
 }
-
-

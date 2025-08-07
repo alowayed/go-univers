@@ -109,4 +109,3 @@ func runEcosystem[V univers.Version[V], VR univers.VersionRange[V]](
 
 	return result, 0
 }
-

@@ -301,7 +301,7 @@ func parseTildeConstraint(version string) ([]*constraint, error) {
 func parseWildcardConstraint(rangeStr string) ([]*constraint, error) {
 	parts := strings.Split(rangeStr, ".")
 	e := &Ecosystem{}
-	
+
 	// Replace * or x with appropriate range
 	for i, part := range parts {
 		if part == "*" || part == "x" {
@@ -388,7 +388,7 @@ func parseHyphenRange(rangeStr string) ([]*constraint, error) {
 	if strings.HasSuffix(rangeStr, " -") {
 		return nil, fmt.Errorf("invalid hyphen range: %s", rangeStr)
 	}
-	
+
 	parts := strings.Split(rangeStr, " - ")
 	if len(parts) != 2 {
 		return nil, fmt.Errorf("invalid hyphen range: %s", rangeStr)
@@ -528,19 +528,19 @@ func (c *constraint) matchesCaret(version *Version) bool {
 	if constraintVersion.stability == stabilityStable && version.stability != stabilityStable {
 		// For stable constraints, generally exclude prereleases of the same version
 		// EXCEPT for specific cases like 1.0b1 vs 1.0.0 where the version format matters
-		if version.major == constraintVersion.major && 
-		   version.minor == constraintVersion.minor && 
-		   version.patch == constraintVersion.patch {
+		if version.major == constraintVersion.major &&
+			version.minor == constraintVersion.minor &&
+			version.patch == constraintVersion.patch {
 			// Check if this is the special case: ^1.0.0 should include 1.0b1
 			// but ^1.2.3 should NOT include 1.2.3-alpha
 			versionStr := version.String()
 			constraintStr := constraintVersion.String()
-			
+
 			// Special case: ^1.0.0 includes 1.0b1 (non-hyphenated prerelease of x.0.0)
 			if constraintStr == "1.0.0" && versionStr == "1.0b1" {
 				return true
 			}
-			
+
 			// General rule: exclude prereleases of the same version (like 1.2.3-alpha for ^1.2.3)
 			return false
 		}
@@ -565,8 +565,8 @@ func (c *constraint) matchesCaretZeroX(version *Version) bool {
 	}
 
 	// For prereleases of the same 0.minor.patch, accept them
-	if version.minor == constraintVersion.minor && 
-	   version.patch == constraintVersion.patch {
+	if version.minor == constraintVersion.minor &&
+		version.patch == constraintVersion.patch {
 		return true
 	}
 
@@ -596,4 +596,3 @@ func (c *constraint) matchesCaretZeroZeroX(version *Version) bool {
 	comparison := version.Compare(constraintVersion)
 	return comparison >= 0 && version.patch == constraintVersion.patch
 }
-

@@ -18,8 +18,8 @@ var (
 	// --- Ensure types implement interfaces (Alphabetical) ---
 
 	// alpine
-	_ univers.Version[*alpine.Version]                          = &alpine.Version{}
-	_ univers.VersionRange[*alpine.Version]                     = &alpine.VersionRange{}
+	_ univers.Version[*alpine.Version]                         = &alpine.Version{}
+	_ univers.VersionRange[*alpine.Version]                    = &alpine.VersionRange{}
 	_ univers.Ecosystem[*alpine.Version, *alpine.VersionRange] = &alpine.Ecosystem{}
 
 	// cargo
@@ -28,8 +28,8 @@ var (
 	_ univers.Ecosystem[*cargo.Version, *cargo.VersionRange] = &cargo.Ecosystem{}
 
 	// composer
-	_ univers.Version[*composer.Version]                            = &composer.Version{}
-	_ univers.VersionRange[*composer.Version]                       = &composer.VersionRange{}
+	_ univers.Version[*composer.Version]                           = &composer.Version{}
+	_ univers.VersionRange[*composer.Version]                      = &composer.VersionRange{}
 	_ univers.Ecosystem[*composer.Version, *composer.VersionRange] = &composer.Ecosystem{}
 
 	// gem
@@ -62,4 +62,3 @@ var (
 	_ univers.VersionRange[*pypi.Version]                  = &pypi.VersionRange{}
 	_ univers.Ecosystem[*pypi.Version, *pypi.VersionRange] = &pypi.Ecosystem{}
 )
-

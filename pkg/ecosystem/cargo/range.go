@@ -124,9 +124,9 @@ func parseConstraint(constraintStr string, ecosystem *Ecosystem) (*constraint, e
 func convertWildcardToStandardConstraint(constraintStr string, ecosystem *Ecosystem) (*constraint, error) {
 	// According to Cargo documentation:
 	// 1.2.* is equivalent to ~1.2.0
-	// 1.* is equivalent to ^1.0.0  
+	// 1.* is equivalent to ^1.0.0
 	// * is equivalent to >=0.0.0
-	
+
 	if constraintStr == "*" {
 		// * means any version, equivalent to >=0.0.0
 		parsedVersion, err := ecosystem.NewVersion("0.0.0")
@@ -135,14 +135,14 @@ func convertWildcardToStandardConstraint(constraintStr string, ecosystem *Ecosys
 		}
 		return &constraint{operator: ">=", version: parsedVersion, precision: 3}, nil
 	}
-	
+
 	// Remove the * and any trailing dots
 	baseVersion := strings.TrimSuffix(constraintStr, "*")
 	baseVersion = strings.TrimSuffix(baseVersion, ".")
-	
+
 	// Count components to determine behavior
 	components := strings.Split(baseVersion, ".")
-	
+
 	switch len(components) {
 	case 1: // 1.* is equivalent to ^1.0.0
 		normalizedVersion := normalizePartialVersion(baseVersion)
@@ -151,7 +151,7 @@ func convertWildcardToStandardConstraint(constraintStr string, ecosystem *Ecosys
 			return nil, fmt.Errorf("invalid wildcard constraint: %v", err)
 		}
 		return &constraint{operator: "^", version: parsedVersion, precision: 3}, nil
-		
+
 	case 2: // 1.2.* is equivalent to ~1.2.0
 		normalizedVersion := normalizePartialVersion(baseVersion)
 		parsedVersion, err := ecosystem.NewVersion(normalizedVersion)
@@ -159,7 +159,7 @@ func convertWildcardToStandardConstraint(constraintStr string, ecosystem *Ecosys
 			return nil, fmt.Errorf("invalid wildcard constraint: %v", err)
 		}
 		return &constraint{operator: "~", version: parsedVersion, precision: 2}, nil
-		
+
 	default:
 		return nil, fmt.Errorf("invalid wildcard pattern: %s", constraintStr)
 	}
@@ -271,12 +271,12 @@ func satisfiesTildeConstraint(version, constraint *Version, precision int) bool 
 // e.g., "1.2" -> "1.2.0", "1" -> "1.0.0"
 func normalizePartialVersion(version string) string {
 	parts := strings.Split(version, ".")
-	
+
 	// Ensure we have exactly 3 parts
 	for len(parts) < 3 {
 		parts = append(parts, "0")
 	}
-	
+
 	return strings.Join(parts[:3], ".")
 }
 
@@ -288,4 +288,3 @@ func countVersionComponents(version string) int {
 	}
 	return len(strings.Split(version, "."))
 }
-

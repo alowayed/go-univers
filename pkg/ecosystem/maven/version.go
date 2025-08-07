@@ -34,7 +34,7 @@ func (e *Ecosystem) NewVersion(version string) (*Version, error) {
 	}
 
 	elements := parseVersionString(trimmed)
-	
+
 	return &Version{
 		original: version,
 		elements: elements,
@@ -45,14 +45,14 @@ func isValidMavenVersion(version string) bool {
 	// Maven versions should contain at least one digit or be a known qualifier
 	hasDigit := false
 	hasKnownQualifier := false
-	
+
 	for _, r := range version {
 		if unicode.IsDigit(r) {
 			hasDigit = true
 			break
 		}
 	}
-	
+
 	// Check for known qualifiers
 	lower := strings.ToLower(version)
 	knownQualifiers := []string{"alpha", "beta", "milestone", "rc", "snapshot", "ga", "final", "release", "sp"}
@@ -62,12 +62,12 @@ func isValidMavenVersion(version string) bool {
 			break
 		}
 	}
-	
+
 	// Also accept single-letter qualifiers
 	if len(version) == 1 && (version == "a" || version == "b" || version == "m") {
 		hasKnownQualifier = true
 	}
-	
+
 	return hasDigit || hasKnownQualifier
 }
 
@@ -77,29 +77,29 @@ func (v *Version) Compare(other *Version) int {
 	if len(other.elements) > maxLen {
 		maxLen = len(other.elements)
 	}
-	
+
 	for i := 0; i < maxLen; i++ {
 		var elem1, elem2 element
-		
+
 		// Get element or use "null" element if past end
 		if i < len(v.elements) {
 			elem1 = v.elements[i]
 		} else {
 			elem1 = element{value: 0, isNumber: true} // null element
 		}
-		
+
 		if i < len(other.elements) {
 			elem2 = other.elements[i]
 		} else {
 			elem2 = element{value: 0, isNumber: true} // null element
 		}
-		
+
 		cmp := compareElements(elem1, elem2)
 		if cmp != 0 {
 			return cmp
 		}
 	}
-	
+
 	return 0 // versions are equal
 }
 
@@ -116,7 +116,7 @@ func compareElements(e1, e2 element) int {
 		}
 		return 0
 	}
-	
+
 	// If one is number and other is string, number comes first (unless string is empty/release)
 	if e1.isNumber && !e2.isNumber {
 		s2 := e2.value.(string)
@@ -131,7 +131,7 @@ func compareElements(e1, e2 element) int {
 		// number vs other qualifier: number is greater
 		return 1
 	}
-	
+
 	if !e1.isNumber && e2.isNumber {
 		s1 := e1.value.(string)
 		if s1 == "" {
@@ -145,14 +145,14 @@ func compareElements(e1, e2 element) int {
 		// other qualifier vs number: number is greater
 		return -1
 	}
-	
+
 	// Both are strings - compare by qualifier order
 	s1 := e1.value.(string)
 	s2 := e2.value.(string)
-	
+
 	order1, exists1 := qualifierOrder[s1]
 	order2, exists2 := qualifierOrder[s2]
-	
+
 	// Unknown qualifiers come after known qualifiers
 	if !exists1 && !exists2 {
 		// Both unknown - lexicographic comparison
@@ -164,15 +164,15 @@ func compareElements(e1, e2 element) int {
 		}
 		return 0
 	}
-	
+
 	if !exists1 {
 		return 1 // unknown qualifier comes after known
 	}
-	
+
 	if !exists2 {
 		return -1 // known qualifier comes before unknown
 	}
-	
+
 	// Both are known qualifiers
 	if order1 < order2 {
 		return -1
@@ -207,18 +207,18 @@ var qualifierOrder = map[string]int{
 
 func parseVersionString(version string) []element {
 	var elements []element
-	
+
 	// Split by common separators and transitions
 	parts := tokenize(version)
-	
+
 	for _, part := range parts {
 		if part == "" {
 			continue
 		}
-		
+
 		// Normalize qualifiers
 		normalized := normalizeQualifier(part)
-		
+
 		// Try to parse as number
 		if num, err := strconv.Atoi(normalized); err == nil {
 			elements = append(elements, element{value: num, isNumber: true})
@@ -226,17 +226,17 @@ func parseVersionString(version string) []element {
 			elements = append(elements, element{value: normalized, isNumber: false})
 		}
 	}
-	
+
 	// Trim trailing null elements (0, "", "final", "ga")
 	elements = trimTrailingNulls(elements)
-	
+
 	return elements
 }
 
 func tokenize(version string) []string {
 	var tokens []string
 	var current strings.Builder
-	
+
 	for i, r := range version {
 		switch {
 		case r == '.' || r == '-':
@@ -261,18 +261,18 @@ func tokenize(version string) []string {
 			current.WriteRune(r)
 		}
 	}
-	
+
 	// Add final token
 	if current.Len() > 0 {
 		tokens = append(tokens, current.String())
 	}
-	
+
 	return tokens
 }
 
 func normalizeQualifier(s string) string {
 	lower := strings.ToLower(s)
-	
+
 	// Handle qualifier shortcuts
 	switch lower {
 	case "a":
@@ -286,7 +286,7 @@ func normalizeQualifier(s string) string {
 	case "ga", "final", "release":
 		return ""
 	}
-	
+
 	return lower
 }
 
