@@ -5,6 +5,12 @@
     },
     {
       "pattern": "^https://localhost"
+    },
+    {
+      "pattern": "https://github.com/alowayed/go-univers/actions"
+    },
+    {
+      "pattern": "https://github.com/alowayed/go-univers/issues"
     }
   ],
   "replacementPatterns": [
