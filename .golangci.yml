@@ -102,23 +102,6 @@ linters-settings:
     min-complexity: 15
 
 issues:
-  exclude-rules:
-    # Allow code duplication in test files
-    - path: _test\.go
-      linters:
-        - dupl
-        
-    # Allow longer lines in test files for table-driven tests
-    - path: _test\.go
-      linters:
-        - lll
-        
-    # Allow underscore in test function names
-    - path: _test\.go
-      linters:
-        - revive
-      text: "don't use underscores in Go names"
-
   max-issues-per-linter: 0
   max-same-issues: 0
 
