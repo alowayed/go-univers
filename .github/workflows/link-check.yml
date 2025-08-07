@@ -1,0 +1,25 @@
+name: Check Markdown Links
+
+on:
+  push:
+    branches: [ "main" ]
+    paths: ['**.md']
+  pull_request:
+    branches: [ "main" ]
+    paths: ['**.md']
+  # Weekly scheduled check to catch external links that go stale
+  schedule:
+    - cron: '0 0 * * 1' # Weekly on Mondays at midnight UTC
+
+jobs:
+  link-check:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Check markdown links
+      uses: tcort/github-action-markdown-link-check@v1
+      with:
+        config-file: 'mlc_config.json'
+        use-quiet-mode: 'yes'
+        use-verbose-mode: 'yes'
