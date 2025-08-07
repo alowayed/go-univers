@@ -48,7 +48,7 @@ See [GitHub Issues](https://github.com/alowayed/go-univers/issues) for planned f
 ### Added Ecosystems (2025)
 - **Alpine**: Alpine Linux package versioning with suffix and build components
 - **Cargo**: Rust/Cargo SemVer 2.0 with caret/tilde constraints
-- **Composer**: PHP/Composer versioning with stability flags and branch names  
+- **Composer**: PHP/Composer versioning with stability flags and branch names
 - **NuGet**: .NET/NuGet SemVer 2.0 with revision components and bracket notation
 - **RubyGems**: Ruby Gem versioning with pessimistic constraints
 

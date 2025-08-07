@@ -145,9 +145,9 @@ Date:   Mon Aug 1 11:22:33 2020 -0400
 See [CLAUDE.md](./CLAUDE.md) for detailed guidance on adding new ecosystems. The process involves:
 
 1. Create package under `pkg/ecosystem/<ecosystem>/`
-2. Implement `Version` and `VersionRange` types 
+2. Implement `Version` and `VersionRange` types
 3. Add comprehensive table-driven tests
 4. Extend CLI support in `cmd/cli/commands.go`
-5. Update README.md with ecosystem documentation
+5. Add the new ecosystem to the 'Supported Ecosystems' table in README.md
 
 Refer to existing ecosystems like `cargo/` or `nuget/` for implementation patterns.
