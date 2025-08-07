@@ -2,22 +2,67 @@
 
 ## Environment setup
 
-1. Install `go`.
-2. Configure git.
-    ```
-    $ git config --global user.name "John Doe"
-    $ git config --global user.email "john.doe@example.com"
-    ```
+1. **Install Go 1.24+**
+   ```bash
+   # Check version
+   go version
+   ```
+
+2. **Install golangci-lint** (for code quality checks)
+   ```bash
+   # Install latest version
+   curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin
+   ```
+
+3. **Configure git**
+   ```bash
+   git config --global user.name "John Doe"
+   git config --global user.email "john.doe@example.com"
+   ```
 
 ## Contribution steps
 
-1. Fork the repository.
-2. Create a feature branch.
-3. Add your changes.
-4. Add tests.
-5. Ensure all tests pass: `go test ./...`.
-6. [Sign](#sign-your-work) and commit your changes.
-7. Submit a pull request.
+1. **Fork and clone**
+   ```bash
+   git clone https://github.com/YOUR_USERNAME/go-univers.git
+   cd go-univers
+   ```
+
+2. **Create a feature branch**
+   ```bash
+   git checkout -b feature/your-feature-name
+   ```
+
+3. **Make your changes and add tests**
+   ```bash
+   # Run tests frequently during development
+   go test ./...
+   ```
+
+4. **Verify code quality**
+   ```bash
+   # Format code
+   go fmt ./...
+   
+   # Run linters
+   golangci-lint run
+   
+   # Ensure dependencies are clean
+   go mod tidy
+   ```
+
+5. **[Sign](#sign-your-work) and commit your changes**
+   ```bash
+   git commit -s -m "feat: add new feature"
+   ```
+
+6. **Push and create pull request**
+   ```bash
+   git push origin feature/your-feature-name
+   # Then create PR on GitHub
+   ```
+
+The CI pipeline will automatically test your changes on multiple platforms and verify code quality.
 
 ## Sign your work
 
@@ -95,10 +140,14 @@ Date:   Mon Aug 1 11:22:33 2020 -0400
 
 ## Common contributions
 
-### Adding a new ecosystem
+## Adding a new ecosystem
 
-When adding new ecosystems:
-1. Create a new package under `ecosystem/`.
-2. Implement the core interfaces defined in `univers.go`.
-3. Add table-driven unit tests.
-4. Update the README.
+See [CLAUDE.md](./CLAUDE.md) for detailed guidance on adding new ecosystems. The process involves:
+
+1. Create package under `pkg/ecosystem/<ecosystem>/`
+2. Implement `Version` and `VersionRange` types 
+3. Add comprehensive table-driven tests
+4. Extend CLI support in `cmd/cli/commands.go`
+5. Update README.md with ecosystem documentation
+
+Refer to existing ecosystems like `cargo/` or `nuget/` for implementation patterns.

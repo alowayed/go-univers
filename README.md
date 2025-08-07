@@ -175,545 +175,57 @@ univers nuget contains ">=1.0.0,<2.0.0" "1.5.0"    # → true (comma-separated)
 
 ## Architecture
 
-go-univers uses a **type-safe, ecosystem-isolated architecture** that prevents accidental cross-ecosystem version mixing:
+go-univers uses a **type-safe, ecosystem-isolated architecture** that prevents accidental cross-ecosystem version mixing. Each ecosystem (npm, pypi, go, etc.) has its own `Version` and `VersionRange` types, eliminating the common bug of accidentally comparing versions from different package managers.
 
-```
-go-univers/
-├── cmd/
-│   └── main.go                 # CLI application
-└── pkg/
-    ├── univers.go              # Universal interfaces (documentation)
-    └── ecosystem/
-        ├── gomod/              # Go ecosystem package
-        │   ├── gomod.go        # Version, VersionRange, Constraint types
-        │   └── gomod_test.go   # Comprehensive tests
-        ├── npm/                # NPM ecosystem package
-        │   ├── npm.go          # Version, VersionRange, Constraint types
-        │   └── npm_test.go     # Comprehensive tests
-        │
-        └── [OTHER ECOSYSTEMS]
-```
+See [DEVELOPMENT.md](./DEVELOPMENT.md) for detailed architecture documentation.
 
-## Ecosystem specific
+## Ecosystem Examples
 
-### Alpine
+Each ecosystem has its own version and range syntax. Here are key patterns:
 
-#### Version Formats
-```go
-e := &alpine.Ecosystem{}
-
-// Basic versions
-e.NewVersion("1.2.3")
-
-// Versions with letters
-e.NewVersion("1.2.3a")         // Letter suffix
-e.NewVersion("2.3.0b")         // Letter suffix
-
-// Versions with suffixes
-e.NewVersion("1.2.3_alpha")    // Alpha release
-e.NewVersion("1.3_alpha2")     // Alpha with number
-e.NewVersion("1.2.3_beta")     // Beta release
-e.NewVersion("1.2.3_pre")      // Pre-release
-e.NewVersion("1.2.3_rc")       // Release candidate
-e.NewVersion("0.1.0_alpha_pre2") // Multiple suffixes
-
-// Versions with build components
-e.NewVersion("1.0.4-r3")       // Build revision
-e.NewVersion("20050718-r2")    // Date-based with build
-
-// Versions with hash components
-e.NewVersion("1.2.3~abc123")   // Commit hash
-e.NewVersion("1.2.3~abc123-r1") // Hash with build
-
-// Complex versions
-e.NewVersion("2.3.0b-r1")      // Letter and build
-e.NewVersion("1.2.3a_beta2-r5") // Letter, suffix, and build
-```
-
-#### Range Operators
-```go
-e := &alpine.Ecosystem{}
-
-// Equality and inequality
-e.NewVersionRange("1.2.3")         // Exact match
-e.NewVersionRange("= 1.2.3")       // Explicit equals
-e.NewVersionRange("!= 1.2.3")      // Not equal
-
-// Comparison operators
-e.NewVersionRange(">= 1.2.3")      // Greater than or equal
-e.NewVersionRange("> 1.2.3")       // Greater than
-e.NewVersionRange("<= 1.2.3")      // Less than or equal
-e.NewVersionRange("< 1.2.3")       // Less than
-
-// Multiple constraints (AND logic)
-e.NewVersionRange(">= 1.0.0 < 2.0.0")      // Range constraint
-e.NewVersionRange(">= 1.2.3 < 2.0.0 != 1.5.0") // With exclusion
-
-// Alpine-specific version formats in ranges
-e.NewVersionRange(">= 1.2.0_alpha")        // Suffix versions
-e.NewVersionRange(">= 1.2.3-r1")           // Build versions
-e.NewVersionRange("> 1.1a")                // Letter versions
-```
-
-### Cargo
-
-#### Version Formats
-```go
-e := &cargo.Ecosystem{}
-
-// Basic SemVer 2.0 versions
-e.NewVersion("1.2.3")
-
-// Versions with prerelease identifiers
-e.NewVersion("1.0.0-alpha")         // Alpha release
-e.NewVersion("1.0.0-beta.1")        // Beta with number
-e.NewVersion("1.0.0-rc.1")          // Release candidate
-e.NewVersion("2.0.0-alpha.beta.1")  // Complex prerelease
-
-// Versions with build metadata
-e.NewVersion("1.0.0+build.1")       // Build metadata
-e.NewVersion("1.0.0-alpha+build")   // Prerelease with build
-
-// Complex versions with all components
-e.NewVersion("1.0.0-beta.1+build.20230101")
-```
-
-#### Range Operators
-```go
-e := &cargo.Ecosystem{}
-
-// Equality and inequality
-e.NewVersionRange("1.2.3")         // Exact match
-e.NewVersionRange("=1.2.3")        // Explicit equals
-e.NewVersionRange("!=1.2.3")       // Not equal
-
-// Comparison operators
-e.NewVersionRange(">=1.2.3")       // Greater than or equal
-e.NewVersionRange(">1.2.3")        // Greater than
-e.NewVersionRange("<=1.2.3")       // Less than or equal
-e.NewVersionRange("<2.0.0")        // Less than
-
-// Caret constraints (compatible within major)
-e.NewVersionRange("^1.2.3")        // >=1.2.3 <2.0.0
-e.NewVersionRange("^0.2.3")        // >=0.2.3 <0.3.0 (special 0.x behavior)
-e.NewVersionRange("^0.0.3")        // =0.0.3 (special 0.0.x behavior)
-
-// Tilde constraints (compatible within minor)
-e.NewVersionRange("~1.2.3")        // >=1.2.3 <1.3.0
-e.NewVersionRange("~1.2")          // >=1.2.0 <1.3.0
-
-// Wildcard matching
-e.NewVersionRange("1.2.*")         // >=1.2.0 <1.3.0
-
-// Multiple constraints (AND logic)
-e.NewVersionRange(">=1.0.0, <2.0.0")      // Range constraint
-e.NewVersionRange(">=1.2.3, <2.0.0, !=1.5.0") // With exclusion
-```
-
-### Composer
-
-#### Version Formats
-```go
-e := &composer.Ecosystem{}
-
-// Basic semantic versions
-e.NewVersion("1.2.3")
-
-// Versions with v prefix
-e.NewVersion("v1.2.3")
-
-// Versions with stability suffixes
-e.NewVersion("1.2.3-alpha")      // Alpha release
-e.NewVersion("1.2.3-alpha.1")    // Alpha with number
-e.NewVersion("1.2.3-beta")       // Beta release
-e.NewVersion("1.2.3-beta.2")     // Beta with number
-e.NewVersion("1.2.3-RC")         // Release candidate
-e.NewVersion("1.2.3-RC.1")       // RC with number
-
-// Short stability forms
-e.NewVersion("1.2.3-a")          // Alpha short form
-e.NewVersion("1.2.3-b")          // Beta short form
-
-// Dev versions
-e.NewVersion("dev-main")          // Dev version with branch
-e.NewVersion("dev-feature-auth")  // Dev version with feature branch
-e.NewVersion("main")              // Branch name only
-
-// Versions with build metadata
-e.NewVersion("1.2.3+build.1")           // Build metadata
-e.NewVersion("1.2.3-alpha.1+build.2")   // Prerelease with build
-
-// Four-component versions (.NET style)
-e.NewVersion("1.2.3.4")          // With revision number
-```
-
-#### Range Operators
-```go
-e := &composer.Ecosystem{}
-
-// Equality and inequality
-e.NewVersionRange("1.2.3")         // Exact match
-e.NewVersionRange("= 1.2.3")       // Explicit equals
-e.NewVersionRange("!= 1.2.3")      // Not equal
-e.NewVersionRange("<> 1.2.3")      // Not equal (alternative syntax)
-
-// Comparison operators
-e.NewVersionRange(">= 1.2.3")      // Greater than or equal
-e.NewVersionRange("> 1.2.3")       // Greater than
-e.NewVersionRange("<= 1.2.3")      // Less than or equal
-e.NewVersionRange("< 2.0.0")       // Less than
-
-// Caret constraints (compatible within major version)
-e.NewVersionRange("^1.2.3")        // >=1.2.3 <2.0.0
-e.NewVersionRange("^0.2.3")        // >=0.2.3 <0.3.0 (special 0.x behavior)
-e.NewVersionRange("^0.0.3")        // =0.0.3 (special 0.0.x behavior)
-
-// Tilde constraints (compatible within minor version)
-e.NewVersionRange("~1.2.3")        // >=1.2.3 <1.3.0
-e.NewVersionRange("~1.2")          // >=1.2.0 <2.0.0
-
-// Wildcard matching
-e.NewVersionRange("1.2.*")         // >=1.2.0 <1.3.0
-e.NewVersionRange("1.*")           // >=1.0.0 <2.0.0
-
-// Hyphen ranges
-e.NewVersionRange("1.2.3 - 2.3.4") // >=1.2.3 <=2.3.4
-
-// Multiple constraints (AND logic)
-e.NewVersionRange(">=1.0.0 <2.0.0")         // Range constraint
-e.NewVersionRange(">=1.0.0, <2.0.0")        // Comma-separated
-e.NewVersionRange(">=1.2.3, <2.0.0, !=1.5.0") // With exclusion
-
-// OR logic
-e.NewVersionRange("1.x || 2.x")    // Multiple constraint groups
-
-// Stability constraints
-e.NewVersionRange("1.2.3@dev")     // Specific version with stability
-e.NewVersionRange("@stable")       // Any stable version
-
-// Wildcard all
-e.NewVersionRange("*")             // Any version
-```
-
-### Maven
-
-#### Version Formats
-```go
-e := &maven.Ecosystem{}
-
-// Basic versions
-e.NewVersion("1.2.3")
-
-// Versions with qualifiers
-e.NewVersion("1.2.3-alpha")     // Alpha release
-e.NewVersion("1.2.3-beta")      // Beta release
-e.NewVersion("1.2.3-milestone") // Milestone release
-e.NewVersion("1.2.3-rc")        // Release candidate
-e.NewVersion("1.2.3-snapshot")  // Snapshot release
-e.NewVersion("1.2.3-sp")        // Service pack
-
-// Normalized qualifiers (equivalent to release)
-e.NewVersion("1.2.3-ga")        // General availability (same as 1.2.3)
-e.NewVersion("1.2.3-final")     // Final release (same as 1.2.3)
-e.NewVersion("1.2.3-release")   // Release (same as 1.2.3)
-
-// Qualifier shortcuts
-e.NewVersion("1.2.3-a")         // Short for alpha
-e.NewVersion("1.2.3-b")         // Short for beta
-e.NewVersion("1.2.3-m")         // Short for milestone
-```
-
-#### Range Operators
-```go
-e := &maven.Ecosystem{}
-
-// Exact version match
-e.NewVersionRange("[1.2.3]")
-
-// Inclusive ranges
-e.NewVersionRange("[1.0.0,2.0.0]")  // >=1.0.0 and <=2.0.0
-
-// Exclusive ranges
-e.NewVersionRange("(1.0.0,2.0.0)")  // >1.0.0 and <2.0.0
-
-// Mixed inclusive/exclusive
-e.NewVersionRange("[1.0.0,2.0.0)")  // >=1.0.0 and <2.0.0
-e.NewVersionRange("(1.0.0,2.0.0]")  // >1.0.0 and <=2.0.0
-
-// Unbounded ranges
-e.NewVersionRange("[1.0.0,)")       // >=1.0.0
-e.NewVersionRange("(,2.0.0]")       // <=2.0.0
-e.NewVersionRange("(,2.0.0)")       // <2.0.0
-
-// Simple version (equivalent to exact match)
-e.NewVersionRange("1.2.3")          // Same as [1.2.3]
-```
-
-### RubyGems
-
-#### Version Formats
-```go
-e := &gem.Ecosystem{}
-
-// Basic versions
-e.NewVersion("1.2.3")
-
-// Versions with prerelease identifiers
-e.NewVersion("1.2.3-alpha")      // Alpha release
-e.NewVersion("1.2.3-beta")       // Beta release  
-e.NewVersion("1.2.3-rc1")        // Release candidate
-e.NewVersion("1.2.3.pre")        // Pre-release format
-e.NewVersion("2.0.0.rc1")        // RC with numbers
-
-// Build metadata
-e.NewVersion("1.0.0+build.1")    // Build metadata
-e.NewVersion("1.0.0-alpha+build") // Prerelease with build
-
-// Complex versions
-e.NewVersion("1.0.0-beta.1")     // Complex prerelease
-e.NewVersion("v1.0.0")           // With v prefix
-```
-
-#### Range Operators
-```go
-e := &gem.Ecosystem{}
-
-// Equality and inequality
-e.NewVersionRange("1.2.3")         // Exact match
-e.NewVersionRange("= 1.2.3")       // Explicit equals
-e.NewVersionRange("!= 1.2.3")      // Not equal
-
-// Comparison operators
-e.NewVersionRange(">= 1.2.3")      // Greater than or equal
-e.NewVersionRange("> 1.2.3")       // Greater than
-e.NewVersionRange("<= 1.2.3")      // Less than or equal
-e.NewVersionRange("< 1.2.3")       // Less than
-
-// Pessimistic constraint (twiddle-wakka)
-e.NewVersionRange("~> 1.2.3")      // >= 1.2.3, < 1.3.0
-e.NewVersionRange("~> 1.2")        // >= 1.2.0, < 2.0.0
-e.NewVersionRange("~> 1")          // >= 1.0.0, < 2.0.0
-
-// Multiple constraints (AND logic)
-e.NewVersionRange("~> 1.2.3, >= 1.2.5")    // Pessimistic with minimum
-e.NewVersionRange(">= 1.0.0, < 2.0.0")     // Range constraint
-e.NewVersionRange("~> 2.0, != 2.1.0")      // Pessimistic with exclusion
-```
-
-### NPM
-
+### NPM (Semantic Versioning)
 ```go
 e := &npm.Ecosystem{}
 
-// Exact versions
-e.NewVersionRange("1.2.3")
+// Parse versions and ranges
+v1, _ := e.NewVersion("1.2.3")
+r1, _ := e.NewVersionRange("^1.2.0")        // Caret: >=1.2.0 <2.0.0
+r2, _ := e.NewVersionRange("~1.2.0")        // Tilde: >=1.2.0 <1.3.0
+r3, _ := e.NewVersionRange(">=1.0.0 <2.0.0") // Multiple constraints
 
-// Comparison operators  
-e.NewVersionRange(">=1.2.3")
-e.NewVersionRange("<2.0.0")
-
-// Caret ranges (compatible within major version)
-e.NewVersionRange("^1.2.3")  // >=1.2.3 <2.0.0
-
-// Tilde ranges (compatible within minor version)  
-e.NewVersionRange("~1.2.3")  // >=1.2.3 <1.3.0
-
-// X-ranges (wildcard matching)
-e.NewVersionRange("1.x")     // >=1.0.0 <2.0.0
-e.NewVersionRange("1.2.x")   // >=1.2.0 <1.3.0
-
-// Hyphen ranges
-e.NewVersionRange("1.2.3 - 2.3.4")  // >=1.2.3 <=2.3.4
-
-// Multiple constraints
-e.NewVersionRange(">=1.0.0 <2.0.0")
-
-// OR logic
-e.NewVersionRange("1.x || 2.x")
+// Check version against range
+fmt.Println(r1.Contains(v1)) // true
 ```
 
-### NuGet
-
-#### Version Formats
-```go
-e := &nuget.Ecosystem{}
-
-// Basic versions
-e.NewVersion("1.2.3")
-
-// Versions with v prefix
-e.NewVersion("v1.2.3")
-
-// Versions with revision (.NET 4th component)
-e.NewVersion("1.2.3.4")
-
-// Versions with prerelease identifiers
-e.NewVersion("1.0.0-alpha")         // Alpha release
-e.NewVersion("1.0.0-beta.1")        // Beta with number
-e.NewVersion("1.0.0-rc.1")          // Release candidate
-e.NewVersion("2.0.0-alpha.beta.1")  // Complex prerelease
-
-// Versions with build metadata
-e.NewVersion("1.0.0+build.1")       // Build metadata
-e.NewVersion("1.0.0-alpha+build")   // Prerelease with build
-
-// Complex versions with revision, prerelease, and build
-e.NewVersion("1.2.3.4-beta.1+build.20230101")
-
-// Major only (defaults to .0.0)
-e.NewVersion("1")
-
-// Major and minor only (defaults to .0)
-e.NewVersion("1.2")
-```
-
-#### Range Operators
-```go
-e := &nuget.Ecosystem{}
-
-// Exact version match
-e.NewVersionRange("[1.2.3]")
-
-// Inclusive ranges
-e.NewVersionRange("[1.0.0,2.0.0]")  // >=1.0.0 and <=2.0.0
-
-// Exclusive ranges
-e.NewVersionRange("(1.0.0,2.0.0)")  // >1.0.0 and <2.0.0
-
-// Mixed inclusive/exclusive
-e.NewVersionRange("[1.0.0,2.0.0)")  // >=1.0.0 and <2.0.0
-e.NewVersionRange("(1.0.0,2.0.0]")  // >1.0.0 and <=2.0.0
-
-// Unbounded ranges
-e.NewVersionRange("[1.0.0,)")       // >=1.0.0
-e.NewVersionRange("(,2.0.0]")       // <=2.0.0
-e.NewVersionRange("(,2.0.0)")       // <2.0.0
-
-// Comma-separated constraints (AND logic)
-e.NewVersionRange(">=1.0.0,<2.0.0") // >=1.0.0 AND <2.0.0
-e.NewVersionRange(">=1.0.0,<2.0.0,!=1.5.0") // With exclusion
-
-// Minimum version (default behavior)
-e.NewVersionRange("1.0.0")          // >=1.0.0
-```
-
-### PyPI
-
-#### Version Formats
+### PyPI (PEP 440)
 ```go
 e := &pypi.Ecosystem{}
 
-// Basic versions
-e.NewVersion("1.2.3")
+// Complex version formats
+v1, _ := e.NewVersion("1.2.3a1")           // Alpha release
+v2, _ := e.NewVersion("2!1.2.3.post1")     // Epoch and post-release
+v3, _ := e.NewVersion("1.2.3+local.1")     // Local version
 
-// Versions with epochs
-e.NewVersion("2!1.2.3")
-
-// Pre-releases
-e.NewVersion("1.2.3a1")    // Alpha
-e.NewVersion("1.2.3b2")    // Beta  
-e.NewVersion("1.2.3rc1")   // Release candidate
-
-// Post-releases
-e.NewVersion("1.2.3.post1")
-
-// Development releases
-e.NewVersion("1.2.3.dev1")
-
-// Local versions
-e.NewVersion("1.2.3+local.1")
-
-// Complex versions
-e.NewVersion("2!1.2.3a1.post1.dev1+local.1")
+// Range operators
+r1, _ := e.NewVersionRange("~=1.2.3")      // Compatible release
+r2, _ := e.NewVersionRange("==1.2.*")      // Wildcard matching
+r3, _ := e.NewVersionRange(">=1.0.0, <2.0.0, !=1.5.0") // Multiple constraints
 ```
 
-#### Range Operators
-```go
-e := &pypi.Ecosystem{}
-
-// Equality and inequality
-e.NewVersionRange("==1.2.3")
-e.NewVersionRange("!=1.2.3")
-
-// Comparison operators
-e.NewVersionRange(">=1.2.3")
-e.NewVersionRange("<2.0.0")
-
-// Compatible release (tilde-equals)
-e.NewVersionRange("~=1.2.3")  // >=1.2.3, <1.3.0
-
-// Wildcard matching
-e.NewVersionRange("==1.2.*")  // >=1.2.0, <1.3.0
-e.NewVersionRange("!=1.3.*")  // <1.3.0 or >=1.4.0
-
-// Arbitrary equality (string matching)
-e.NewVersionRange("===1.2.3")
-
-// Multiple constraints (AND logic)
-e.NewVersionRange(">=1.0.0, <2.0.0, !=1.5.0")
-```
-
-### Go
-
-#### Version Formats
+### Go Modules
 ```go
 e := &gomod.Ecosystem{}
 
-// Basic semantic versions
-e.NewVersion("v1.2.3")
-e.NewVersion("1.2.3")  // Automatically prefixed with 'v'
-
-// Versions with prerelease
-e.NewVersion("v1.2.3-beta")
-e.NewVersion("v1.2.3-alpha.1")
-e.NewVersion("v1.2.3-rc.1")
-
-// Versions with build metadata
-e.NewVersion("v1.2.3+build.1")
-
-// Complex versions with prerelease and build
-e.NewVersion("v1.2.3-beta.1+build.20230101")
-
-// Pseudo-versions (generated by Go tools)
-e.NewVersion("v1.0.0-20170915032832-14c0d48ead0c")        // Pattern 1: no base version
-e.NewVersion("v1.2.3-beta.0.20170915032832-14c0d48ead0c") // Pattern 2: prerelease base
-e.NewVersion("v1.2.4-0.20170915032832-14c0d48ead0c")      // Pattern 3: release base
-```
-
-#### Range Operators
-```go
-e := &gomod.Ecosystem{}
-
-// Equality and inequality
-e.NewVersionRange("v1.2.3")       // Exact match
-e.NewVersionRange("!=v1.2.3")     // Not equal
-
-// Comparison operators
-e.NewVersionRange(">=v1.2.3")     // Greater than or equal
-e.NewVersionRange(">v1.2.3")      // Greater than
-e.NewVersionRange("<=v1.2.3")     // Less than or equal
-e.NewVersionRange("<v2.0.0")      // Less than
-
-// Multiple constraints (AND logic)
-e.NewVersionRange(">=v1.2.3 <v2.0.0")           // Range constraint
-e.NewVersionRange(">=v1.0.0 <v2.0.0 !=v1.5.0")  // With exclusion
-```
-
-#### Pseudo-Version Support
-
-```go
-e := &gomod.Ecosystem{}
-
-// Pseudo-versions are automatically recognized and parsed
+// Regular and pseudo-versions
+v1, _ := e.NewVersion("v1.2.3")
+v2, _ := e.NewVersion("v1.2.3-beta")
 pseudo, _ := e.NewVersion("v1.0.0-20170915032832-14c0d48ead0c")
 
-// Pseudo-versions compare correctly with regular versions
-regular, _ := e.NewVersion("v1.0.0")
-fmt.Println(pseudo.Compare(regular)) // -1 (pseudo-versions are pre-release)
-
-// Pseudo-versions can be used in ranges
-r, _ := e.NewVersionRange(">=v1.0.0-20170915032832-14c0d48ead0c")
+// Range constraints
+r1, _ := e.NewVersionRange(">=v1.2.3 <v2.0.0")
 ```
+
+For complete syntax documentation of all ecosystems, see the [Supported Ecosystems](#supported-ecosystems) table above.
 
 ## Related Projects
 
