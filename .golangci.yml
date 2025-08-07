@@ -20,7 +20,7 @@ linters:
     - godot            # Comments end with period (too strict)
     - godox            # TODO comments (we want them)
     - ireturn          # Interface returns (sometimes valid pattern)
-    - lll              # Line length (gofmt handles formatting)
+    # lll - Line length linting enabled for source files, disabled for test files via exclude-rules
     - maintidx         # Maintainability index (too strict)
     - mnd              # Magic numbers (not every number is magic)
     - nestif           # Nested if statements (sometimes needed)

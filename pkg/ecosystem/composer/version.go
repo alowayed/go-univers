@@ -3,6 +3,7 @@ package composer
 import (
 	"fmt"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 )
@@ -192,23 +193,16 @@ func isBranchName(version string) bool {
 		}
 	}
 
-	// Reject common invalid version patterns
-	invalidPatterns := []string{"invalid", "test", "example"}
-	for _, invalid := range invalidPatterns {
-		if version == invalid || strings.HasPrefix(version, invalid+"-") {
-			return false
-		}
-	}
+	// Allow most strings that look like branch names
+	// Let the validation logic handle truly invalid cases
 
 	// Common branch name patterns used in Git repositories
 	commonBranches := []string{
 		"main", "master", "develop", "development", "trunk",
 		"stable", "staging", "production", "prod",
 	}
-	for _, branch := range commonBranches {
-		if version == branch {
-			return true
-		}
+	if slices.Contains(commonBranches, version) {
+		return true
 	}
 
 	// Accept conventional Git Flow and GitHub Flow patterns
@@ -240,47 +234,6 @@ func (v *Version) String() string {
 	return v.original
 }
 
-// normalize returns the normalized form of the version for comparison
-func (v *Version) normalize() string {
-	if v.isDev {
-		if v.devBranch != "" {
-			return fmt.Sprintf("dev-%s", v.devBranch)
-		}
-		return "dev"
-	}
-
-	result := fmt.Sprintf("%d.%d.%d", v.major, v.minor, v.patch)
-	if v.extra > 0 {
-		result += fmt.Sprintf(".%d", v.extra)
-	}
-
-	// Add stability suffix
-	if v.stability != stabilityStable {
-		var stabilityStr string
-		switch v.stability {
-		case stabilityAlpha:
-			stabilityStr = "alpha"
-		case stabilityBeta:
-			stabilityStr = "beta"
-		case stabilityRC:
-			stabilityStr = "RC"
-		case stabilityDev:
-			stabilityStr = "dev"
-		}
-
-		if v.stabilityNum > 0 {
-			result += fmt.Sprintf("-%s.%d", stabilityStr, v.stabilityNum)
-		} else {
-			result += fmt.Sprintf("-%s", stabilityStr)
-		}
-	}
-
-	if v.build != "" {
-		result += "+" + v.build
-	}
-
-	return result
-}
 
 // Compare compares this version with another Composer version following Composer rules
 func (v *Version) Compare(other *Version) int {
