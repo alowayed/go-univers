@@ -54,7 +54,7 @@
    golangci-lint run
    
    # Check documentation links
-   markdown-link-check README.md CONTRIBUTING.md DEVELOPMENT.md CLAUDE.md cmd/README.md --config mlc_config.json
+   markdown-link-check . --config mlc_config.json
    
    # Ensure dependencies are clean
    go mod tidy
