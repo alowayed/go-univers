@@ -51,9 +51,9 @@ jobs:
         fi
 
     - name: Lint
-      uses: golangci/golangci-lint-action@v4
+      uses: golangci/golangci-lint-action@v8
       with:
-        version: v2.2
+        version: v2.1
         args: --timeout=5m
 
   # Build and test on multiple platforms
