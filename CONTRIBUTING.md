@@ -14,7 +14,13 @@
    curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin
    ```
 
-3. **Configure git**
+3. **Install markdown-link-check** (for documentation link validation)
+   ```bash
+   # Install via npm (requires Node.js)
+   npm install -g markdown-link-check
+   ```
+
+4. **Configure git**
    ```bash
    git config --global user.name "John Doe"
    git config --global user.email "john.doe@example.com"
@@ -47,6 +53,9 @@
    # Run linters
    golangci-lint run
    
+   # Check documentation links
+   markdown-link-check README.md CONTRIBUTING.md DEVELOPMENT.md CLAUDE.md cmd/README.md --config mlc_config.json
+   
    # Ensure dependencies are clean
    go mod tidy
    ```
@@ -62,7 +71,7 @@
    # Then create PR on GitHub
    ```
 
-The CI pipeline will automatically test your changes on multiple platforms and verify code quality.
+The CI pipeline will automatically test your changes on multiple platforms, verify code quality, and validate documentation links.
 
 ## Sign your work
 
