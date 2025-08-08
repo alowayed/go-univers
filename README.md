@@ -20,6 +20,7 @@ A Go library to:
 | **NPM** | `pkg/ecosystem/npm` | Semantic Versioning | `^1.2.3`, `~1.2.3`, `1.x`, `>=1.0.0 <2.0.0` |
 | **NuGet** | `pkg/ecosystem/nuget` | SemVer 2.0 + .NET Extensions | `[1.0.0]`, `[1.0.0,2.0.0]`, `>=1.0.0,<2.0.0` |
 | **PyPI** | `pkg/ecosystem/pypi` | PEP 440 | `~=1.2.3`, `>=1.0.0,<2.0.0`, `==1.2.*` |
+| **RPM** | `pkg/ecosystem/rpm` | RPM Package Versioning | `>=1.2.3`, `<2.0.0`, `!=1.5.0` |
 | **RubyGems** | `pkg/ecosystem/gem` | Ruby Gem Versioning | `~> 1.2.3`, `>= 1.0.0`, `!= 1.5.0` |
 
 ## Installation
@@ -115,6 +116,11 @@ univers composer compare "2.0.0" "1.9.9"         # → 1 (first > second)
 # Compare NuGet versions with SemVer 2.0 and .NET extensions
 univers nuget compare "1.0.0-alpha" "1.0.0"  # → -1 (prerelease < release)
 univers nuget compare "1.2.3.4" "1.2.3"      # → 1 (revision > no revision)
+
+# Compare RPM versions with epoch, version, and release handling
+univers rpm compare "1:1.2.3-4" "2.0.0"      # → 1 (epoch 1 > epoch 0)
+univers rpm compare "1.0~beta" "1.0"         # → -1 (tilde sorts before release)
+univers rpm compare "2.0.0-1.el8" "2.0.0-2.el8" # → -1 (release 1 < release 2)
 ```
 
 #### Sort Versions
@@ -146,6 +152,10 @@ univers composer sort "1.2.3" "1.2.3-beta" "dev-main" "1.2.3-alpha"
 # Sort NuGet versions with SemVer 2.0 prerelease and revision handling
 univers nuget sort "1.0.0" "1.0.0-beta" "1.0.0.1" "1.0.0-alpha"
 # → "1.0.0-alpha" "1.0.0-beta" "1.0.0" "1.0.0.1"
+
+# Sort RPM versions with epoch, tilde, and release handling
+univers rpm sort "1:1.0" "1.0~beta" "1.0" "1.0-1" "2.0.0-1.el8"
+# → "1.0~beta" "1.0" "1.0-1" "2.0.0-1.el8" "1:1.0"
 ```
 
 #### Check Range Satisfaction
@@ -184,6 +194,11 @@ univers composer contains "1.2.*" "1.2.9"    # → true (wildcard match)
 univers nuget contains "[1.0.0,2.0.0]" "1.5.0"     # → true (inclusive range)
 univers nuget contains "[1.0.0,)" "2.0.0"          # → true (unbounded range)
 univers nuget contains ">=1.0.0,<2.0.0" "1.5.0"    # → true (comma-separated)
+
+# RPM range checking with epoch and release support
+univers rpm contains ">=1:1.0.0" "1:1.5.0-1"      # → true (epoch and version match)
+univers rpm contains ">=1.0.0 <2.0.0" "1.5.0-1.el8" # → true (within range)
+univers rpm contains ">1.0~beta" "1.0"            # → true (release > tilde)
 ```
 
 ## Architecture
@@ -251,6 +266,21 @@ pseudo, _ := e.NewVersion("v1.0.0-20170915032832-14c0d48ead0c")
 
 // Range constraints
 r1, _ := e.NewVersionRange(">=v1.2.3 <v2.0.0")
+```
+
+### RPM Package Versioning
+```go
+e := &rpm.Ecosystem{}
+
+// Epoch, version, and release components
+v1, _ := e.NewVersion("1:2.3.4-5.el8")       // Epoch 1, version 2.3.4, release 5.el8
+v2, _ := e.NewVersion("1.0~beta1")            // Tilde for pre-release
+v3, _ := e.NewVersion("2.4.37-1.fc34.x86_64") // Fedora release with architecture
+
+// Range constraints
+r1, _ := e.NewVersionRange(">=1:1.0.0")      // Epoch-aware ranges
+r2, _ := e.NewVersionRange(">=1.0.0 <2.0.0") // Standard comparison operators
+r3, _ := e.NewVersionRange(">=1.0.0, !=1.5.0") // Multiple constraints
 ```
 
 For complete syntax documentation of all ecosystems, see the [Supported Ecosystems](#supported-ecosystems) table above.
