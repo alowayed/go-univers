@@ -208,16 +208,6 @@ func compareRPMNonDigits(a, b string) int {
 	}
 
 	// Both have tilde or both don't have tilde - compare lexicographically
-	if len(a) == 0 && len(b) == 0 {
-		return 0
-	}
-	if len(a) == 0 {
-		return -1
-	}
-	if len(b) == 0 {
-		return 1
-	}
-
 	return strings.Compare(a, b)
 }
 
