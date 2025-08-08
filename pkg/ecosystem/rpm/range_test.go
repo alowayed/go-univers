@@ -308,6 +308,26 @@ func TestVersionRange_Contains(t *testing.T) {
 			want:     false,
 		},
 
+		// Mixed constraint format (space and comma)
+		{
+			name:     "mixed constraints pass",
+			rangeStr: ">=1.0.0 <2.0.0, !=1.5.0",
+			version:  "1.2.0",
+			want:     true,
+		},
+		{
+			name:     "mixed constraints fail exclusion",
+			rangeStr: ">=1.0.0 <2.0.0, !=1.5.0",
+			version:  "1.5.0",
+			want:     false,
+		},
+		{
+			name:     "mixed constraints fail range",
+			rangeStr: ">=1.0.0 <2.0.0, !=1.5.0",
+			version:  "2.5.0",
+			want:     false,
+		},
+
 		// Complex constraints
 		{
 			name:     "multiple constraints pass",
@@ -486,6 +506,12 @@ func TestParseRPMConstraints(t *testing.T) {
 		{
 			name:     "mixed separators with spaces",
 			rangeStr: ">=1.0.0, <2.0.0, !=1.5.0",
+			wantOps:  []string{">=", "<", "!="},
+			wantVers: []string{"1.0.0", "2.0.0", "1.5.0"},
+		},
+		{
+			name:     "complex mixed constraints",
+			rangeStr: ">=1.0.0 <2.0.0, !=1.5.0",
 			wantOps:  []string{">=", "<", "!="},
 			wantVers: []string{"1.0.0", "2.0.0", "1.5.0"},
 		},

@@ -38,14 +38,9 @@ func (e *Ecosystem) NewVersionRange(rangeStr string) (*VersionRange, error) {
 
 // parseRPMConstraints parses RPM constraint syntax
 func parseRPMConstraints(e *Ecosystem, rangeStr string) ([]*constraint, error) {
-	// Handle multiple constraints separated by spaces or commas (AND logic)
-	// Split by comma first, then by spaces
-	var parts []string
-	if strings.Contains(rangeStr, ",") {
-		parts = strings.Split(rangeStr, ",")
-	} else {
-		parts = strings.Fields(rangeStr)
-	}
+	// Handle multiple constraints separated by spaces, commas, or both (AND logic)
+	// Normalize by replacing commas with spaces, then split by whitespace
+	parts := strings.Fields(strings.ReplaceAll(rangeStr, ",", " "))
 
 	var constraints []*constraint
 
