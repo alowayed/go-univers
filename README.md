@@ -155,7 +155,7 @@ univers nuget sort "1.0.0" "1.0.0-beta" "1.0.0.1" "1.0.0-alpha"
 
 # Sort RPM versions with epoch, tilde, and release handling
 univers rpm sort "1:1.0" "1.0~beta" "1.0" "1.0-1" "2.0.0-1.el8"
-# → "1.0~beta" "1.0" "1.0-1" "1:1.0" "2.0.0-1.el8"
+# → "1.0~beta" "1.0" "1.0-1" "2.0.0-1.el8" "1:1.0"
 ```
 
 #### Check Range Satisfaction

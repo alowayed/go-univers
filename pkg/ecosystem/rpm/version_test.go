@@ -112,6 +112,16 @@ func TestEcosystem_NewVersion(t *testing.T) {
 				original: "1.2.3-el8.x86_64",
 			},
 		},
+		{
+			name:    "release with hyphens",
+			version: "1.2.3-1.el8-1",
+			want: &Version{
+				epoch:    0,
+				version:  "1.2.3-1.el8",
+				release:  "1",
+				original: "1.2.3-1.el8-1",
+			},
+		},
 
 		// Error cases
 		{

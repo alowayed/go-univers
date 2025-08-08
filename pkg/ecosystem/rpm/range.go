@@ -14,7 +14,7 @@ type VersionRange struct {
 // constraint represents a single RPM version constraint
 type constraint struct {
 	operator string
-	version  string
+	version  *Version
 }
 
 // NewVersionRange creates a new RPM version range from a range string
@@ -25,7 +25,7 @@ func (e *Ecosystem) NewVersionRange(rangeStr string) (*VersionRange, error) {
 		return nil, fmt.Errorf("empty range string")
 	}
 
-	constraints, err := parseRPMConstraints(rangeStr)
+	constraints, err := parseRPMConstraints(e, rangeStr)
 	if err != nil {
 		return nil, err
 	}
@@ -37,7 +37,7 @@ func (e *Ecosystem) NewVersionRange(rangeStr string) (*VersionRange, error) {
 }
 
 // parseRPMConstraints parses RPM constraint syntax
-func parseRPMConstraints(rangeStr string) ([]*constraint, error) {
+func parseRPMConstraints(e *Ecosystem, rangeStr string) ([]*constraint, error) {
 	// Handle multiple constraints separated by spaces or commas (AND logic)
 	// Split by comma first, then by spaces
 	var parts []string
@@ -55,7 +55,7 @@ func parseRPMConstraints(rangeStr string) ([]*constraint, error) {
 			continue
 		}
 
-		constraint, err := parseRPMConstraint(part)
+		constraint, err := parseRPMConstraint(e, part)
 		if err != nil {
 			return nil, err
 		}
@@ -70,21 +70,21 @@ func parseRPMConstraints(rangeStr string) ([]*constraint, error) {
 }
 
 // parseRPMConstraint parses a single constraint
-func parseRPMConstraint(constraintStr string) (*constraint, error) {
+func parseRPMConstraint(e *Ecosystem, constraintStr string) (*constraint, error) {
 	constraintStr = strings.TrimSpace(constraintStr)
 
 	// RPM supports standard comparison operators
 	operators := []string{">=", "<=", "!=", ">", "<", "="}
 	for _, op := range operators {
 		if strings.HasPrefix(constraintStr, op) {
-			version := strings.TrimSpace(constraintStr[len(op):])
-			if version == "" {
+			versionStr := strings.TrimSpace(constraintStr[len(op):])
+			if versionStr == "" {
 				return nil, fmt.Errorf("constraint %s requires version", op)
 			}
 
-			// Validate the version string
-			ecosystem := &Ecosystem{}
-			if _, err := ecosystem.NewVersion(version); err != nil {
+			// Parse the version string once and store it
+			version, err := e.NewVersion(versionStr)
+			if err != nil {
 				return nil, fmt.Errorf("invalid version in constraint: %v", err)
 			}
 
@@ -92,13 +92,13 @@ func parseRPMConstraint(constraintStr string) (*constraint, error) {
 		}
 	}
 
-	// Default to exact match - validate this version too
-	ecosystem := &Ecosystem{}
-	if _, err := ecosystem.NewVersion(constraintStr); err != nil {
+	// Default to exact match - parse the version
+	version, err := e.NewVersion(constraintStr)
+	if err != nil {
 		return nil, fmt.Errorf("invalid version in constraint: %v", err)
 	}
 
-	return &constraint{operator: "=", version: constraintStr}, nil
+	return &constraint{operator: "=", version: version}, nil
 }
 
 // String returns the string representation of the version range
@@ -108,11 +108,9 @@ func (vr *VersionRange) String() string {
 
 // Contains checks if a version satisfies this range
 func (vr *VersionRange) Contains(version *Version) bool {
-	ecosystem := &Ecosystem{}
-
 	// All constraints must be satisfied (AND logic)
 	for _, c := range vr.constraints {
-		if !satisfiesRPMConstraint(version, c, ecosystem) {
+		if !satisfiesRPMConstraint(version, c) {
 			return false
 		}
 	}
@@ -121,13 +119,8 @@ func (vr *VersionRange) Contains(version *Version) bool {
 }
 
 // satisfiesRPMConstraint checks if a version satisfies a single constraint
-func satisfiesRPMConstraint(version *Version, c *constraint, ecosystem *Ecosystem) bool {
-	constraintVersion, err := ecosystem.NewVersion(c.version)
-	if err != nil {
-		return false
-	}
-
-	cmp := version.Compare(constraintVersion)
+func satisfiesRPMConstraint(version *Version, c *constraint) bool {
+	cmp := version.Compare(c.version)
 
 	switch c.operator {
 	case "=":

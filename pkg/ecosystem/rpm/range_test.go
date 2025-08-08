@@ -503,7 +503,8 @@ func TestParseRPMConstraints(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			constraints, err := parseRPMConstraints(tt.rangeStr)
+			ecosystem := &Ecosystem{}
+			constraints, err := parseRPMConstraints(ecosystem, tt.rangeStr)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("parseRPMConstraints() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -521,8 +522,8 @@ func TestParseRPMConstraints(t *testing.T) {
 				if c.operator != tt.wantOps[i] {
 					t.Errorf("parseRPMConstraints() constraint %d operator = %v, want %v", i, c.operator, tt.wantOps[i])
 				}
-				if c.version != tt.wantVers[i] {
-					t.Errorf("parseRPMConstraints() constraint %d version = %v, want %v", i, c.version, tt.wantVers[i])
+				if c.version.String() != tt.wantVers[i] {
+					t.Errorf("parseRPMConstraints() constraint %d version = %v, want %v", i, c.version.String(), tt.wantVers[i])
 				}
 			}
 		})

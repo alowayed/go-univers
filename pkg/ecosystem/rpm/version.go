@@ -10,7 +10,7 @@ import (
 
 // versionPattern matches RPM version strings
 // Format: [epoch:]version[-release]
-var versionPattern = regexp.MustCompile(`^(?:(\d+):)?(.+?)(?:-([^-]+))?$`)
+var versionPattern = regexp.MustCompile(`^(?:(\d+):)?(.+)$`)
 
 // Version represents an RPM package version
 type Version struct {
@@ -29,15 +29,24 @@ func (e *Ecosystem) NewVersion(version string) (*Version, error) {
 		return nil, fmt.Errorf("empty version string")
 	}
 
-	// Parse using regex
+	// Parse using regex to extract epoch
 	matches := versionPattern.FindStringSubmatch(version)
 	if matches == nil {
 		return nil, fmt.Errorf("invalid RPM version format: %s", original)
 	}
 
 	epochStr := matches[1]
-	versionPart := matches[2]
-	releasePart := matches[3]
+	versionReleasePart := matches[2]
+
+	// Split version and release on the last hyphen (if any)
+	var versionPart, releasePart string
+	if lastHyphen := strings.LastIndex(versionReleasePart, "-"); lastHyphen != -1 {
+		versionPart = versionReleasePart[:lastHyphen]
+		releasePart = versionReleasePart[lastHyphen+1:]
+	} else {
+		versionPart = versionReleasePart
+		releasePart = ""
+	}
 
 	// Parse epoch (default to 0)
 	epoch := 0
