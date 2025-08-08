@@ -14,7 +14,7 @@ type VersionRange struct {
 // constraint represents a single Debian version constraint
 type constraint struct {
 	operator string
-	version  string
+	version  *Version
 }
 
 // NewVersionRange creates a new Debian version range from a range string
@@ -25,7 +25,7 @@ func (e *Ecosystem) NewVersionRange(rangeStr string) (*VersionRange, error) {
 		return nil, fmt.Errorf("empty range string")
 	}
 
-	constraints, err := parseConstraints(rangeStr)
+	constraints, err := parseConstraints(rangeStr, e)
 	if err != nil {
 		return nil, err
 	}
@@ -37,7 +37,7 @@ func (e *Ecosystem) NewVersionRange(rangeStr string) (*VersionRange, error) {
 }
 
 // parseConstraints parses Debian constraint syntax
-func parseConstraints(rangeStr string) ([]*constraint, error) {
+func parseConstraints(rangeStr string, ecosystem *Ecosystem) ([]*constraint, error) {
 	// Handle multiple constraints separated by commas (AND logic)
 	parts := strings.Split(rangeStr, ",")
 	var constraints []*constraint
@@ -48,7 +48,7 @@ func parseConstraints(rangeStr string) ([]*constraint, error) {
 			continue
 		}
 
-		constraint, err := parseConstraint(part)
+		constraint, err := parseConstraint(part, ecosystem)
 		if err != nil {
 			return nil, err
 		}
@@ -63,7 +63,7 @@ func parseConstraints(rangeStr string) ([]*constraint, error) {
 }
 
 // parseConstraint parses a single constraint
-func parseConstraint(constraintStr string) (*constraint, error) {
+func parseConstraint(constraintStr string, ecosystem *Ecosystem) (*constraint, error) {
 	constraintStr = strings.TrimSpace(constraintStr)
 
 	// Debian supports standard comparison operators
@@ -71,16 +71,27 @@ func parseConstraint(constraintStr string) (*constraint, error) {
 	operators := []string{">=", "<=", ">>", "<<", "!=", ">", "<", "="}
 	for _, op := range operators {
 		if strings.HasPrefix(constraintStr, op) {
-			version := strings.TrimSpace(constraintStr[len(op):])
-			if version == "" {
+			versionStr := strings.TrimSpace(constraintStr[len(op):])
+			if versionStr == "" {
 				return nil, fmt.Errorf("constraint %s requires version", op)
 			}
+
+			version, err := ecosystem.NewVersion(versionStr)
+			if err != nil {
+				return nil, fmt.Errorf("invalid version in constraint: %w", err)
+			}
+
 			return &constraint{operator: op, version: version}, nil
 		}
 	}
 
 	// Default to exact match
-	return &constraint{operator: "=", version: constraintStr}, nil
+	version, err := ecosystem.NewVersion(constraintStr)
+	if err != nil {
+		return nil, fmt.Errorf("invalid version in constraint: %w", err)
+	}
+
+	return &constraint{operator: "=", version: version}, nil
 }
 
 // String returns the string representation of the version range
@@ -90,11 +101,9 @@ func (vr *VersionRange) String() string {
 
 // Contains checks if a version satisfies this range
 func (vr *VersionRange) Contains(version *Version) bool {
-	ecosystem := &Ecosystem{}
-
 	// All constraints must be satisfied (AND logic)
 	for _, c := range vr.constraints {
-		if !satisfiesConstraint(version, c, ecosystem) {
+		if !satisfiesConstraint(version, c) {
 			return false
 		}
 	}
@@ -103,13 +112,8 @@ func (vr *VersionRange) Contains(version *Version) bool {
 }
 
 // satisfiesConstraint checks if a version satisfies a single constraint
-func satisfiesConstraint(version *Version, c *constraint, ecosystem *Ecosystem) bool {
-	constraintVersion, err := ecosystem.NewVersion(c.version)
-	if err != nil {
-		return false
-	}
-
-	cmp := version.Compare(constraintVersion)
+func satisfiesConstraint(version *Version, c *constraint) bool {
+	cmp := version.Compare(c.version)
 
 	switch c.operator {
 	case "=":

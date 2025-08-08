@@ -139,15 +139,17 @@ func compareDebianVersionString(a, b string) int {
 
 	for i < len(a) || j < len(b) {
 		// Extract non-digit prefix
-		var aNonDigit, bNonDigit string
+		iStart := i
 		for i < len(a) && !unicode.IsDigit(rune(a[i])) {
-			aNonDigit += string(a[i])
 			i++
 		}
+		aNonDigit := a[iStart:i]
+
+		jStart := j
 		for j < len(b) && !unicode.IsDigit(rune(b[j])) {
-			bNonDigit += string(b[j])
 			j++
 		}
+		bNonDigit := b[jStart:j]
 
 		// Compare non-digit parts lexicographically with special tilde handling
 		nonDigitCmp := compareDebianNonDigits(aNonDigit, bNonDigit)
@@ -156,15 +158,17 @@ func compareDebianVersionString(a, b string) int {
 		}
 
 		// Extract digit prefix
-		var aDigit, bDigit string
+		iStart = i
 		for i < len(a) && unicode.IsDigit(rune(a[i])) {
-			aDigit += string(a[i])
 			i++
 		}
+		aDigit := a[iStart:i]
+
+		jStart = j
 		for j < len(b) && unicode.IsDigit(rune(b[j])) {
-			bDigit += string(b[j])
 			j++
 		}
+		bDigit := b[jStart:j]
 
 		// Compare digit parts numerically
 		digitCmp := compareDebianDigits(aDigit, bDigit)
@@ -237,23 +241,28 @@ func compareDebianDigits(a, b string) int {
 	}
 
 	// Convert to integers for comparison
-	aNum, err := strconv.Atoi(a)
-	if err != nil {
-		// Fallback to string comparison if parsing fails
-		return strings.Compare(a, b)
+	aNum, aErr := strconv.ParseUint(a, 10, 64)
+	bNum, bErr := strconv.ParseUint(b, 10, 64)
+
+	if aErr == nil && bErr == nil {
+		if aNum < bNum {
+			return -1
+		}
+		if aNum > bNum {
+			return 1
+		}
+		return 0
 	}
 
-	bNum, err := strconv.Atoi(b)
-	if err != nil {
-		// Fallback to string comparison if parsing fails
-		return strings.Compare(a, b)
-	}
-
-	if aNum < bNum {
+	// Fallback for very large numbers that don't fit in uint64.
+	// Compare by length first.
+	if len(a) < len(b) {
 		return -1
 	}
-	if aNum > bNum {
+	if len(a) > len(b) {
 		return 1
 	}
-	return 0
+
+	// If lengths are equal, a string comparison is correct.
+	return strings.Compare(a, b)
 }
