@@ -14,6 +14,7 @@ import (
 	"github.com/alowayed/go-univers/pkg/ecosystem/npm"
 	"github.com/alowayed/go-univers/pkg/ecosystem/nuget"
 	"github.com/alowayed/go-univers/pkg/ecosystem/pypi"
+	"github.com/alowayed/go-univers/pkg/ecosystem/rpm"
 	"github.com/alowayed/go-univers/pkg/univers"
 )
 
@@ -60,6 +61,9 @@ func run(args []string) (string, int) {
 		},
 		pypi.Name: func(args []string) (string, int) {
 			return runEcosystem(&pypi.Ecosystem{}, args)
+		},
+		rpm.Name: func(args []string) (string, int) {
+			return runEcosystem(&rpm.Ecosystem{}, args)
 		},
 	}
 

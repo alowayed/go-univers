@@ -11,6 +11,7 @@ import (
 	"github.com/alowayed/go-univers/pkg/ecosystem/npm"
 	"github.com/alowayed/go-univers/pkg/ecosystem/nuget"
 	"github.com/alowayed/go-univers/pkg/ecosystem/pypi"
+	"github.com/alowayed/go-univers/pkg/ecosystem/rpm"
 	"github.com/alowayed/go-univers/pkg/univers"
 )
 
@@ -67,4 +68,9 @@ var (
 	_ univers.Version[*pypi.Version]                       = &pypi.Version{}
 	_ univers.VersionRange[*pypi.Version]                  = &pypi.VersionRange{}
 	_ univers.Ecosystem[*pypi.Version, *pypi.VersionRange] = &pypi.Ecosystem{}
+
+	// rpm
+	_ univers.Version[*rpm.Version]                      = &rpm.Version{}
+	_ univers.VersionRange[*rpm.Version]                 = &rpm.VersionRange{}
+	_ univers.Ecosystem[*rpm.Version, *rpm.VersionRange] = &rpm.Ecosystem{}
 )
