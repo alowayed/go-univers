@@ -2,6 +2,7 @@ package cran
 
 import (
 	"fmt"
+	"math"
 	"math/big"
 	"regexp"
 	"strings"
@@ -65,7 +66,7 @@ func (e *Ecosystem) NewVersion(version string) (*Version, error) {
 		}
 
 		// Convert to int for easier comparison
-		if num > int64(^uint(0)>>1) { // Check if fits in int
+		if num > int64(math.MaxInt) { // Check if fits in int
 			return nil, fmt.Errorf("invalid CRAN version: %s (component too large: %s)", original, part)
 		}
 
