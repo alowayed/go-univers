@@ -14,6 +14,7 @@ A Go library to:
 | **Alpine** | `pkg/ecosystem/alpine` | Alpine Package Versioning | `>=1.2.3`, `<2.0.0`, `!=1.5.0` |
 | **Cargo** | `pkg/ecosystem/cargo` | SemVer 2.0 | `^1.2.3`, `~1.2.3`, `>=1.0.0`, `1.2.*` |
 | **Composer** | `pkg/ecosystem/composer` | Composer Versioning | `^1.2.3`, `~1.2.3`, `1.2.*`, `>=1.0.0,<2.0.0` |
+| **CRAN** | `pkg/ecosystem/cran` | R Package Versioning | `>=1.2.3`, `<2.0.0`, `!=1.5.0` |
 | **Debian** | `pkg/ecosystem/debian` | Debian Package Versioning | `>=1.2.3`, `<2.0.0`, `!=1.5.0`, `>>1.0`, `<<2.0` |
 | **Go** | `pkg/ecosystem/gomod` | Go Module Versioning | `>=v1.2.3`, `<v2.0.0`, `!=v1.3.0` |
 | **Maven** | `pkg/ecosystem/maven` | Maven Versioning | `[1.0.0]`, `[1.0.0,2.0.0]`, `(1.0.0,)` |
@@ -113,6 +114,11 @@ univers cargo compare "1.2.3" "1.2.4"        # → -1 (first < second)
 univers composer compare "1.2.3-alpha" "1.2.3"  # → -1 (prerelease < stable)
 univers composer compare "2.0.0" "1.9.9"         # → 1 (first > second)
 
+# Compare CRAN versions with numeric component handling
+univers cran compare "1.2.3" "1.2.4"     # → -1 (first < second)
+univers cran compare "1.2" "1.2.0"       # → -1 (fewer components < more components)
+univers cran compare "1-2-3" "1.2.3"     # → 0 (dashes normalized to periods)
+
 # Compare NuGet versions with SemVer 2.0 and .NET extensions
 univers nuget compare "1.0.0-alpha" "1.0.0"  # → -1 (prerelease < release)
 univers nuget compare "1.2.3.4" "1.2.3"      # → 1 (revision > no revision)
@@ -128,6 +134,10 @@ univers rpm compare "2.0.0-1.el8" "2.0.0-2.el8" # → -1 (release 1 < release 2)
 # Sort Alpine versions with proper suffix ordering
 univers alpine sort "2.0.0" "1.0.0_alpha" "1.0.0"
 # → "1.0.0_alpha" "1.0.0" "2.0.0"
+
+# Sort CRAN versions with component length handling
+univers cran sort "1.2.3" "1.2" "1.2.4" "1.10"
+# → "1.2" "1.2.3" "1.2.4" "1.10"
 
 # Sort Debian versions with epoch, tilde, and revision handling
 univers debian sort "1:1.0" "1.0~beta" "1.0" "1.0-1"
@@ -190,6 +200,11 @@ univers composer contains "^1.2.0" "1.3.0"   # → true (compatible within major
 univers composer contains "~1.2.0" "1.2.5"   # → true (compatible within minor)
 univers composer contains "1.2.*" "1.2.9"    # → true (wildcard match)
 
+# CRAN range checking with standard operators
+univers cran contains ">=1.2.0" "1.2.5"      # → true
+univers cran contains ">=1.2.0, <2.0.0" "1.5.0"  # → true (multiple constraints)
+univers cran contains "!=1.2.3" "1.2.4"      # → true (not equal constraint)
+
 # NuGet range checking with bracket notation and comma-separated constraints
 univers nuget contains "[1.0.0,2.0.0]" "1.5.0"     # → true (inclusive range)
 univers nuget contains "[1.0.0,)" "2.0.0"          # → true (unbounded range)
@@ -238,6 +253,24 @@ v3, _ := e.NewVersion("1.2.3+local.1")     // Local version
 r1, _ := e.NewVersionRange("~=1.2.3")      // Compatible release
 r2, _ := e.NewVersionRange("==1.2.*")      // Wildcard matching
 r3, _ := e.NewVersionRange(">=1.0.0, <2.0.0, !=1.5.0") // Multiple constraints
+```
+
+### CRAN (R Package Versioning)
+```go
+e := &cran.Ecosystem{}
+
+// Numeric component versions
+v1, _ := e.NewVersion("1.2")            // Two components
+v2, _ := e.NewVersion("1.2.3")          // Three components
+v3, _ := e.NewVersion("1-2-3")          // Dashes normalized to periods
+
+// Range operators
+r1, _ := e.NewVersionRange(">=1.2.0")     // Standard comparison
+r2, _ := e.NewVersionRange(">=1.0, <2.0") // Multiple constraints
+r3, _ := e.NewVersionRange("!=1.5.0")     // Not equal constraint
+
+// Check version against range
+fmt.Println(r1.Contains(v2)) // true
 ```
 
 ### Debian Package Versioning

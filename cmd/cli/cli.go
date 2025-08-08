@@ -7,6 +7,7 @@ import (
 	"github.com/alowayed/go-univers/pkg/ecosystem/alpine"
 	"github.com/alowayed/go-univers/pkg/ecosystem/cargo"
 	"github.com/alowayed/go-univers/pkg/ecosystem/composer"
+	"github.com/alowayed/go-univers/pkg/ecosystem/cran"
 	"github.com/alowayed/go-univers/pkg/ecosystem/debian"
 	"github.com/alowayed/go-univers/pkg/ecosystem/gem"
 	"github.com/alowayed/go-univers/pkg/ecosystem/gomod"
@@ -40,6 +41,9 @@ func run(args []string) (string, int) {
 		},
 		composer.Name: func(args []string) (string, int) {
 			return runEcosystem(&composer.Ecosystem{}, args)
+		},
+		cran.Name: func(args []string) (string, int) {
+			return runEcosystem(&cran.Ecosystem{}, args)
 		},
 		debian.Name: func(args []string) (string, int) {
 			return runEcosystem(&debian.Ecosystem{}, args)
