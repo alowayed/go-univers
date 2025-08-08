@@ -261,7 +261,7 @@ e := &cran.Ecosystem{}
 
 // Numeric component versions
 v1, _ := e.NewVersion("1.2")            // Two components
-v2, _ := e.NewVersion("1.2.3")          // Three components  
+v2, _ := e.NewVersion("1.2.3")          // Three components
 v3, _ := e.NewVersion("1-2-3")          // Dashes normalized to periods
 
 // Range operators

@@ -55,21 +55,18 @@ func (e *Ecosystem) NewVersion(version string) (*Version, error) {
 			return nil, fmt.Errorf("invalid CRAN version: %s (non-numeric component: %s)", original, part)
 		}
 
+		// Check for negative values
+		if bigNum.Sign() < 0 {
+			return nil, fmt.Errorf("invalid CRAN version: %s (negative component: %s)", original, part)
+		}
+
 		// Check if it fits in int
-		if !bigNum.IsInt64() {
+		maxIntVal := big.NewInt(int64(math.MaxInt))
+		if bigNum.Cmp(maxIntVal) > 0 {
 			return nil, fmt.Errorf("invalid CRAN version: %s (component too large: %s)", original, part)
 		}
 
 		num := bigNum.Int64()
-		if num < 0 {
-			return nil, fmt.Errorf("invalid CRAN version: %s (negative component: %s)", original, part)
-		}
-
-		// Convert to int for easier comparison
-		if num > int64(math.MaxInt) { // Check if fits in int
-			return nil, fmt.Errorf("invalid CRAN version: %s (component too large: %s)", original, part)
-		}
-
 		components[i] = int(num)
 	}
 
