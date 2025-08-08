@@ -4,6 +4,7 @@ import (
 	"github.com/alowayed/go-univers/pkg/ecosystem/alpine"
 	"github.com/alowayed/go-univers/pkg/ecosystem/cargo"
 	"github.com/alowayed/go-univers/pkg/ecosystem/composer"
+	"github.com/alowayed/go-univers/pkg/ecosystem/cran"
 	"github.com/alowayed/go-univers/pkg/ecosystem/debian"
 	"github.com/alowayed/go-univers/pkg/ecosystem/gem"
 	"github.com/alowayed/go-univers/pkg/ecosystem/gomod"
@@ -33,6 +34,11 @@ var (
 	_ univers.Version[*composer.Version]                           = &composer.Version{}
 	_ univers.VersionRange[*composer.Version]                      = &composer.VersionRange{}
 	_ univers.Ecosystem[*composer.Version, *composer.VersionRange] = &composer.Ecosystem{}
+
+	// cran
+	_ univers.Version[*cran.Version]                       = &cran.Version{}
+	_ univers.VersionRange[*cran.Version]                  = &cran.VersionRange{}
+	_ univers.Ecosystem[*cran.Version, *cran.VersionRange] = &cran.Ecosystem{}
 
 	// debian
 	_ univers.Version[*debian.Version]                         = &debian.Version{}
