@@ -151,8 +151,12 @@ See `pkg/ecosystem/` directory for all supported ecosystems.
 3. **API Stability**: Keep public APIs minimal and stable
 4. **Go Idioms**: Follow golang-standards/project-layout and effective Go practices
 5. **Error Handling**: Provide clear, actionable error messages for invalid input
-6. **Documentation**: Update README.md for any new ecosystem or major feature additions
-7. **Contributing**: Follow guidelines in CONTRIBUTING.md for code submissions and development workflow
+6. **Performance**: Avoid repeated parsing of the same data structures
+   - Store parsed objects (like `*Version`) instead of strings in structs when the data will be used multiple times
+   - Parse constraint versions once during range construction, not on every `Contains()` call
+   - Example: `type constraint struct { operator string; version *Version }` (good) vs `type constraint struct { operator string; version string }` (bad)
+7. **Documentation**: Update README.md for any new ecosystem or major feature additions
+8. **Contributing**: Follow guidelines in CONTRIBUTING.md for code submissions and development workflow
 
 ### Issue Completion Process
 

@@ -10,6 +10,7 @@ import (
 	"github.com/alowayed/go-univers/pkg/ecosystem/cran"
 	"github.com/alowayed/go-univers/pkg/ecosystem/debian"
 	"github.com/alowayed/go-univers/pkg/ecosystem/gem"
+	"github.com/alowayed/go-univers/pkg/ecosystem/gentoo"
 	"github.com/alowayed/go-univers/pkg/ecosystem/gomod"
 	"github.com/alowayed/go-univers/pkg/ecosystem/maven"
 	"github.com/alowayed/go-univers/pkg/ecosystem/npm"
@@ -50,6 +51,9 @@ func run(args []string) (string, int) {
 		},
 		gem.Name: func(args []string) (string, int) {
 			return runEcosystem(&gem.Ecosystem{}, args)
+		},
+		gentoo.Name: func(args []string) (string, int) {
+			return runEcosystem(&gentoo.Ecosystem{}, args)
 		},
 		gomod.Name: func(args []string) (string, int) {
 			return runEcosystem(&gomod.Ecosystem{}, args)
