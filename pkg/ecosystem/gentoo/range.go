@@ -39,18 +39,26 @@ func (e *Ecosystem) NewVersionRange(rangeStr string) (*VersionRange, error) {
 func parseRange(e *Ecosystem, rangeStr string) ([]*constraint, error) {
 	rangeStr = strings.TrimSpace(rangeStr)
 
-	// Handle comma-separated constraints (>=1.0.0, <2.0.0)
-	if strings.Contains(rangeStr, ",") {
-		return parseCommaSeparatedConstraints(e, rangeStr)
+	// Normalize separators by replacing commas with spaces, then split.
+	// This handles both ">=1.0, <2.0" and ">=1.0 <2.0".
+	normalized := strings.ReplaceAll(rangeStr, ",", " ")
+	parts := strings.Fields(normalized)
+
+	if len(parts) <= 1 {
+		// This also handles single versions like "1.2.3" correctly.
+		return parseSingleConstraint(e, rangeStr)
 	}
 
-	// Handle space-separated constraints (>=1.0.0 <2.0.0)
-	if strings.Contains(rangeStr, " ") {
-		return parseSpaceSeparatedConstraints(e, rangeStr)
+	var constraints []*constraint
+	for _, part := range parts {
+		partConstraints, err := parseSingleConstraint(e, part)
+		if err != nil {
+			return nil, err
+		}
+		constraints = append(constraints, partConstraints...)
 	}
 
-	// Handle single constraint
-	return parseSingleConstraint(e, rangeStr)
+	return constraints, nil
 }
 
 // parseSingleConstraint parses a single Gentoo constraint
@@ -79,38 +87,6 @@ func parseSingleConstraint(e *Ecosystem, c string) ([]*constraint, error) {
 		return nil, fmt.Errorf("invalid version %s: %w", c, err)
 	}
 	return []*constraint{{operator: "=", version: version}}, nil
-}
-
-// parseCommaSeparatedConstraints handles comma-separated constraints (>=1.0.0, <2.0.0)
-func parseCommaSeparatedConstraints(e *Ecosystem, rangeStr string) ([]*constraint, error) {
-	parts := strings.Split(rangeStr, ",")
-	var constraints []*constraint
-
-	for _, part := range parts {
-		partConstraints, err := parseSingleConstraint(e, strings.TrimSpace(part))
-		if err != nil {
-			return nil, err
-		}
-		constraints = append(constraints, partConstraints...)
-	}
-
-	return constraints, nil
-}
-
-// parseSpaceSeparatedConstraints handles space-separated constraints (>=1.0.0 <2.0.0)
-func parseSpaceSeparatedConstraints(e *Ecosystem, rangeStr string) ([]*constraint, error) {
-	parts := strings.Fields(rangeStr)
-	var constraints []*constraint
-
-	for _, part := range parts {
-		partConstraints, err := parseSingleConstraint(e, part)
-		if err != nil {
-			return nil, err
-		}
-		constraints = append(constraints, partConstraints...)
-	}
-
-	return constraints, nil
 }
 
 // String returns the string representation of the range

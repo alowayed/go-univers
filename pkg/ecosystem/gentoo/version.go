@@ -136,11 +136,11 @@ func (v *Version) Compare(other *Version) int {
 		return compareInt(vSuffixValue, otherSuffixValue)
 	}
 
-	// If same suffix type, compare suffix numbers
-	if v.suffix != "" && other.suffix != "" && v.suffix == other.suffix {
-		if v.suffixNum != other.suffixNum {
-			return compareInt(v.suffixNum, other.suffixNum)
-		}
+	// If suffix types are the same, compare suffix numbers.
+	// This check is sufficient because if suffixes were different, the
+	// function would have already returned from the `vSuffixValue != otherSuffixValue` check.
+	if v.suffix != "" && v.suffixNum != other.suffixNum {
+		return compareInt(v.suffixNum, other.suffixNum)
 	}
 
 	// Compare revisions
