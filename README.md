@@ -16,6 +16,7 @@ A Go library to:
 | **Composer** | `pkg/ecosystem/composer` | Composer Versioning | `^1.2.3`, `~1.2.3`, `1.2.*`, `>=1.0.0,<2.0.0` |
 | **CRAN** | `pkg/ecosystem/cran` | R Package Versioning | `>=1.2.3`, `<2.0.0`, `!=1.5.0` |
 | **Debian** | `pkg/ecosystem/debian` | Debian Package Versioning | `>=1.2.3`, `<2.0.0`, `!=1.5.0`, `>>1.0`, `<<2.0` |
+| **Gentoo** | `pkg/ecosystem/gentoo` | Gentoo Package Versioning | `>=1.2.3`, `<2.0.0`, `!=1.5.0` |
 | **Go** | `pkg/ecosystem/gomod` | Go Module Versioning | `>=v1.2.3`, `<v2.0.0`, `!=v1.3.0` |
 | **Maven** | `pkg/ecosystem/maven` | Maven Versioning | `[1.0.0]`, `[1.0.0,2.0.0]`, `(1.0.0,)` |
 | **NPM** | `pkg/ecosystem/npm` | Semantic Versioning | `^1.2.3`, `~1.2.3`, `1.x`, `>=1.0.0 <2.0.0` |
@@ -102,6 +103,11 @@ univers alpine compare "2.0.0" "1.9.9"         # → 1 (first > second)
 univers debian compare "1:1.0-1" "2.0"       # → 1 (epoch 1 > epoch 0)
 univers debian compare "1.0~beta" "1.0"      # → -1 (tilde sorts before release)
 
+# Compare Gentoo versions with suffix and revision handling
+univers gentoo compare "1.0_alpha" "1.0"     # → -1 (alpha < release)
+univers gentoo compare "1.0-r1" "1.0"        # → 1 (revision > no revision)
+univers gentoo compare "2.3a" "2.3b"         # → -1 (letter a < letter b)
+
 # Compare Ruby Gem versions with prerelease handling
 univers gem compare "1.0.0-alpha" "1.0.0"  # → -1 (prerelease < release)
 univers gem compare "2.0.0" "1.9.9"        # → 1 (first > second)
@@ -143,6 +149,10 @@ univers cran sort "1.2.3" "1.2" "1.2.4" "1.10"
 univers debian sort "1:1.0" "1.0~beta" "1.0" "1.0-1"
 # → "1.0~beta" "1.0" "1.0-1" "1:1.0"
 
+# Sort Gentoo versions with suffix and revision handling
+univers gentoo sort "2.0" "1.0_alpha" "1.0" "1.0-r1" "1.0_beta"
+# → "1.0_alpha" "1.0_beta" "1.0" "1.0-r1" "2.0"
+
 # Sort Go module versions including pseudo-versions
 univers go sort "v2.0.0" "v1.2.3" "v1.0.0-20170915032832-14c0d48ead0c"
 # → v1.0.0-20170915032832-14c0d48ead0c, v1.2.3, v2.0.0
@@ -177,6 +187,11 @@ univers alpine contains "<2.0.0" "1.9.9"      # → true
 # Debian range checking with epoch and revision support
 univers debian contains ">=1:1.0" "1:1.5-1"   # → true
 univers debian contains ">>1.0" "1.0~beta"    # → false (tilde < 1.0)
+
+# Gentoo range checking with suffix and revision support
+univers gentoo contains ">=1.0" "1.0_beta"    # → false (beta < release)
+univers gentoo contains ">=1.0_alpha" "1.0"   # → true (release > alpha)
+univers gentoo contains ">=1.0, <2.0" "1.5-r2" # → true (within range)
 
 # PyPI range checking
 univers pypi contains "~=1.2.0" "1.2.5"   # → true
@@ -286,6 +301,25 @@ v3, _ := e.NewVersion("1.0+dfsg-1ubuntu1")  // Complex revision
 r1, _ := e.NewVersionRange(">=1:1.0-1")     // Epoch-aware ranges
 r2, _ := e.NewVersionRange(">>1.0, <<2.0") // Debian-specific operators
 r3, _ := e.NewVersionRange(">=1.0, !=1.5") // Multiple constraints
+```
+
+### Gentoo Package Versioning
+```go
+e := &gentoo.Ecosystem{}
+
+// Version formats with suffixes and revisions
+v1, _ := e.NewVersion("1.2.3")              // Basic version
+v2, _ := e.NewVersion("2.0a")               // Version with letter suffix
+v3, _ := e.NewVersion("1.0_alpha1")         // Version with alpha suffix
+v4, _ := e.NewVersion("1.5_beta2-r3")       // Complex version with beta suffix and revision
+
+// Range constraints
+r1, _ := e.NewVersionRange(">=1.0.0")       // Standard comparison
+r2, _ := e.NewVersionRange(">=1.0, <2.0")  // Multiple constraints
+r3, _ := e.NewVersionRange(">=1.0_alpha, !=1.2") // Suffix-aware constraints
+
+// Check version against range
+fmt.Println(r1.Contains(v3)) // true
 ```
 
 ### Go Modules
