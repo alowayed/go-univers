@@ -78,11 +78,11 @@ func TestVersion_Compare(t *testing.T) {
 		{"2.0.0", "1.9.9", 1},
 		{"1.10", "1.2", 1}, // 10 > 2
 
-		// Different number of components
-		{"1.0", "1.0.0", -1}, // fewer components < more components
-		{"1.0.0", "1.0", 1},
-		{"1.2", "1.2.0", -1},
-		{"1.2.0", "1.2", 1},
+		// Different number of components (should be equivalent per Gentoo PMS)
+		{"1.0", "1.0.0", 0}, // 1.0 equivalent to 1.0.0
+		{"1.0.0", "1.0", 0},
+		{"1.2", "1.2.0", 0},
+		{"1.2.0", "1.2", 0},
 
 		// Letter suffixes
 		{"1.0a", "1.0", 1},   // letter > no letter

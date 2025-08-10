@@ -103,22 +103,12 @@ func (v *Version) Compare(other *Version) int {
 	for i := 0; i < maxLen; i++ {
 		vNum := 0
 		otherNum := 0
-		vHasComponent := i < len(v.numbers)
-		otherHasComponent := i < len(other.numbers)
 
-		if vHasComponent {
+		if i < len(v.numbers) {
 			vNum = v.numbers[i]
 		}
-		if otherHasComponent {
+		if i < len(other.numbers) {
 			otherNum = other.numbers[i]
-		}
-
-		// If one version has a component and the other doesn't
-		if vHasComponent && !otherHasComponent {
-			return 1 // more components > fewer components
-		}
-		if !vHasComponent && otherHasComponent {
-			return -1 // fewer components < more components
 		}
 
 		if vNum != otherNum {

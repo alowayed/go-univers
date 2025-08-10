@@ -14,7 +14,7 @@ type VersionRange struct {
 // constraint represents a single Gentoo version constraint
 type constraint struct {
 	operator string
-	version  string
+	version  *Version
 }
 
 // NewVersionRange creates a new Gentoo version range from a range string
@@ -24,7 +24,7 @@ func (e *Ecosystem) NewVersionRange(rangeStr string) (*VersionRange, error) {
 		return nil, fmt.Errorf("empty range string")
 	}
 
-	constraints, err := parseRange(rangeStr)
+	constraints, err := parseRange(e, rangeStr)
 	if err != nil {
 		return nil, err
 	}
@@ -36,50 +36,58 @@ func (e *Ecosystem) NewVersionRange(rangeStr string) (*VersionRange, error) {
 }
 
 // parseRange parses Gentoo range syntax into constraints
-func parseRange(rangeStr string) ([]*constraint, error) {
+func parseRange(e *Ecosystem, rangeStr string) ([]*constraint, error) {
 	rangeStr = strings.TrimSpace(rangeStr)
 
 	// Handle comma-separated constraints (>=1.0.0, <2.0.0)
 	if strings.Contains(rangeStr, ",") {
-		return parseCommaSeparatedConstraints(rangeStr)
+		return parseCommaSeparatedConstraints(e, rangeStr)
 	}
 
 	// Handle space-separated constraints (>=1.0.0 <2.0.0)
 	if strings.Contains(rangeStr, " ") {
-		return parseSpaceSeparatedConstraints(rangeStr)
+		return parseSpaceSeparatedConstraints(e, rangeStr)
 	}
 
 	// Handle single constraint
-	return parseSingleConstraint(rangeStr)
+	return parseSingleConstraint(e, rangeStr)
 }
 
 // parseSingleConstraint parses a single Gentoo constraint
-func parseSingleConstraint(c string) ([]*constraint, error) {
+func parseSingleConstraint(e *Ecosystem, c string) ([]*constraint, error) {
 	c = strings.TrimSpace(c)
 
 	// Handle comparison operators
 	operators := []string{">=", "<=", "!=", ">", "<", "="}
 	for _, op := range operators {
 		if strings.HasPrefix(c, op) {
-			version := strings.TrimSpace(c[len(op):])
-			if version == "" {
+			versionStr := strings.TrimSpace(c[len(op):])
+			if versionStr == "" {
 				return nil, fmt.Errorf("missing version after operator %s", op)
+			}
+			version, err := e.NewVersion(versionStr)
+			if err != nil {
+				return nil, fmt.Errorf("invalid version %s: %w", versionStr, err)
 			}
 			return []*constraint{{operator: op, version: version}}, nil
 		}
 	}
 
 	// Default to exact match
-	return []*constraint{{operator: "=", version: c}}, nil
+	version, err := e.NewVersion(c)
+	if err != nil {
+		return nil, fmt.Errorf("invalid version %s: %w", c, err)
+	}
+	return []*constraint{{operator: "=", version: version}}, nil
 }
 
 // parseCommaSeparatedConstraints handles comma-separated constraints (>=1.0.0, <2.0.0)
-func parseCommaSeparatedConstraints(rangeStr string) ([]*constraint, error) {
+func parseCommaSeparatedConstraints(e *Ecosystem, rangeStr string) ([]*constraint, error) {
 	parts := strings.Split(rangeStr, ",")
 	var constraints []*constraint
 
 	for _, part := range parts {
-		partConstraints, err := parseSingleConstraint(strings.TrimSpace(part))
+		partConstraints, err := parseSingleConstraint(e, strings.TrimSpace(part))
 		if err != nil {
 			return nil, err
 		}
@@ -90,12 +98,12 @@ func parseCommaSeparatedConstraints(rangeStr string) ([]*constraint, error) {
 }
 
 // parseSpaceSeparatedConstraints handles space-separated constraints (>=1.0.0 <2.0.0)
-func parseSpaceSeparatedConstraints(rangeStr string) ([]*constraint, error) {
+func parseSpaceSeparatedConstraints(e *Ecosystem, rangeStr string) ([]*constraint, error) {
 	parts := strings.Fields(rangeStr)
 	var constraints []*constraint
 
 	for _, part := range parts {
-		partConstraints, err := parseSingleConstraint(part)
+		partConstraints, err := parseSingleConstraint(e, part)
 		if err != nil {
 			return nil, err
 		}
@@ -123,13 +131,7 @@ func (gr *VersionRange) Contains(version *Version) bool {
 
 // matches checks if the given version matches this constraint
 func (c *constraint) matches(version *Version) bool {
-	e := &Ecosystem{}
-	constraintVersion, err := e.NewVersion(c.version)
-	if err != nil {
-		return false
-	}
-
-	comparison := version.Compare(constraintVersion)
+	comparison := version.Compare(c.version)
 
 	switch c.operator {
 	case "=":
