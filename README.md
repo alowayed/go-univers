@@ -24,6 +24,7 @@ A Go library to:
 | **PyPI** | `pkg/ecosystem/pypi` | PEP 440 | `~=1.2.3`, `>=1.0.0,<2.0.0`, `==1.2.*` |
 | **RPM** | `pkg/ecosystem/rpm` | RPM Package Versioning | `>=1.2.3`, `<2.0.0`, `!=1.5.0` |
 | **RubyGems** | `pkg/ecosystem/gem` | Ruby Gem Versioning | `~> 1.2.3`, `>= 1.0.0`, `!= 1.5.0` |
+| **SemVer** | `pkg/ecosystem/semver` | Semantic Versioning 2.0.0 | `>=1.2.3`, `<2.0.0`, `!=1.5.0` |
 
 ## Installation
 
@@ -133,6 +134,11 @@ univers nuget compare "1.2.3.4" "1.2.3"      # → 1 (revision > no revision)
 univers rpm compare "1:1.2.3-4" "2.0.0"      # → 1 (epoch 1 > epoch 0)
 univers rpm compare "1.0~beta" "1.0"         # → -1 (tilde sorts before release)
 univers rpm compare "2.0.0-1.el8" "2.0.0-2.el8" # → -1 (release 1 < release 2)
+
+# Compare SemVer versions with strict semantic versioning 2.0.0 rules
+univers semver compare "1.0.0-alpha" "1.0.0"      # → -1 (prerelease < release)
+univers semver compare "1.0.0-alpha.1" "1.0.0-alpha.beta" # → -1 (numeric < non-numeric)
+univers semver compare "1.0.0+build1" "1.0.0+build2" # → 0 (build metadata ignored)
 ```
 
 #### Sort Versions
@@ -176,6 +182,10 @@ univers nuget sort "1.0.0" "1.0.0-beta" "1.0.0.1" "1.0.0-alpha"
 # Sort RPM versions with epoch, tilde, and release handling
 univers rpm sort "1:1.0" "1.0~beta" "1.0" "1.0-1" "2.0.0-1.el8"
 # → "1.0~beta" "1.0" "1.0-1" "2.0.0-1.el8" "1:1.0"
+
+# Sort SemVer versions with strict semantic versioning 2.0.0 precedence
+univers semver sort "1.0.0" "1.0.0-beta.2" "1.0.0-beta.11" "1.0.0-alpha" "1.0.0-rc.1"
+# → "1.0.0-alpha" "1.0.0-beta.2" "1.0.0-beta.11" "1.0.0-rc.1" "1.0.0"
 ```
 
 #### Check Range Satisfaction
@@ -229,6 +239,11 @@ univers nuget contains ">=1.0.0,<2.0.0" "1.5.0"    # → true (comma-separated)
 univers rpm contains ">=1:1.0.0" "1:1.5.0-1"      # → true (epoch and version match)
 univers rpm contains ">=1.0.0 <2.0.0" "1.5.0-1.el8" # → true (within range)
 univers rpm contains ">1.0~beta" "1.0"            # → true (release > tilde)
+
+# SemVer range checking with standard comparison operators
+univers semver contains ">=1.0.0,<2.0.0" "1.5.0"        # → true (within range)
+univers semver contains ">=1.0.0-alpha" "1.0.0-beta"     # → true (beta > alpha)
+univers semver contains "!=1.5.0" "1.5.0+build"         # → false (build metadata ignored)
 ```
 
 ## Architecture
@@ -348,6 +363,25 @@ v3, _ := e.NewVersion("2.4.37-1.fc34.x86_64") // Fedora release with architectur
 r1, _ := e.NewVersionRange(">=1:1.0.0")      // Epoch-aware ranges
 r2, _ := e.NewVersionRange(">=1.0.0 <2.0.0") // Standard comparison operators
 r3, _ := e.NewVersionRange(">=1.0.0, !=1.5.0") // Multiple constraints
+```
+
+### SemVer (Semantic Versioning 2.0.0)
+```go
+e := &semver.Ecosystem{}
+
+// Standard semantic versioning formats
+v1, _ := e.NewVersion("1.2.3")                  // Basic version
+v2, _ := e.NewVersion("1.0.0-alpha.1")          // Prerelease
+v3, _ := e.NewVersion("1.0.0+build.1")          // Build metadata
+v4, _ := e.NewVersion("1.0.0-beta.2+exp.sha.1") // Both prerelease and build
+
+// Range constraints with standard comparison operators
+r1, _ := e.NewVersionRange(">=1.0.0,<2.0.0")    // Comma-separated constraints
+r2, _ := e.NewVersionRange(">=1.0.0 <2.0.0")    // Space-separated constraints
+r3, _ := e.NewVersionRange("!=1.5.0")           // Not equal constraint
+
+// Check version against range (build metadata ignored in comparisons)
+fmt.Println(r1.Contains(v1)) // true
 ```
 
 For complete syntax documentation of all ecosystems, see the [Supported Ecosystems](#supported-ecosystems) table above.
