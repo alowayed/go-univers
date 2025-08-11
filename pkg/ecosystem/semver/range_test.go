@@ -1,6 +1,7 @@
 package semver
 
 import (
+	"strings"
 	"testing"
 )
 
@@ -24,6 +25,7 @@ func TestEcosystem_NewVersionRange(t *testing.T) {
 		{"multiple constraints", ">=1.0.0,<2.0.0,!=1.5.0", false},
 		{"prerelease constraints", ">=1.0.0-alpha", false},
 		{"build metadata constraints", ">=1.0.0+build", false},
+		{"valid with whitespace", "  >=1.2.3  ", false},
 
 		// Invalid ranges
 		{"empty string", "", true},
@@ -51,8 +53,8 @@ func TestEcosystem_NewVersionRange(t *testing.T) {
 				return
 			}
 
-			if result.String() != tt.input {
-				t.Errorf("NewVersionRange(%q).String() = %q, want %q", tt.input, result.String(), tt.input)
+			if result.String() != strings.TrimSpace(tt.input) {
+				t.Errorf("NewVersionRange(%q).String() = %q, want %q", tt.input, result.String(), strings.TrimSpace(tt.input))
 			}
 		})
 	}

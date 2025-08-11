@@ -7,10 +7,17 @@ import (
 	"strings"
 )
 
-// versionPattern matches SemVer 2.0.0 version strings
-// Group 1: major, Group 2: minor, Group 3: patch
-// Group 4: prerelease (optional), Group 5: build metadata (optional)
-var versionPattern = regexp.MustCompile(`^(\d+)\.(\d+)\.(\d+)(?:-([0-9A-Za-z\-]+(?:\.[0-9A-Za-z\-]+)*))?(?:\+([0-9A-Za-z\-]+(?:\.[0-9A-Za-z\-]+)*))?$`)
+// Package-level compiled regular expressions for performance
+var (
+	// versionPattern matches SemVer 2.0.0 version strings
+	// Group 1: major, Group 2: minor, Group 3: patch
+	// Group 4: prerelease (optional), Group 5: build metadata (optional)
+	versionPattern = regexp.MustCompile(`^(\d+)\.(\d+)\.(\d+)(?:-([0-9A-Za-z\-]+(?:\.[0-9A-Za-z\-]+)*))?(?:\+([0-9A-Za-z\-]+(?:\.[0-9A-Za-z\-]+)*))?$`)
+
+	// Patterns for prerelease and build metadata validation
+	validCharsPattern = regexp.MustCompile(`^[0-9A-Za-z\-]+$`)
+	numericPattern    = regexp.MustCompile(`^[0-9]+$`)
+)
 
 // Version represents a Semantic Version 2.0.0
 type Version struct {
@@ -103,12 +110,12 @@ func validatePrerelease(prerelease string) error {
 		}
 
 		// Check for valid characters (alphanumerics and hyphens only)
-		if !regexp.MustCompile(`^[0-9A-Za-z\-]+$`).MatchString(part) {
+		if !validCharsPattern.MatchString(part) {
 			return fmt.Errorf("invalid characters in prerelease identifier: %s", part)
 		}
 
 		// Numeric identifiers must not have leading zeros
-		if regexp.MustCompile(`^[0-9]+$`).MatchString(part) {
+		if numericPattern.MatchString(part) {
 			if len(part) > 1 && part[0] == '0' {
 				return fmt.Errorf("numeric prerelease identifier cannot have leading zeros: %s", part)
 			}
@@ -126,7 +133,7 @@ func validateBuildMetadata(build string) error {
 		}
 
 		// Check for valid characters (alphanumerics and hyphens only)
-		if !regexp.MustCompile(`^[0-9A-Za-z\-]+$`).MatchString(part) {
+		if !validCharsPattern.MatchString(part) {
 			return fmt.Errorf("invalid characters in build metadata identifier: %s", part)
 		}
 	}
@@ -198,8 +205,8 @@ func comparePrerelease(a, b string) int {
 		}
 
 		// Both parts exist, compare them
-		aIsNum := regexp.MustCompile(`^[0-9]+$`).MatchString(aPart)
-		bIsNum := regexp.MustCompile(`^[0-9]+$`).MatchString(bPart)
+		aIsNum := numericPattern.MatchString(aPart)
+		bIsNum := numericPattern.MatchString(bPart)
 
 		if aIsNum && bIsNum {
 			// Both are numeric, compare numerically
