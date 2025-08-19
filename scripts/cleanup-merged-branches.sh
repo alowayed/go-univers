@@ -71,8 +71,30 @@ for branch in $local_branches; do
         file_diff_count=$(git diff --name-only "$MAIN_BRANCH"..."$branch" 2>/dev/null | wc -l || echo "1")
     fi
     
-    # Determine branch status
-    if [[ "$remote_exists" == "false" && "$commits_not_in_main" -eq 0 ]] || [[ "$file_diff_count" -eq 0 ]]; then
+    # Enhanced detection for ecosystem branches (common pattern)
+    is_ecosystem_merged=false
+    if [[ "$branch" =~ (feat|feature).*(ecosystem|support) ]]; then
+        # Check if the ecosystem directory exists in main
+        ecosystem_dirs=$(git diff --name-only "$MAIN_BRANCH"..."$branch" 2>/dev/null | grep "pkg/ecosystem/" | cut -d'/' -f3 | sort -u)
+        all_ecosystems_exist=true
+        
+        for ecosystem in $ecosystem_dirs; do
+            if [[ -n "$ecosystem" && ! -d "pkg/ecosystem/$ecosystem" ]]; then
+                all_ecosystems_exist=false
+                break
+            fi
+        done
+        
+        # If all ecosystem directories exist in main, likely merged
+        if [[ "$all_ecosystems_exist" == true && -n "$ecosystem_dirs" ]]; then
+            is_ecosystem_merged=true
+        fi
+    fi
+    
+    # Determine branch status with enhanced logic
+    if [[ "$remote_exists" == "false" && "$commits_not_in_main" -eq 0 ]] || \
+       [[ "$file_diff_count" -eq 0 ]] || \
+       [[ "$remote_exists" == "false" && "$is_ecosystem_merged" == true ]]; then
         merged_branches+=("$branch")
     else
         unknown_branches+=("$branch")
