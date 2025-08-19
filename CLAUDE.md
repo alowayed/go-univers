@@ -143,6 +143,13 @@ See `pkg/ecosystem/` directory for all supported ecosystems.
 
 ### Development Guidelines
 
+**CRITICAL: Branch Protection Rules**
+- **NEVER commit directly to main branch**
+- **NEVER push directly to main branch** 
+- **ALWAYS create feature branches** for any changes, no matter how small
+- **ALWAYS create PRs** for code review before merging
+- Even urgent fixes must go through feature branch → PR → merge workflow
+
 1. **Type Safety First**: Never allow cross-ecosystem version operations
 2. **Test Coverage**: All new functionality requires comprehensive table-driven tests
    - Test function names must follow the pattern `TestStructName_MethodName` (e.g., `TestEcosystem_NewVersion`, `TestVersion_Compare`)
@@ -162,10 +169,12 @@ See `pkg/ecosystem/` directory for all supported ecosystems.
 
 When asked to complete a GitHub issue, ALWAYS follow this standardized process:
 
-1. **Branch Management**:
+1. **Branch Management** (MANDATORY):
    ```bash
+   # ALWAYS create a feature branch - NEVER work on main
    git checkout -b feat/descriptive-feature-name
    ```
+   **WARNING**: Never commit or push directly to main under any circumstances
 
 2. **Issue Analysis**:
    - Fetch issue details using `gh issue view <issue-number>`
@@ -206,8 +215,9 @@ When asked to complete a GitHub issue, ALWAYS follow this standardized process:
    - Add code example in ecosystem examples section
    - Keep examples concise but demonstrative of key features
 
-8. **Commit and PR**:
+8. **Commit and PR** (MANDATORY - Never skip this):
    ```bash
+   # Commit to feature branch (NEVER to main)
    git add .
    git commit -s -m "feat: add <ecosystem> ecosystem support
 
@@ -223,9 +233,13 @@ When asked to complete a GitHub issue, ALWAYS follow this standardized process:
    
    Co-Authored-By: Claude <noreply@anthropic.com>"
    
+   # Push feature branch (NEVER push to main)
    git push -u origin feat/descriptive-feature-name
+   
+   # ALWAYS create PR for review - no exceptions
    gh pr create --title "feat: add <ecosystem> ecosystem support" --body "Implements <ecosystem> ecosystem support as requested in #<issue-number>"
    ```
+   **CRITICAL**: All changes must go through PR review, even urgent fixes
 
 9. **Verification**:
    - Test CLI commands manually to ensure they work correctly
