@@ -7,6 +7,7 @@ import (
 	"github.com/alowayed/go-univers/pkg/ecosystem/alpine"
 	"github.com/alowayed/go-univers/pkg/ecosystem/cargo"
 	"github.com/alowayed/go-univers/pkg/ecosystem/composer"
+	"github.com/alowayed/go-univers/pkg/ecosystem/conan"
 	"github.com/alowayed/go-univers/pkg/ecosystem/cran"
 	"github.com/alowayed/go-univers/pkg/ecosystem/debian"
 	"github.com/alowayed/go-univers/pkg/ecosystem/gem"
@@ -40,6 +41,9 @@ func run(args []string) (string, int) {
 		},
 		cargo.Name: func(args []string) (string, int) {
 			return runEcosystem(&cargo.Ecosystem{}, args)
+		},
+		conan.Name: func(args []string) (string, int) {
+			return runEcosystem(&conan.Ecosystem{}, args)
 		},
 		composer.Name: func(args []string) (string, int) {
 			return runEcosystem(&composer.Ecosystem{}, args)

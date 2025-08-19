@@ -13,6 +13,7 @@ A Go library to:
 |-----------|---------|----------------|--------------|
 | **Alpine** | `pkg/ecosystem/alpine` | Alpine Package Versioning | `>=1.2.3`, `<2.0.0`, `!=1.5.0` |
 | **Cargo** | `pkg/ecosystem/cargo` | SemVer 2.0 | `^1.2.3`, `~1.2.3`, `>=1.0.0`, `1.2.*` |
+| **Conan** | `pkg/ecosystem/conan` | Extended SemVer | `^1.2.3`, `~1.2.3`, `>=1.0.0`, `<2.0.0` |
 | **Composer** | `pkg/ecosystem/composer` | Composer Versioning | `^1.2.3`, `~1.2.3`, `1.2.*`, `>=1.0.0,<2.0.0` |
 | **CRAN** | `pkg/ecosystem/cran` | R Package Versioning | `>=1.2.3`, `<2.0.0`, `!=1.5.0` |
 | **Debian** | `pkg/ecosystem/debian` | Debian Package Versioning | `>=1.2.3`, `<2.0.0`, `!=1.5.0`, `>>1.0`, `<<2.0` |
@@ -117,6 +118,11 @@ univers gem compare "2.0.0" "1.9.9"        # → 1 (first > second)
 univers cargo compare "1.0.0-alpha" "1.0.0"  # → -1 (prerelease < release)
 univers cargo compare "1.2.3" "1.2.4"        # → -1 (first < second)
 
+# Compare Conan versions with extended semantic versioning
+univers conan compare "1.2.3" "1.2.4"        # → -1 (first < second)
+univers conan compare "1.0.2n" "1.0.2m"      # → 1 (letter n > letter m)
+univers conan compare "1.2.3-alpha" "1.2.3"  # → -1 (prerelease < release)
+
 # Compare Composer versions with stability flags
 univers composer compare "1.2.3-alpha" "1.2.3"  # → -1 (prerelease < stable)
 univers composer compare "2.0.0" "1.9.9"         # → 1 (first > second)
@@ -171,6 +177,10 @@ univers gem sort "2.0.0" "1.0.0-alpha" "1.0.0"
 univers cargo sort "1.0.0" "1.0.0-beta.1" "1.0.0-beta.11" "1.0.0-alpha"
 # → "1.0.0-alpha" "1.0.0-beta.1" "1.0.0-beta.11" "1.0.0"
 
+# Sort Conan versions with extended semantic versioning and letter handling
+univers conan sort "1.2.3" "1.0.2n" "1.0.2m" "1.2.3-alpha" "1.2.3.4"
+# → "1.0.2m" "1.0.2n" "1.2.3-alpha" "1.2.3" "1.2.3.4"
+
 # Sort Composer versions with stability ordering (dev < alpha < beta < RC < stable)
 univers composer sort "1.2.3" "1.2.3-beta" "dev-main" "1.2.3-alpha"
 # → "dev-main" "1.2.3-alpha" "1.2.3-beta" "1.2.3"
@@ -219,6 +229,12 @@ univers gem contains "~> 1.2.0" "1.3.0"  # → false (minor increment not allowe
 univers cargo contains "^1.2.0" "1.2.5"   # → true (compatible within major)
 univers cargo contains "^1.2.0" "2.0.0"   # → false (major increment not allowed)
 univers cargo contains "~1.2.0" "1.2.5"   # → true (patch increment allowed)
+
+# Conan range checking with extended semantic versioning
+univers conan contains ">=1.2.0" "1.2.5"     # → true
+univers conan contains "^1.2.0" "1.5.0"      # → true (compatible within major)
+univers conan contains "~1.2.3" "1.2.5"      # → true (patch increment allowed)
+univers conan contains ">=1.0.2m" "1.0.2n"   # → true (letter n > letter m)
 
 # Composer constraint checking with caret, tilde, and wildcard ranges
 univers composer contains "^1.2.0" "1.3.0"   # → true (compatible within major)
@@ -301,6 +317,27 @@ r3, _ := e.NewVersionRange("!=1.5.0")     // Not equal constraint
 
 // Check version against range
 fmt.Println(r1.Contains(v2)) // true
+```
+
+### Conan (C/C++ Package Manager)
+```go
+e := &conan.Ecosystem{}
+
+// Extended semantic versioning with flexible parts
+v1, _ := e.NewVersion("1.2.3")              // Standard semver
+v2, _ := e.NewVersion("1.0.2n")             // OpenSSL-style with letter
+v3, _ := e.NewVersion("1.2.3.4.5")          // Extended multi-part version
+v4, _ := e.NewVersion("1.2.3-alpha")        // With prerelease
+v5, _ := e.NewVersion("2.1b-beta+build")    // Complex version with all components
+
+// Range constraints
+r1, _ := e.NewVersionRange(">=1.2.0")       // Standard comparison
+r2, _ := e.NewVersionRange("^1.2.3")        // Caret: compatible within major
+r3, _ := e.NewVersionRange("~1.2.3")        // Tilde: patch-level changes
+r4, _ := e.NewVersionRange(">=1.0.0, <2.0.0") // Multiple constraints
+
+// Check version against range
+fmt.Println(r2.Contains(v1)) // true
 ```
 
 ### Debian Package Versioning

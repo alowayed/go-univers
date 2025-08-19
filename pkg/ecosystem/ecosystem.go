@@ -4,6 +4,7 @@ import (
 	"github.com/alowayed/go-univers/pkg/ecosystem/alpine"
 	"github.com/alowayed/go-univers/pkg/ecosystem/cargo"
 	"github.com/alowayed/go-univers/pkg/ecosystem/composer"
+	"github.com/alowayed/go-univers/pkg/ecosystem/conan"
 	"github.com/alowayed/go-univers/pkg/ecosystem/cran"
 	"github.com/alowayed/go-univers/pkg/ecosystem/debian"
 	"github.com/alowayed/go-univers/pkg/ecosystem/gem"
@@ -31,6 +32,11 @@ var (
 	_ univers.Version[*cargo.Version]                        = &cargo.Version{}
 	_ univers.VersionRange[*cargo.Version]                   = &cargo.VersionRange{}
 	_ univers.Ecosystem[*cargo.Version, *cargo.VersionRange] = &cargo.Ecosystem{}
+
+	// conan
+	_ univers.Version[*conan.Version]                        = &conan.Version{}
+	_ univers.VersionRange[*conan.Version]                   = &conan.VersionRange{}
+	_ univers.Ecosystem[*conan.Version, *conan.VersionRange] = &conan.Ecosystem{}
 
 	// composer
 	_ univers.Version[*composer.Version]                           = &composer.Version{}
