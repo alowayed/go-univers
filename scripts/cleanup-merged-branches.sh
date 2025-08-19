@@ -38,9 +38,32 @@ merged_branches=()
 working_branches=()
 unknown_branches=()
 
-# Associative arrays to cache git operation results
-declare -A branch_commits_not_in_main
-declare -A branch_remote_exists
+# Simple cache approach for older bash compatibility
+get_cached_commits() {
+    local branch="$1"
+    for entry in "${branch_commits_cache[@]}"; do
+        if [[ "$entry" == "$branch:"* ]]; then
+            echo "${entry#*:}"
+            return
+        fi
+    done
+    echo "0"
+}
+
+get_cached_remote() {
+    local branch="$1"
+    for entry in "${branch_remote_cache[@]}"; do
+        if [[ "$entry" == "$branch:"* ]]; then
+            echo "${entry#*:}"
+            return
+        fi
+    done
+    echo "false"
+}
+
+# Arrays to cache git operation results (for older bash compatibility)
+branch_commits_cache=()
+branch_remote_cache=()
 
 echo -e "${BLUE}🔍 Analyzing branches...${NC}"
 
@@ -66,16 +89,17 @@ for branch in "${local_branches[@]}"; do
     
     # Check if remote tracking branch exists (cache result)
     if git ls-remote --exit-code --heads origin "$branch" > /dev/null 2>&1; then
-        branch_remote_exists["$branch"]="true"
         remote_exists="true"
     else
-        branch_remote_exists["$branch"]="false"
         remote_exists="false"
     fi
     
     # Check if all commits from this branch are in main (cache result)
     commits_not_in_main=$(git cherry "$MAIN_BRANCH" "$branch" 2>/dev/null | grep "^+" | wc -l)
-    branch_commits_not_in_main["$branch"]="$commits_not_in_main"
+    
+    # Store cache data (branch name and results in parallel arrays)
+    branch_commits_cache+=("$branch:$commits_not_in_main")
+    branch_remote_cache+=("$branch:$remote_exists")
     
     # Check if there are any differences in file content
     if git diff --quiet "$MAIN_BRANCH"..."$branch" --; then
@@ -132,7 +156,7 @@ if [[ ${#merged_branches[@]} -eq 0 ]]; then
     echo "  None found"
 else
     for branch in "${merged_branches[@]}"; do
-        if [[ "${branch_remote_exists["$branch"]}" == "true" ]]; then
+        if [[ "$(get_cached_remote "$branch")" == "true" ]]; then
             remote_status="(remote exists)"
         else
             remote_status="(remote deleted)"
@@ -147,8 +171,8 @@ if [[ ${#unknown_branches[@]} -eq 0 ]]; then
     echo "  None found"
 else
     for branch in "${unknown_branches[@]}"; do
-        commits_not_in_main="${branch_commits_not_in_main["$branch"]}"
-        if [[ "${branch_remote_exists["$branch"]}" == "true" ]]; then
+        commits_not_in_main="$(get_cached_commits "$branch")"
+        if [[ "$(get_cached_remote "$branch")" == "true" ]]; then
             remote_status="(remote exists)"
         else
             remote_status="(remote deleted)"
