@@ -73,6 +73,14 @@
 
 The CI pipeline will automatically test your changes on multiple platforms, verify code quality, and validate documentation links.
 
+## Helpful Scripts
+
+### Branch Cleanup
+Clean up local branches that have been squash-merged:
+```bash
+./scripts/cleanup-merged-branches.sh
+```
+
 ## Sign your work
 
 The `sign-off` is a line at the end of the explanation for the patch. Your

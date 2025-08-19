@@ -330,6 +330,16 @@ When asked to create GitHub issues for tracking future work, ALWAYS follow this 
 
 This workflow ensures issues are well-researched, actionable, and provide clear guidance for future implementation.
 
+### Branch Cleanup
+
+Local branches can accumulate after squash-merges. Use the automated cleanup script:
+
+```bash
+./scripts/cleanup-merged-branches.sh
+```
+
+The script detects squash-merged branches and offers to delete them while preserving active work. Update `WORKING_BRANCH_PATTERNS` in the script to protect current development branches.
+
 ### References
 
 - @README.md
