@@ -252,6 +252,84 @@ This process ensures consistency, quality, and completeness for all ecosystem ad
 **Pseudo-versions**: Handle special version formats (Go module pseudo-versions)
 **Normalization**: Maintain original string while supporting normalized comparison
 
+### GitHub Issue Creation Workflow
+
+When asked to create GitHub issues for tracking future work, ALWAYS follow this standardized process:
+
+1. **Research Phase**:
+   - Investigate the problem domain thoroughly using WebFetch and other research tools
+   - Identify existing solutions, industry standards, and best practices
+   - Review relevant GitHub documentation and community resources
+   - Examine the current codebase for related patterns or existing implementations
+
+2. **Problem Analysis**:
+   - Clearly articulate the specific problem or need
+   - Document the current state and desired future state
+   - Identify potential risks, costs, or complexity factors
+   - Reference authoritative sources and documentation
+
+3. **Solution Design**:
+   - Research and document 2-3 potential approaches
+   - For each approach, include:
+     - **Pros**: Benefits and advantages
+     - **Cons**: Drawbacks, limitations, or risks
+     - **Implementation details**: Key technical considerations
+     - **Effort estimate**: Rough complexity assessment
+
+4. **Success Criteria**:
+   - Define measurable, specific success criteria
+   - Include examples of what "done" looks like
+   - Reference external test suites, compliance standards, or benchmarks when applicable
+   - Ensure criteria are testable and verifiable
+
+5. **Issue Structure Template**:
+   ```markdown
+   ## Problem Statement
+   [Clear description of the problem and why it needs solving]
+
+   ## Research
+   [Summary of research findings with links to authoritative sources]
+
+   ## Current State
+   [Description of how things work today]
+
+   ## Proposed Solutions
+
+   ### Option 1: [Solution Name]
+   **Pros:**
+   - [Benefit 1]
+   - [Benefit 2]
+
+   **Cons:**
+   - [Limitation 1]
+   - [Limitation 2]
+
+   **Implementation Details:**
+   - [Key technical consideration 1]
+   - [Key technical consideration 2]
+
+   ### Option 2: [Alternative Solution]
+   [Same structure as Option 1]
+
+   ## Success Criteria
+   - [ ] [Specific measurable criterion 1]
+   - [ ] [Specific measurable criterion 2]
+   - [ ] [Reference to external compliance/test suite if applicable]
+
+   ## Resources
+   - [Link to relevant documentation]
+   - [Link to related issues or PRs]
+   - [Link to external standards or specifications]
+   ```
+
+6. **Issue Creation**:
+   - Use `gh issue create` with appropriate title and body
+   - Add relevant labels (e.g., `enhancement`, `research`, `security`)
+   - Assign to appropriate milestone if applicable
+   - Reference related issues or PRs
+
+This workflow ensures issues are well-researched, actionable, and provide clear guidance for future implementation.
+
 ### References
 
 - @README.md
