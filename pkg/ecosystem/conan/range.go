@@ -147,11 +147,9 @@ func rebuildConstraintsFromParts(parts []string) []string {
 
 // isOperator checks if a string is a valid constraint operator
 func isOperator(s string) bool {
-	operators := []string{">=", ">", "<=", "<", "~", "^", "!=", "="}
-	for _, op := range operators {
-		if s == op {
-			return true
-		}
+	switch s {
+	case ">=", ">", "<=", "<", "~", "^", "!=", "=":
+		return true
 	}
 	return false
 }

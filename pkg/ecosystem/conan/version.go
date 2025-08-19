@@ -214,49 +214,36 @@ func comparePrerelease(a, b string) int {
 }
 
 // naturalCompare compares two version parts using natural ordering
-// Handles mixed alphanumeric parts correctly (e.g., "2" < "10" < "10a" < "3a")
+// Handles mixed alphanumeric parts correctly (e.g., "2" < "10", "3a" < "10a")
 func naturalCompare(a, b string) int {
-	aIsNum := numericPattern.MatchString(a)
-	bIsNum := numericPattern.MatchString(b)
+	aNumStr := extractLeadingNumber(a)
+	bNumStr := extractLeadingNumber(b)
 
-	if aIsNum && bIsNum {
-		// Both are numeric, compare numerically
-		aNum, _ := strconv.Atoi(a)
-		bNum, _ := strconv.Atoi(b)
-		return compareInt(aNum, bNum)
-	} else if aIsNum && !bIsNum {
-		// Pure numeric vs alphanumeric: need to check if b starts with a number
-		if bNum := extractLeadingNumber(b); bNum != "" {
-			aNum, _ := strconv.Atoi(a)
-			bNumVal, _ := strconv.Atoi(bNum)
-			if aNum != bNumVal {
-				return compareInt(aNum, bNumVal)
-			}
-			// Same numeric part, pure number comes before suffixed version
-			return -1
+	aRemStr := a[len(aNumStr):]
+	bRemStr := b[len(bNumStr):]
+
+	// Compare numeric parts if both exist
+	if aNumStr != "" && bNumStr != "" {
+		aNum, _ := strconv.Atoi(aNumStr)
+		bNum, _ := strconv.Atoi(bNumStr)
+		if aNum != bNum {
+			return compareInt(aNum, bNum)
 		}
-		// Pure numeric comes before pure alphabetic
+	} else if aNumStr != "" { // a has number, b doesn't
 		return -1
-	} else if !aIsNum && bIsNum {
-		// Alphanumeric vs pure numeric: check if a starts with a number
-		if aNum := extractLeadingNumber(a); aNum != "" {
-			aNumVal, _ := strconv.Atoi(aNum)
-			bNum, _ := strconv.Atoi(b)
-			if aNumVal != bNum {
-				return compareInt(aNumVal, bNum)
-			}
-			// Same numeric part, suffixed version comes after pure number
-			return 1
-		}
-		// Pure alphabetic comes after pure numeric
-		return 1
-	} else {
-		// Both are alphanumeric, compare lexically
-		if a < b {
-			return -1
-		}
+	} else if bNumStr != "" { // b has number, a doesn't
 		return 1
 	}
+
+	// Numeric parts are equal or both absent, compare remainder strings
+	if aRemStr < bRemStr {
+		return -1
+	}
+	if aRemStr > bRemStr {
+		return 1
+	}
+
+	return 0
 }
 
 // extractLeadingNumber extracts the leading numeric portion of a string

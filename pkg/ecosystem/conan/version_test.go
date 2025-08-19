@@ -304,6 +304,11 @@ func TestVersion_Compare(t *testing.T) {
 		{"pure numeric vs pure alphabetic", "1.2.3", "1.2.a", -1},          // numeric < alphabetic
 		{"alphanumeric vs pure numeric", "1.2.3a", "1.2.4", -1},            // 3a < 4
 
+		// Additional natural comparison tests (addressing reviewer feedback)
+		{"alphanumeric comparison fix", "1.2.3a", "1.2.10a", -1},  // 3a < 10a (fixed lexical issue)
+		{"complex alphanumeric", "1.2.10b", "1.2.3c", 1},          // 10b > 3c
+		{"same numeric different suffix", "1.2.3a", "1.2.3b", -1}, // 3a < 3b
+
 		// Prerelease comparisons
 		{"normal version vs prerelease", "1.0.0", "1.0.0-alpha", 1},
 		{"prerelease vs normal version", "1.0.0-alpha", "1.0.0", -1},
