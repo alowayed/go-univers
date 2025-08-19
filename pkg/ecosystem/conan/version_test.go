@@ -216,6 +216,29 @@ func TestEcosystem_NewVersion(t *testing.T) {
 			input:     "1.2.3+build..1",
 			wantError: true,
 		},
+
+		// Leading zero validation in prerelease/build metadata
+		{
+			name:      "leading zero in prerelease",
+			input:     "1.2.3-alpha.01",
+			wantError: true,
+		},
+		{
+			name:      "leading zero in build metadata",
+			input:     "1.2.3+build.01",
+			wantError: true,
+		},
+		{
+			name:      "valid single digit zero",
+			input:     "1.2.3-alpha.0",
+			wantError: false,
+			expected:  &Version{parts: []string{"1", "2", "3"}, prerelease: "alpha.0", build: "", original: "1.2.3-alpha.0"},
+		},
+		{
+			name:      "multiple leading zeros",
+			input:     "1.2.3-001",
+			wantError: true,
+		},
 	}
 
 	e := &Ecosystem{}

@@ -10,7 +10,7 @@ import (
 var (
 	// constraintPattern matches individual constraints
 	// Supports: >=, >, <=, <, ~, ^, !=, exact version
-	constraintPattern = regexp.MustCompile(`^\s*(>=|>|<=|<|~|\^|!=|=)?\s*([0-9a-z\.\-\+]+(?:\.[0-9a-z\.\-\+]*)*(?:-[0-9a-z\.\-]*)*(?:\+[0-9a-z\.\-]*)*)\s*$`)
+	constraintPattern = regexp.MustCompile(`^\s*(>=|>|<=|<|~|\^|!=|=)?\s*(\S+)\s*$`)
 )
 
 // VersionRange represents a Conan version range

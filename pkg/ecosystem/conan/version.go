@@ -91,6 +91,9 @@ func validateIdentifiers(identifiers, identifierType string) error {
 		if !prereleasePartPattern.MatchString(part) {
 			return fmt.Errorf("invalid characters in %s identifier: %s", identifierType, part)
 		}
+		if numericPattern.MatchString(part) && len(part) > 1 && part[0] == '0' {
+			return fmt.Errorf("invalid leading zero in numeric %s identifier: %s", identifierType, part)
+		}
 	}
 	return nil
 }
