@@ -75,7 +75,8 @@ for branch in $local_branches; do
     is_ecosystem_merged=false
     if [[ "$branch" =~ (feat|feature).*(ecosystem|support) ]]; then
         # Check if the ecosystem directory exists in main
-        ecosystem_dirs=$(git diff --name-only "$MAIN_BRANCH"..."$branch" 2>/dev/null | grep "pkg/ecosystem/" | cut -d'/' -f3 | sort -u)
+        # Filter for actual directories (4th field and beyond, not files in pkg/ecosystem/)
+        ecosystem_dirs=$(git diff --name-only "$MAIN_BRANCH"..."$branch" 2>/dev/null | grep "pkg/ecosystem/" | awk -F'/' 'NF >= 4 {print $3}' | sort -u)
         all_ecosystems_exist=true
         
         for ecosystem in $ecosystem_dirs; do
