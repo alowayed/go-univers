@@ -15,7 +15,7 @@ NC='\033[0m' # No Color
 # Configuration
 MAIN_BRANCH="main"
 PROTECTED_BRANCHES=("main" "master" "develop" "development")
-WORKING_BRANCH_PATTERNS=("feature/semver-ecosystem-support" "feat/add-branch-cleanup-automation")
+WORKING_BRANCH_PATTERNS=() # e.g. ("feature/long-running-task" "user/my-wip-branch")
 
 echo -e "${BLUE}🧹 Branch Cleanup Tool${NC}"
 echo "Scanning for branches that have been squash-merged..."
@@ -27,17 +27,20 @@ git checkout "$MAIN_BRANCH" > /dev/null 2>&1
 git fetch --all --prune > /dev/null 2>&1
 git pull origin "$MAIN_BRANCH" > /dev/null 2>&1
 
-# Get all local branches except protected ones
-local_branches=$(git branch --format='%(refname:short)' | grep -v "^$MAIN_BRANCH$")
+mapfile -t local_branches < <(git branch --format='%(refname:short)' | grep -v "^$MAIN_BRANCH$")
 
 # Arrays to track branches
 merged_branches=()
 working_branches=()
 unknown_branches=()
 
+# Associative arrays to cache git operation results
+declare -A branch_commits_not_in_main
+declare -A branch_remote_exists
+
 echo -e "${BLUE}🔍 Analyzing branches...${NC}"
 
-for branch in $local_branches; do
+for branch in "${local_branches[@]}"; do
     # Skip if it's a protected branch
     if [[ " ${PROTECTED_BRANCHES[@]} " =~ " ${branch} " ]]; then
         continue
@@ -46,7 +49,7 @@ for branch in $local_branches; do
     # Skip if it's a known working branch
     is_working=false
     for pattern in "${WORKING_BRANCH_PATTERNS[@]}"; do
-        if [[ "$branch" == "$pattern" ]]; then
+        if [[ "$branch" == $pattern ]]; then
             is_working=true
             working_branches+=("$branch")
             break
@@ -57,18 +60,24 @@ for branch in $local_branches; do
         continue
     fi
     
-    # Check if remote tracking branch exists
-    remote_exists=$(git ls-remote --exit-code --heads origin "$branch" > /dev/null 2>&1 && echo "true" || echo "false")
+    # Check if remote tracking branch exists (cache result)
+    if git ls-remote --exit-code --heads origin "$branch" > /dev/null 2>&1; then
+        branch_remote_exists["$branch"]="true"
+        remote_exists="true"
+    else
+        branch_remote_exists["$branch"]="false"
+        remote_exists="false"
+    fi
     
-    # Check if all commits from this branch are in main (indicates squash merge)
-    commits_not_in_main=$(git cherry "$MAIN_BRANCH" "$branch" 2>/dev/null | grep "^+" | wc -l || echo "0")
+    # Check if all commits from this branch are in main (cache result)
+    commits_not_in_main=$(git cherry "$MAIN_BRANCH" "$branch" 2>/dev/null | grep "^+" | wc -l)
+    branch_commits_not_in_main["$branch"]="$commits_not_in_main"
     
     # Check if there are any differences in file content
-    file_diff_count=0
-    if git diff --quiet "$MAIN_BRANCH"..."$branch" > /dev/null 2>&1; then
+    if git diff --quiet "$MAIN_BRANCH"..."$branch" --; then
         file_diff_count=0
     else
-        file_diff_count=$(git diff --name-only "$MAIN_BRANCH"..."$branch" 2>/dev/null | wc -l || echo "1")
+        file_diff_count=1
     fi
     
     # Enhanced detection for ecosystem branches (common pattern)
@@ -119,8 +128,12 @@ if [[ ${#merged_branches[@]} -eq 0 ]]; then
     echo "  None found"
 else
     for branch in "${merged_branches[@]}"; do
-        remote_exists=$(git ls-remote --exit-code --heads origin "$branch" > /dev/null 2>&1 && echo "(remote exists)" || echo "(remote deleted)")
-        echo "  - $branch $remote_exists"
+        if [[ "${branch_remote_exists["$branch"]}" == "true" ]]; then
+            remote_status="(remote exists)"
+        else
+            remote_status="(remote deleted)"
+        fi
+        echo "  - $branch $remote_status"
     done
 fi
 
@@ -130,9 +143,13 @@ if [[ ${#unknown_branches[@]} -eq 0 ]]; then
     echo "  None found"
 else
     for branch in "${unknown_branches[@]}"; do
-        commits_not_in_main=$(git cherry "$MAIN_BRANCH" "$branch" 2>/dev/null | grep "^+" | wc -l || echo "0")
-        remote_exists=$(git ls-remote --exit-code --heads origin "$branch" > /dev/null 2>&1 && echo "(remote exists)" || echo "(remote deleted)")
-        echo "  - $branch (${commits_not_in_main} unique commits) $remote_exists"
+        commits_not_in_main="${branch_commits_not_in_main["$branch"]}"
+        if [[ "${branch_remote_exists["$branch"]}" == "true" ]]; then
+            remote_status="(remote exists)"
+        else
+            remote_status="(remote deleted)"
+        fi
+        echo "  - $branch (${commits_not_in_main} unique commits) $remote_status"
     done
 fi
 
