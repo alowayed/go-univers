@@ -264,27 +264,14 @@ func (r *VersionRange) tildeMatch(version, constraint *Version) bool {
 		}
 		return vPart == constraint.parts[0]
 
-	case 2: // ~1.2 := >=1.2.0 <1.3.0
-		// Major and minor must match
+	default: // ~1.2, ~1.2.3, etc. mean major and minor must match
+		// Major and minor must match for constraints with 2 or more parts.
 		for i := 0; i < 2; i++ {
 			vPart := "0"
 			if i < len(version.parts) {
 				vPart = version.parts[i]
 			}
 			if vPart != constraint.parts[i] {
-				return false
-			}
-		}
-		return true
-
-	default: // ~1.2.3 := >=1.2.3 <1.3.0
-		// Major and minor must match, patch can be anything
-		for i := 0; i < 2; i++ {
-			vPart := "0"
-			if i < len(version.parts) {
-				vPart = version.parts[i]
-			}
-			if i < len(constraint.parts) && vPart != constraint.parts[i] {
 				return false
 			}
 		}
