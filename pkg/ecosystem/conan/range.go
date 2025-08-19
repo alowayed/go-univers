@@ -10,13 +10,13 @@ import (
 var (
 	// constraintPattern matches individual constraints
 	// Supports: >=, >, <=, <, ~, ^, !=, exact version
-	constraintPattern = regexp.MustCompile(`^\s*(>=|>|<=|<|~|\^|!=|=)?\s*([0-9a-z\.\-\+]+.*?)\s*$`)
+	constraintPattern = regexp.MustCompile(`^\s*(>=|>|<=|<|~|\^|!=|=)?\s*([0-9a-z\.\-\+]+(?:\.[0-9a-z\.\-\+]*)*(?:-[0-9a-z\.\-]*)*(?:\+[0-9a-z\.\-]*)*)\s*$`)
 )
 
 // VersionRange represents a Conan version range
 type VersionRange struct {
-	constraints []constraint
-	original    string
+	orGroups [][]constraint // Each inner slice is an AND group, outer slice represents OR logic
+	original string
 }
 
 // constraint represents a single version constraint
@@ -36,13 +36,17 @@ func (e *Ecosystem) NewVersionRange(rangeStr string) (*VersionRange, error) {
 
 	// Handle OR logic (||)
 	orParts := strings.Split(rangeStr, "||")
-	var allConstraints []constraint
+	var orGroups [][]constraint
 
 	for _, orPart := range orParts {
 		orPart = strings.TrimSpace(orPart)
+		if orPart == "" {
+			continue
+		}
 
 		// Parse AND constraints (comma or space separated)
 		andParts := splitConstraints(orPart)
+		var andConstraints []constraint
 
 		for _, andPart := range andParts {
 			andPart = strings.TrimSpace(andPart)
@@ -55,21 +59,25 @@ func (e *Ecosystem) NewVersionRange(rangeStr string) (*VersionRange, error) {
 				return nil, fmt.Errorf("invalid constraint '%s' in range '%s': %v", andPart, original, err)
 			}
 
-			allConstraints = append(allConstraints, constraint)
+			andConstraints = append(andConstraints, constraint)
+		}
+
+		if len(andConstraints) > 0 {
+			orGroups = append(orGroups, andConstraints)
 		}
 	}
 
-	if len(allConstraints) == 0 {
+	if len(orGroups) == 0 {
 		return nil, fmt.Errorf("no valid constraints found in range: %s", original)
 	}
 
 	return &VersionRange{
-		constraints: allConstraints,
-		original:    original,
+		orGroups: orGroups,
+		original: original,
 	}, nil
 }
 
-// splitConstraints splits a string into individual constraints
+// splitConstraints splits a string into individual constraints using regex-based parsing
 func splitConstraints(s string) []string {
 	// First split by comma to handle comma-separated constraints
 	commaParts := strings.Split(s, ",")
@@ -81,22 +89,56 @@ func splitConstraints(s string) []string {
 			continue
 		}
 
-		// For each comma-separated part, check if it contains multiple space-separated constraints
-		// But be careful not to split things like " >= 1.2.3 " which should be one constraint
-		spaceParts := strings.Fields(part)
-		if len(spaceParts) > 1 {
-			// Check if this looks like operator + version (single constraint with spaces)
-			// vs multiple separate constraints
-			if len(spaceParts) == 2 && isOperator(spaceParts[0]) {
-				// Single constraint with spaces like ">= 1.2.3"
-				result = append(result, strings.TrimSpace(part))
-			} else {
-				// Multiple space-separated constraints
-				result = append(result, spaceParts...)
-			}
+		// Use regex to find all constraints in this part
+		constraints := findConstraints(part)
+		result = append(result, constraints...)
+	}
+
+	return result
+}
+
+// findConstraints uses regex to find individual constraints in a string
+// Handles cases like ">= 1.2.0 < 2.0.0" correctly
+func findConstraints(s string) []string {
+	var result []string
+
+	// Try the simpler approach: split by spaces and rebuild constraints
+	spaceParts := strings.Fields(s)
+	if len(spaceParts) > 1 {
+		// Check if this looks like operator + version (single constraint with spaces)
+		if len(spaceParts) == 2 && isOperator(spaceParts[0]) {
+			// Single constraint with spaces like ">= 1.2.3"
+			result = append(result, strings.TrimSpace(s))
 		} else {
-			// Single constraint
-			result = append(result, part)
+			// Try to rebuild constraints from parts
+			result = rebuildConstraintsFromParts(spaceParts)
+		}
+	} else {
+		// Single constraint
+		result = append(result, strings.TrimSpace(s))
+	}
+
+	return result
+}
+
+// rebuildConstraintsFromParts attempts to rebuild constraints from space-separated parts
+func rebuildConstraintsFromParts(parts []string) []string {
+	var result []string
+	i := 0
+
+	for i < len(parts) {
+		if isOperator(parts[i]) && i+1 < len(parts) {
+			// Operator followed by version
+			constraint := parts[i] + " " + parts[i+1]
+			result = append(result, constraint)
+			i += 2
+		} else if !isOperator(parts[i]) {
+			// Standalone version (no operator)
+			result = append(result, parts[i])
+			i++
+		} else {
+			// Operator without version, skip
+			i++
 		}
 	}
 
@@ -143,30 +185,18 @@ func parseConstraint(constraintStr string, e *Ecosystem) (constraint, error) {
 
 // Contains checks if a version satisfies this range
 func (r *VersionRange) Contains(version *Version) bool {
-	if len(r.constraints) == 0 {
+	if len(r.orGroups) == 0 {
 		return false
 	}
 
-	// Group constraints by OR logic (|| separates OR groups)
-	// Within each OR group, all constraints must be satisfied (AND logic)
-	constraintGroups := r.groupConstraintsByOR()
-
 	// Check if any OR group is satisfied
-	for _, group := range constraintGroups {
+	for _, group := range r.orGroups {
 		if r.groupSatisfied(group, version) {
 			return true
 		}
 	}
 
 	return false
-}
-
-// groupConstraintsByOR groups constraints by OR logic
-func (r *VersionRange) groupConstraintsByOR() [][]constraint {
-	// For now, treat all constraints as a single AND group
-	// This is a simplified implementation - in a full implementation,
-	// we would need to track which constraints came from which OR part
-	return [][]constraint{r.constraints}
 }
 
 // groupSatisfied checks if all constraints in a group are satisfied

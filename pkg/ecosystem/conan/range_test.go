@@ -37,6 +37,11 @@ func TestEcosystem_NewVersionRange(t *testing.T) {
 		{"whitespace around operators", " >= 1.2.3 ", false},
 		{"extra whitespace", "  >=  1.2.3  ,  <  2.0.0  ", false},
 
+		// Valid ranges - space-separated constraints (fixes for constraint splitting)
+		{"space separated with operator spaces", ">= 1.2.0 < 2.0.0", false},
+		{"space separated mixed", ">= 1.2.0 <2.0.0", false},
+		{"complex space separated", ">= 1.0.0 < 1.5.0 != 1.2.3", false},
+
 		// Invalid ranges
 		{"empty string", "", true},
 		{"only whitespace", "   ", true},
@@ -122,6 +127,12 @@ func TestVersionRange_Contains(t *testing.T) {
 		{"multiple constraints - first not satisfied", ">=1.2.0, <2.0.0", "1.1.0", false},
 		{"multiple constraints - second not satisfied", ">=1.2.0, <2.0.0", "2.1.0", false},
 		{"three constraints - all satisfied", ">=1.0.0, <2.0.0, !=1.5.0", "1.4.0", true},
+
+		// Space-separated constraints (fixes for constraint splitting)
+		{"space separated with spaces around operators", ">= 1.2.0 < 2.0.0", "1.5.0", true},
+		{"space separated with spaces around operators - false", ">= 1.2.0 < 2.0.0", "2.1.0", false},
+		{"complex space separated", ">= 1.0.0 < 1.5.0 != 1.2.3", "1.4.0", true},
+		{"complex space separated - excluded", ">= 1.0.0 < 1.5.0 != 1.2.3", "1.2.3", false},
 
 		// Extended Conan version formats
 		{"version with letter", ">=1.2.3a", "1.2.3b", true},
@@ -212,11 +223,18 @@ func TestVersionRange_ConanSpecificScenarios(t *testing.T) {
 		// Test mixed numeric/alphabetic version parts
 		{"mixed parts in constraint", ">=1.2a.3", "1.2b.3", true},
 		{"mixed parts - numeric vs alpha", ">=1.2.3", "1.2.3a", true},
-		{"mixed parts - alpha vs numeric", ">=1.2.3a", "1.2.4", false},
+		{"mixed parts - alpha vs numeric", ">=1.2.3a", "1.2.4", true},
 
 		// Complex constraints with extended versions
 		{"complex constraint with letters", ">=1.0.2n, <1.1.0", "1.0.2o", true},
 		{"complex constraint with many parts", ">=1.2.3.4, <1.2.4", "1.2.3.5", true},
+
+		// OR logic tests
+		{"OR constraint - first group satisfied", ">=1.0.0, <1.5.0 || >=2.0.0, <2.5.0", "1.2.0", true},
+		{"OR constraint - second group satisfied", ">=1.0.0, <1.5.0 || >=2.0.0, <2.5.0", "2.2.0", true},
+		{"OR constraint - neither group satisfied", ">=1.0.0, <1.5.0 || >=2.0.0, <2.5.0", "1.8.0", false},
+		{"OR constraint - complex", ">1.0.0 <2.0.0 || ^3.2.0", "1.5.0", true},
+		{"OR constraint - complex second match", ">1.0.0 <2.0.0 || ^3.2.0", "3.2.5", true},
 	}
 
 	e := &Ecosystem{}

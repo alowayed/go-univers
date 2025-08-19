@@ -298,6 +298,12 @@ func TestVersion_Compare(t *testing.T) {
 		{"numeric ordering in parts", "1.2.11", "1.2.9", 1},
 		{"large numbers", "1.999.999", "1.1000.0", -1},
 
+		// Natural comparison fixes - mixed numeric/alphabetic parts
+		{"numeric vs alphanumeric with same base", "1.2.10", "1.2.3a", 1},  // 10 > 3a
+		{"numeric vs alphanumeric different base", "1.2.3", "1.2.10a", -1}, // 3 < 10a
+		{"pure numeric vs pure alphabetic", "1.2.3", "1.2.a", -1},          // numeric < alphabetic
+		{"alphanumeric vs pure numeric", "1.2.3a", "1.2.4", -1},            // 3a < 4
+
 		// Prerelease comparisons
 		{"normal version vs prerelease", "1.0.0", "1.0.0-alpha", 1},
 		{"prerelease vs normal version", "1.0.0-alpha", "1.0.0", -1},

@@ -133,31 +133,9 @@ func compareVersionParts(a, b []string) int {
 			bPart = "0" // Missing parts are treated as 0
 		}
 
-		// Compare parts - digits numerically, letters alphabetically
-		aIsNum := numericPattern.MatchString(aPart)
-		bIsNum := numericPattern.MatchString(bPart)
-
-		if aIsNum && bIsNum {
-			// Both are numeric, compare numerically
-			aNum, _ := strconv.Atoi(aPart)
-			bNum, _ := strconv.Atoi(bPart)
-			if aNum != bNum {
-				return compareInt(aNum, bNum)
-			}
-		} else if aIsNum && !bIsNum {
-			// Numeric comes before alphabetic
-			return -1
-		} else if !aIsNum && bIsNum {
-			// Alphabetic comes after numeric
-			return 1
-		} else {
-			// Both are alphabetic, compare lexically
-			if aPart != bPart {
-				if aPart < bPart {
-					return -1
-				}
-				return 1
-			}
+		// Compare parts using natural ordering
+		if aPart != bPart {
+			return naturalCompare(aPart, bPart)
 		}
 	}
 
@@ -233,6 +211,66 @@ func comparePrerelease(a, b string) int {
 	}
 
 	return 0
+}
+
+// naturalCompare compares two version parts using natural ordering
+// Handles mixed alphanumeric parts correctly (e.g., "2" < "10" < "10a" < "3a")
+func naturalCompare(a, b string) int {
+	aIsNum := numericPattern.MatchString(a)
+	bIsNum := numericPattern.MatchString(b)
+
+	if aIsNum && bIsNum {
+		// Both are numeric, compare numerically
+		aNum, _ := strconv.Atoi(a)
+		bNum, _ := strconv.Atoi(b)
+		return compareInt(aNum, bNum)
+	} else if aIsNum && !bIsNum {
+		// Pure numeric vs alphanumeric: need to check if b starts with a number
+		if bNum := extractLeadingNumber(b); bNum != "" {
+			aNum, _ := strconv.Atoi(a)
+			bNumVal, _ := strconv.Atoi(bNum)
+			if aNum != bNumVal {
+				return compareInt(aNum, bNumVal)
+			}
+			// Same numeric part, pure number comes before suffixed version
+			return -1
+		}
+		// Pure numeric comes before pure alphabetic
+		return -1
+	} else if !aIsNum && bIsNum {
+		// Alphanumeric vs pure numeric: check if a starts with a number
+		if aNum := extractLeadingNumber(a); aNum != "" {
+			aNumVal, _ := strconv.Atoi(aNum)
+			bNum, _ := strconv.Atoi(b)
+			if aNumVal != bNum {
+				return compareInt(aNumVal, bNum)
+			}
+			// Same numeric part, suffixed version comes after pure number
+			return 1
+		}
+		// Pure alphabetic comes after pure numeric
+		return 1
+	} else {
+		// Both are alphanumeric, compare lexically
+		if a < b {
+			return -1
+		}
+		return 1
+	}
+}
+
+// extractLeadingNumber extracts the leading numeric portion of a string
+func extractLeadingNumber(s string) string {
+	for i, r := range s {
+		if r < '0' || r > '9' {
+			if i == 0 {
+				return ""
+			}
+			return s[:i]
+		}
+	}
+	// Entire string is numeric
+	return s
 }
 
 // compareInt returns -1 if a < b, 0 if a == b, 1 if a > b
