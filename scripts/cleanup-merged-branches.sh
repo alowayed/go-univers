@@ -27,7 +27,11 @@ git checkout "$MAIN_BRANCH" > /dev/null 2>&1
 git fetch --all --prune > /dev/null 2>&1
 git pull origin "$MAIN_BRANCH" > /dev/null 2>&1
 
-mapfile -t local_branches < <(git branch --format='%(refname:short)' | grep -v "^$MAIN_BRANCH$")
+# Get all local branches safely (compatible with older bash versions)
+local_branches=()
+while IFS= read -r branch; do
+    local_branches+=("$branch")
+done < <(git branch --format='%(refname:short)' | grep -v "^$MAIN_BRANCH$")
 
 # Arrays to track branches
 merged_branches=()
