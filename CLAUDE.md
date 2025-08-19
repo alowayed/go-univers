@@ -145,7 +145,7 @@ See `pkg/ecosystem/` directory for all supported ecosystems.
 
 **CRITICAL: Branch Protection Rules**
 - **NEVER commit directly to main branch**
-- **NEVER push directly to main branch** 
+- **NEVER push directly to main branch**
 - **ALWAYS create feature branches** for any changes, no matter how small
 - **ALWAYS create PRs** for code review before merging
 - Even urgent fixes must go through feature branch → PR → merge workflow
