@@ -4,14 +4,11 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
-
-	"github.com/alowayed/go-univers/pkg/vers"
 )
 
 type VersionRange struct {
-	original        string
-	constraints     []constraint              // For native Maven ranges
-	versConstraints []vers.Constraint        // For VERS ranges
+	original    string
+	constraints []constraint
 }
 
 type constraint struct {
@@ -43,12 +40,6 @@ func (e *Ecosystem) NewVersionRange(rangeStr string) (*VersionRange, error) {
 }
 
 func (vr *VersionRange) Contains(version *Version) bool {
-	// If this is a VERS range, use the VERS algorithm
-	if vr.versConstraints != nil {
-		return vr.containsVers(version)
-	}
-
-	// Otherwise use the traditional Maven algorithm
 	if len(vr.constraints) == 0 {
 		return false
 	}
@@ -60,39 +51,6 @@ func (vr *VersionRange) Contains(version *Version) bool {
 		}
 	}
 	return true
-}
-
-// containsVers uses the VERS algorithm for checking version containment
-func (vr *VersionRange) containsVers(version *Version) bool {
-	// Create a parse function for Maven versions
-	parseVersion := func(versionStr string) (vers.VersionComparator, error) {
-		e := &Ecosystem{}
-		v, err := e.NewVersion(versionStr)
-		if err != nil {
-			return nil, err
-		}
-		return &versionComparatorWrapper{v}, nil
-	}
-
-	// Use the VERS containment algorithm
-	result, err := vers.ContainsVersion(&versionComparatorWrapper{version}, vr.versConstraints, parseVersion)
-	if err != nil {
-		return false // If there's an error, assume not contained
-	}
-	return result
-}
-
-// versionComparatorWrapper wraps Maven Version to implement vers.VersionComparator
-type versionComparatorWrapper struct {
-	*Version
-}
-
-func (w *versionComparatorWrapper) Compare(other vers.VersionComparator) int {
-	if otherWrapper, ok := other.(*versionComparatorWrapper); ok {
-		return w.Version.Compare(otherWrapper.Version)
-	}
-	// Fallback to string comparison if types don't match
-	return strings.Compare(w.String(), other.String())
 }
 
 func (vr *VersionRange) String() string {

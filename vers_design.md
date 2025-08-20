@@ -10,111 +10,100 @@ VERS provides a universal notation for expressing version ranges across differen
 
 **Implementation Scope**: Parse VERS strings into strongly-typed ecosystem-specific version ranges. No conversion back to VERS format is required.
 
-## Selected Approach: Hybrid Stateless + Ecosystem-Specific Methods
+## Selected Approach: Stateless VERS-Only API
 
 **User API:**
 ```go
-// Convenient stateless API (primary usage) - automatic ecosystem detection
-contains, err := vers.Contains("vers:maven/>=1.0.0|<=1.7.5", "1.1.0")
-compare, err := vers.Compare("vers:npm/^1.2.0", "1.3.0", "1.4.0")
+// Single stateless API - automatic ecosystem detection and VERS processing
+contains, err := vers.Contains("vers:maven/>=1.0.0|<=1.7.5|>=7.0.0|<=7.0.7", "1.1.0")
 
-// Type-safe ecosystem API (power users) - explicit ecosystem selection
-range, err := maven.ParseVers("vers:maven/>=1.0.0-beta1|<=1.7.5|>=7.0.0-M1|<=7.0.7")
-version, _ := maven.NewVersion("1.1.0")
-contains := range.Contains(version) // Returns bool
-
-// Works with all ecosystems
-npmRange, err := npm.ParseVers("vers:npm/>=1.2.0|<2.0.0")
-pypiRange, err := pypi.ParseVers("vers:pypi/~=1.2.3|!=1.2.5")
-goRange, err := gomod.ParseVers("vers:go/>=v1.2.0|<v2.0.0")
-alpineRange, err := alpine.ParseVers("vers:alpine/>=1.2.0")
+// That's it - no ecosystem-specific VERS methods needed
 ```
 
 **Implementation Structure:**
 ```go
-// Stateless API in pkg/vers/ (primary usage):
+// Only public API in pkg/vers/:
 func Contains(versRange, version string) (bool, error)
-func Compare(versRange, version1, version2 string) (int, error)
 
-// In each ecosystem package (e.g., pkg/ecosystem/maven/):
-func ParseVers(versString string) (*VersionRange, error)
+// No changes to any ecosystem packages - they remain completely clean
 
-// Existing method remains unchanged for backward compatibility:
-func (e *Ecosystem) NewVersionRange(s string) (*VersionRange, error)
-
-// Shared VERS parsing logic in pkg/vers/:
-func ParseVersConstraints(ecosystem, constraints string) ([]Constraint, error)
-
-// Internal implementation of stateless API:
+// Internal implementation converts VERS to native ecosystem ranges:
 func Contains(versRange, version string) (bool, error) {
-    ecosystem, _ := parseVersString(versRange)
+    ecosystem, constraints := parseVersString(versRange)
+    
     switch ecosystem {
     case "maven":
-        range, err := maven.ParseVers(versRange)  // Reuse existing ParseVers
+        // Convert VERS constraints to native Maven ranges
+        ranges := convertVersToMavenRanges(constraints)
+        
+        // Use existing Maven API to check containment
+        version, err := (&maven.Ecosystem{}).NewVersion(version)
         if err != nil { return false, err }
         
-        ver, err := (&maven.Ecosystem{}).NewVersion(version)
-        if err != nil { return false, err }
-        
-        return range.Contains(ver), nil
+        // VERS interval logic: version satisfies range if it's in ANY interval
+        for _, range := range ranges {
+            if range.Contains(version) {
+                return true
+            }
+        }
+        return false
     // ... similar for all ecosystems
     }
 }
+
+// VERS-specific logic converts constraints to native ecosystem ranges
+func convertVersToMavenRanges(constraints string) []*maven.VersionRange {
+    // Example: ">=1.0.0|<=1.7.5|>=7.0.0|<=7.0.7"
+    // Becomes: Maven ranges "[1.0.0,1.7.5]" and "[7.0.0,7.0.7]" 
+}
 ```
 
-**Why This Hybrid Approach:**
-- ✅ **Best user experience** - Stateless API for convenience, ecosystem API for power users
-- ✅ **Matches VERS philosophy** - Universal interface that feels truly universal
-- ✅ **Maintains type safety** - Ecosystem-specific methods prevent cross-ecosystem mixing
-- ✅ **Minimal API surface** - Only adds `ParseVers()` to ecosystems and stateless functions
-- ✅ **Reuses existing methods** - `NewVersion()`, `Contains()`, `Compare()` 
-- ✅ **Mirrors CLI architecture** - Automatic ecosystem detection like the CLI does
-- ✅ **Backward compatible** - Existing `NewVersionRange()` remains unchanged
-- ✅ **Simple scope** - Just parsing, no conversion complexity
+**Why This Approach:**
+- ✅ **Simplest user experience** - Single function for all VERS operations
+- ✅ **Matches VERS philosophy** - Truly universal interface across all ecosystems
+- ✅ **No ecosystem pollution** - Ecosystems remain completely unchanged
+- ✅ **Minimal API surface** - Only one function: `Contains()`
+- ✅ **Reuses existing ecosystem APIs** - `NewVersion()`, `NewVersionRange()`, `Contains()`
+- ✅ **Centralized VERS logic** - All VERS complexity in one place, no duplication
+- ✅ **Backward compatible** - No changes to any existing ecosystem APIs
+- ✅ **Type safety maintained** - VERS package handles conversion to strongly-typed objects
 
 ## Other Approaches Considered
 
 Several alternative approaches were evaluated but rejected:
 
-1. **Generic Factory with Type Parameters** - Complex generics and less intuitive API
-2. **Registry-Based Factory** - Breaks type safety with runtime type assertions  
-3. **Interface-Based with Ecosystem Injection** - More verbose API with extra objects
-4. **Hybrid Package-Level Functions** - Larger API surface with potential confusion
+1. **Ecosystem-Specific ParseVers Methods** - Would add `ParseVers()` to each ecosystem, creating API bloat
+2. **Hybrid Stateless + Ecosystem APIs** - Two different ways to do the same thing, confusing  
+3. **Generic Factory with Type Parameters** - Complex generics and less intuitive API
+4. **Registry-Based Factory** - Breaks type safety with runtime type assertions
 
-- Maintains the core principle of type safety and ecosystem isolation
-- Minimizes time spent in generic VERS world  
-- Prevents cross-ecosystem version mixing at compile time
-- Matches the pattern of `ecosystem.NewVersion()` and `ecosystem.NewVersionRange()`
-- Provides intuitive API: `maven.ParseVers()` clearly indicates what you get back
-- Allows each ecosystem to optimize for its specific constraints
-- Enables shared common logic in `pkg/vers/` for constraint parsing
+The selected approach was chosen because it:
+- Provides the simplest possible user experience (single function call)
+- Keeps all ecosystems completely clean and unchanged
+- Centralizes all VERS complexity in one place
+- Maintains type safety through internal conversion to strongly-typed ecosystem objects
 
 ## Implementation Plan
 
-### Phase 1: Core Infrastructure
-1. **Create `pkg/vers/` package** with shared VERS parsing utilities:
-   - `ParseVersConstraints(ecosystem, constraints string) ([]Constraint, error)`
-   - VERS state machine implementation for version containment checking
-
-### Phase 2: Ecosystem Integration  
-2. **Add VERS parsing method to each ecosystem**:
-   - `ParseVers(versString string) (*VersionRange, error)`
-   - Integration with existing constraint types
-
-### Phase 3: Stateless API
-3. **Create stateless API in `pkg/vers/`**:
+### Phase 1: VERS Package Core
+1. **Create `pkg/vers/` package** with stateless API:
    - `Contains(versRange, version string) (bool, error)`
-   - `Compare(versRange, version1, version2 string) (int, error)`
-   - Ecosystem routing logic with switch statement
+   - Internal VERS parsing and constraint conversion logic
 
-### Phase 4: Testing
-4. **Comprehensive testing** across all ecosystems:
-   - Test ecosystem-specific `ParseVers()` methods
-   - Test stateless API functions
-   - Test ecosystem routing logic
+### Phase 2: Ecosystem Integration
+2. **Add VERS-to-native conversion for each ecosystem**:
+   - `convertVersToMavenRanges(constraints string) []*maven.VersionRange`
+   - `convertVersToNpmRanges(constraints string) []*npm.VersionRange`
+   - No changes to ecosystem packages themselves
 
-### Phase 5: Documentation
-5. **Update documentation** with both API patterns and usage examples
+### Phase 3: Testing
+3. **Comprehensive testing** of VERS functionality:
+   - Test stateless API functions with all supported ecosystems
+   - Test VERS constraint parsing and conversion logic
+   - Test complex VERS examples from the specification
+
+### Phase 4: Documentation
+4. **Update documentation** with VERS usage examples and patterns
 
 ## CLI Integration Examples
 
@@ -132,13 +121,13 @@ univers maven contains "vers:maven/>=1.0.0|<=2.0.0" "1.5.0"  # → true
 
 ## Success Criteria
 
-- [ ] All supported ecosystems can parse VERS notation into strongly-typed version ranges via `ParseVers()`
-- [ ] Stateless API functions (`vers.Contains()`, `vers.Compare()`) work with all ecosystems  
-- [ ] Type safety maintained - no generic types enabling cross-ecosystem mixing
-- [ ] Ecosystem routing logic correctly dispatches to appropriate parsers
-- [ ] Comprehensive test coverage with edge cases for both API patterns
-- [ ] Documentation with examples for both stateless and ecosystem-specific usage
-- [ ] Backward compatibility with existing APIs (`NewVersionRange()` unchanged)
+- [ ] Stateless API function (`vers.Contains()`) works with all ecosystems
+- [ ] VERS constraint parsing and conversion to native ecosystem ranges works correctly
+- [ ] Type safety maintained - all conversions use strongly-typed ecosystem objects
+- [ ] Complex VERS examples (intervals, exclusions) work as specified
+- [ ] Comprehensive test coverage with edge cases for VERS functionality
+- [ ] Documentation with VERS usage examples and patterns
+- [ ] Zero changes to existing ecosystem APIs (complete backward compatibility)
 
 ## Constructor Naming Convention Analysis
 
