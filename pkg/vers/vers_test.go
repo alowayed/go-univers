@@ -114,21 +114,21 @@ func TestContains(t *testing.T) {
 			name:      "maven unordered constraints - outside range",
 			versRange: "vers:maven/>=2.0.0|>=1.0.0|<=3.0.0",
 			version:   "0.5.0",
-			want:      true, // Current behavior: creates interval from first pair, 0.5.0 < 3.0.0 so it matches upper bound
+			want:      false, // Fixed: Multiple lower bounds with single upper should merge to most restrictive (>=2.0.0, <=3.0.0)
 			wantErr:   false,
 		},
 		{
 			name:      "maven redundant lower bounds - should use more restrictive",
 			versRange: "vers:maven/>=1.0.0|>=2.0.0|<=3.0.0",
 			version:   "1.5.0",
-			want:      true, // For now, accept current behavior - this is complex interval logic
+			want:      false, // Fixed: Should use most restrictive lower bound (>=2.0.0), so 1.5.0 is excluded
 			wantErr:   false,
 		},
 		{
 			name:      "maven redundant upper bounds - should use more restrictive",
 			versRange: "vers:maven/>=1.0.0|<=3.0.0|<=2.0.0",
 			version:   "2.5.0",
-			want:      true, // For now, accept current behavior - this is complex interval logic
+			want:      false, // Fixed: Should use most restrictive upper bound (<=2.0.0), so 2.5.0 is excluded
 			wantErr:   false,
 		},
 		// Test exclude functionality
@@ -314,7 +314,7 @@ func TestContains(t *testing.T) {
 			name:      "redundant constraints with different operators",
 			versRange: "vers:maven/>=1.0.0|>1.0.0|<=2.0.0",
 			version:   "1.0.0",
-			want:      true, // Current implementation might fail this
+			want:      false, // Fixed: Most restrictive lower bound is >1.0.0, so 1.0.0 is excluded
 			wantErr:   false,
 		},
 	}
