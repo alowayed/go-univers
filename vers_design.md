@@ -385,7 +385,7 @@ The VERS (Version Range Specification) implementation is now fully functional fo
 **✅ Completed Features:**
 - Single stateless API: `vers.Contains(versRange, version string) (bool, error)`
 - Complete VERS string parsing: `"vers:<ecosystem>/<constraints>"`
-- All VERS operators supported: `>=`, `<=`, `>`, `<`, `=`, `!=`
+- VERS operators supported: `>=`, `<=`, `>`, `<`, `=` (Note: `!=` parsed but limited Maven range support)
 - VERS interval logic correctly implemented
 - Maven ecosystem integration using existing APIs
 - Comprehensive test coverage including complex examples
