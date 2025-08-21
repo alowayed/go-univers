@@ -30,7 +30,6 @@ func Contains(versRange, version string) (bool, error) {
 	}
 }
 
-
 // parseVersString parses a VERS string and returns the ecosystem and constraints.
 func parseVersString(versString string) (ecosystem, constraints string, err error) {
 	if !strings.HasPrefix(versString, "vers:") {
@@ -104,7 +103,7 @@ func convertVersToMavenRanges(constraints string) ([]*maven.VersionRange, error)
 	// Convert each interval to a Maven range
 	var ranges []*maven.VersionRange
 	e := &maven.Ecosystem{}
-	
+
 	for _, interval := range intervals {
 		rangeStr := convertIntervalToMavenRange(interval)
 		if rangeStr == "" {
@@ -184,19 +183,19 @@ func parseVersConstraint(constraintStr string) (versConstraint, error) {
 
 // interval represents a version interval [lower, upper]
 type interval struct {
-	lower         string
+	lower          string
 	lowerInclusive bool
-	upper         string
+	upper          string
 	upperInclusive bool
-	exact         string // for exact version matches
-	exclude       string // for != exclusions
+	exact          string // for exact version matches
+	exclude        string // for != exclusions
 }
 
 // groupConstraintsIntoIntervals groups VERS constraints into intervals according to the specification
 func groupConstraintsIntoIntervals(constraints []versConstraint) ([]interval, error) {
 	// For now, implement a simple version that handles basic cases
 	// TODO: Implement full VERS state machine algorithm
-	
+
 	var intervals []interval
 	var currentLower, currentUpper versConstraint
 	var hasLower, hasUpper bool
@@ -283,4 +282,3 @@ func convertIntervalToMavenRange(interval interval) string {
 
 	return ""
 }
-
