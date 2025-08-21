@@ -158,12 +158,32 @@ func contains[V univers.Version[V], VR univers.VersionRange[V]](
 		return false, fmt.Errorf("failed to convert VERS constraints: %w", err)
 	}
 
+	// Parse constraints to check for excludes
+	versConstraints, err := parseConstraints(constraints)
+	if err != nil {
+		return false, fmt.Errorf("failed to parse constraints for exclusion check: %w", err)
+	}
+	
+	// Check if version is excluded by any != constraints
+	for _, constraint := range versConstraints {
+		if constraint.operator == "!=" && constraint.version == version {
+			return false, nil // Version is explicitly excluded
+		}
+	}
+	
 	// VERS interval logic: version satisfies range if it's in ANY interval
+	// If there are no range intervals (only excludes), then version is allowed if not excluded
+	if len(ranges) == 0 {
+		return true, nil // No ranges means all versions allowed (except excludes, which we already checked)
+	}
+	
+	// Check if version is in any allowed range
 	for _, r := range ranges {
 		if r.Contains(v) {
 			return true, nil
 		}
 	}
+	
 	return false, nil
 }
 
@@ -271,26 +291,19 @@ func parseConstraint(constraintStr string) (constraint, error) {
 
 // groupConstraintsIntoIntervals groups VERS constraints into intervals according to the specification
 func groupConstraintsIntoIntervals(constraints []constraint) ([]interval, error) {
-	// For now, implement a simple version that handles basic cases
-	// TODO: Implement full VERS state machine algorithm
-
 	var intervals []interval
 	var lowerBounds []constraint
 	var upperBounds []constraint
+	var exactMatches []constraint
+	var excludes []constraint
 
-	// Collect all bounds by type
+	// Separate constraints by type
 	for _, constraint := range constraints {
 		switch constraint.operator {
 		case "=":
-			// Exact match - create interval with same lower and upper
-			intervals = append(intervals, interval{
-				exact: constraint.version,
-			})
+			exactMatches = append(exactMatches, constraint)
 		case "!=":
-			// Exclusion - for now, just store it (proper implementation would apply to other intervals)
-			intervals = append(intervals, interval{
-				exclude: constraint.version,
-			})
+			excludes = append(excludes, constraint)
 		case ">=", ">":
 			lowerBounds = append(lowerBounds, constraint)
 		case "<=", "<":
@@ -298,58 +311,44 @@ func groupConstraintsIntoIntervals(constraints []constraint) ([]interval, error)
 		}
 	}
 
-	// Create intervals based on the number of bounds
-	if len(lowerBounds) == 1 && len(upperBounds) == 1 {
-		// Simple case: one lower + one upper = one interval
+	// Handle exact matches first - they create individual intervals
+	for _, exact := range exactMatches {
 		intervals = append(intervals, interval{
-			lower:          lowerBounds[0].version,
-			lowerInclusive: lowerBounds[0].operator == ">=",
-			upper:          upperBounds[0].version,
-			upperInclusive: upperBounds[0].operator == "<=",
+			exact: exact.version,
 		})
-	} else if len(lowerBounds) == 0 && len(upperBounds) == 1 {
-		// Only upper bound
-		intervals = append(intervals, interval{
-			upper:          upperBounds[0].version,
-			upperInclusive: upperBounds[0].operator == "<=",
-		})
-	} else if len(lowerBounds) == 1 && len(upperBounds) == 0 {
-		// Only lower bound
-		intervals = append(intervals, interval{
-			lower:          lowerBounds[0].version,
-			lowerInclusive: lowerBounds[0].operator == ">=",
-		})
-	} else {
-		// Complex case: multiple bounds of same type
-		// Special handling based on the test cases
-		if len(lowerBounds) > 1 && len(upperBounds) == 1 {
-			// Case like >=2.0.0|>=1.0.0|<=3.0.0
-			// Create one interval with first lower bound + upper bound
-			intervals = append(intervals, interval{
-				lower:          lowerBounds[0].version,
-				lowerInclusive: lowerBounds[0].operator == ">=",
-				upper:          upperBounds[0].version,
-				upperInclusive: upperBounds[0].operator == "<=",
-			})
-			// Then create separate intervals for remaining lower bounds
-			for i := 1; i < len(lowerBounds); i++ {
+	}
+
+	// Excludes are handled separately in the contains function, not as intervals
+
+	// Handle range constraints (lower/upper bounds)
+	// VERS algorithm: pair constraints to create multiple intervals
+	if len(lowerBounds) > 0 || len(upperBounds) > 0 {
+		// If only one type of bound, create unbounded intervals
+		if len(lowerBounds) > 0 && len(upperBounds) == 0 {
+			// Only lower bounds - create separate intervals for each
+			for _, lower := range lowerBounds {
 				intervals = append(intervals, interval{
-					lower:          lowerBounds[i].version,
-					lowerInclusive: lowerBounds[i].operator == ">=",
+					lower:          lower.version,
+					lowerInclusive: lower.operator == ">=",
 				})
 			}
-			// And a separate interval for the upper bound
-			intervals = append(intervals, interval{
-				upper:          upperBounds[0].version,
-				upperInclusive: upperBounds[0].operator == "<=",
-			})
-		} else if len(lowerBounds) > 0 && len(upperBounds) > 0 {
-			// Pair bounds in order: first lower with first upper, etc.
+		} else if len(upperBounds) > 0 && len(lowerBounds) == 0 {
+			// Only upper bounds - create separate intervals for each
+			for _, upper := range upperBounds {
+				intervals = append(intervals, interval{
+					upper:          upper.version,
+					upperInclusive: upper.operator == "<=",
+				})
+			}
+		} else {
+			// Both lower and upper bounds - pair them to create intervals
+			// VERS pairing algorithm: process constraints in pairs
 			maxPairs := len(lowerBounds)
 			if len(upperBounds) < maxPairs {
 				maxPairs = len(upperBounds)
 			}
 
+			// Create intervals from pairs
 			for i := 0; i < maxPairs; i++ {
 				intervals = append(intervals, interval{
 					lower:          lowerBounds[i].version,
@@ -359,7 +358,7 @@ func groupConstraintsIntoIntervals(constraints []constraint) ([]interval, error)
 				})
 			}
 
-			// Handle remaining unpaired bounds
+			// Handle remaining unpaired bounds as unbounded intervals
 			for i := maxPairs; i < len(lowerBounds); i++ {
 				intervals = append(intervals, interval{
 					lower:          lowerBounds[i].version,
@@ -370,20 +369,6 @@ func groupConstraintsIntoIntervals(constraints []constraint) ([]interval, error)
 				intervals = append(intervals, interval{
 					upper:          upperBounds[i].version,
 					upperInclusive: upperBounds[i].operator == "<=",
-				})
-			}
-		} else {
-			// Only one type of bound
-			for _, lower := range lowerBounds {
-				intervals = append(intervals, interval{
-					lower:          lower.version,
-					lowerInclusive: lower.operator == ">=",
-				})
-			}
-			for _, upper := range upperBounds {
-				intervals = append(intervals, interval{
-					upper:          upper.version,
-					upperInclusive: upper.operator == "<=",
 				})
 			}
 		}

@@ -19,12 +19,9 @@ func intervalToMavenRanges(interval interval) []string {
 		return []string{fmt.Sprintf("[%s]", interval.exact)}
 	}
 
-	// Handle exclusions by creating two ranges: (,excluded) and (excluded,)
+	// Exclusions are now handled separately, not as Maven ranges
 	if interval.exclude != "" {
-		return []string{
-			fmt.Sprintf("(,%s)", interval.exclude),
-			fmt.Sprintf("(%s,)", interval.exclude),
-		}
+		return []string{} // Return empty - excludes handled in contains function
 	}
 
 	// Handle regular intervals with bounds

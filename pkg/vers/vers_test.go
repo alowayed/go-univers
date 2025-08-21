@@ -168,6 +168,155 @@ func TestContains(t *testing.T) {
 			want:      true,
 			wantErr:   false,
 		},
+		// VERS validation edge cases
+		{
+			name:      "empty ecosystem name",
+			versRange: "vers:/>1.0.0",
+			version:   "1.1.0",
+			want:      false,
+			wantErr:   true,
+		},
+		{
+			name:      "empty constraints",
+			versRange: "vers:maven/",
+			version:   "1.0.0",
+			want:      false,
+			wantErr:   true,
+		},
+		{
+			name:      "missing colon",
+			versRange: "versmaven/>=1.0.0",
+			version:   "1.0.0",
+			want:      false,
+			wantErr:   true,
+		},
+		{
+			name:      "missing slash separator",
+			versRange: "vers:maven>=1.0.0",
+			version:   "1.0.0",
+			want:      false,
+			wantErr:   true,
+		},
+		{
+			name:      "uppercase ecosystem should fail per VERS spec",
+			versRange: "vers:MAVEN/>=1.0.0",
+			version:   "1.0.0",
+			want:      false,
+			wantErr:   true, // VERS spec requires lowercase
+		},
+		{
+			name:      "whitespace in constraints should be normalized",
+			versRange: "vers:maven/ >= 1.0.0 | <= 2.0.0 ",
+			version:   "1.5.0",
+			want:      true,
+			wantErr:   false,
+		},
+		{
+			name:      "multiple stars should fail",
+			versRange: "vers:maven/*|*",
+			version:   "1.0.0",
+			want:      false,
+			wantErr:   true, // VERS spec allows only one star
+		},
+		{
+			name:      "duplicate constraints should be normalized",
+			versRange: "vers:maven/>=1.0.0|>=1.0.0|<=2.0.0",
+			version:   "1.5.0",
+			want:      true,
+			wantErr:   false,
+		},
+		{
+			name:      "unsorted constraints should work (normalization)",
+			versRange: "vers:maven/<=2.0.0|>=1.0.0",
+			version:   "1.5.0",
+			want:      true,
+			wantErr:   false,
+		},
+		// Complex constraint grouping scenarios
+		{
+			name:      "conflicting constraints - impossible range",
+			versRange: "vers:maven/>=2.0.0|<=1.0.0",
+			version:   "1.5.0",
+			want:      false,
+			wantErr:   false,
+		},
+		{
+			name:      "multiple lower bounds - should take most restrictive",
+			versRange: "vers:maven/>=1.0.0|>=2.0.0|<=3.0.0",
+			version:   "1.5.0",
+			want:      false, // Current implementation may fail this
+			wantErr:   false,
+		},
+		{
+			name:      "multiple upper bounds - should take most restrictive",
+			versRange: "vers:maven/>=1.0.0|<=3.0.0|<=2.0.0",
+			version:   "2.5.0",
+			want:      false, // Current implementation may fail this
+			wantErr:   false,
+		},
+		{
+			name:      "mixed inclusive and exclusive bounds",
+			versRange: "vers:maven/>1.0.0|<2.0.0",
+			version:   "1.0.0",
+			want:      false,
+			wantErr:   false,
+		},
+		{
+			name:      "mixed inclusive and exclusive bounds - edge case",
+			versRange: "vers:maven/>1.0.0|<2.0.0",
+			version:   "2.0.0",
+			want:      false,
+			wantErr:   false,
+		},
+		{
+			name:      "three intervals scenario - gap between intervals",
+			versRange: "vers:maven/>=1.0.0|<=1.5.0|>=2.0.0|<=2.5.0|>=3.0.0|<=3.5.0",
+			version:   "1.8.0",
+			want:      false,
+			wantErr:   false,
+		},
+		{
+			name:      "three intervals scenario - in first interval",
+			versRange: "vers:maven/>=1.0.0|<=1.5.0|>=2.0.0|<=2.5.0|>=3.0.0|<=3.5.0",
+			version:   "1.2.0",
+			want:      true,
+			wantErr:   false,
+		},
+		{
+			name:      "exclude with range combination",
+			versRange: "vers:maven/>=1.0.0|<=3.0.0|!=2.0.0",
+			version:   "2.0.0",
+			want:      false,
+			wantErr:   false,
+		},
+		{
+			name:      "exclude with range combination - allowed version",
+			versRange: "vers:maven/>=1.0.0|<=3.0.0|!=2.0.0",
+			version:   "1.9.0",
+			want:      true,
+			wantErr:   false,
+		},
+		{
+			name:      "multiple excludes",
+			versRange: "vers:maven/!=1.0.0|!=2.0.0",
+			version:   "1.0.0",
+			want:      false,
+			wantErr:   false,
+		},
+		{
+			name:      "multiple excludes - allowed version",
+			versRange: "vers:maven/!=1.0.0|!=2.0.0",
+			version:   "1.5.0",
+			want:      true,
+			wantErr:   false,
+		},
+		{
+			name:      "redundant constraints with different operators",
+			versRange: "vers:maven/>=1.0.0|>1.0.0|<=2.0.0",
+			version:   "1.0.0",
+			want:      true, // Current implementation might fail this
+			wantErr:   false,
+		},
 	}
 
 	for _, tt := range tests {
