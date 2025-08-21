@@ -15,7 +15,6 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/alowayed/go-univers/pkg/ecosystem/maven"
 	"github.com/alowayed/go-univers/pkg/univers"
 )
 
@@ -154,7 +153,7 @@ func contains[V univers.Version[V], VR univers.VersionRange[V]](
 	}
 
 	// Parse VERS constraints and convert to ecosystem ranges
-	ranges, err := parseConstraints(e, constraints)
+	ranges, err := toRanges(e, constraints)
 	if err != nil {
 		return false, fmt.Errorf("failed to convert VERS constraints: %w", err)
 	}
@@ -168,13 +167,13 @@ func contains[V univers.Version[V], VR univers.VersionRange[V]](
 	return false, nil
 }
 
-// parseConstraints converts VERS constraints to ecosystem-specific ranges
-func parseConstraints[V univers.Version[V], VR univers.VersionRange[V]](
+// toRanges converts VERS constraints to ecosystem-specific ranges
+func toRanges[V univers.Version[V], VR univers.VersionRange[V]](
 	e univers.Ecosystem[V, VR],
 	constraints []string,
 ) ([]VR, error) {
 	// Parse individual constraints
-	versConstraints, err := parseconstraints(constraints)
+	versConstraints, err := parseConstraints(constraints)
 	if err != nil {
 		return nil, err
 	}
@@ -188,22 +187,34 @@ func parseConstraints[V univers.Version[V], VR univers.VersionRange[V]](
 	// Convert each interval to an ecosystem range
 	var ranges []VR
 	for _, interval := range intervals {
-		rangeStr := convertIntervalToGenericRange(interval)
-		if rangeStr == "" {
-			continue // Skip empty intervals (like exclusions we don't handle yet)
+		// Create ecosystem-specific range strings from intervals
+		var rangeStrs []string
+
+		switch e.Name() {
+		case "maven":
+			rangeStrs = intervalToMavenRanges(interval)
+		default:
+			// For unsupported ecosystems, return error
+			return nil, fmt.Errorf("ecosystem '%s' not yet supported for VERS", e.Name())
 		}
-		r, err := e.NewVersionRange(rangeStr)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create %s range '%s': %w", e.Name(), rangeStr, err)
+
+		for _, rangeStr := range rangeStrs {
+			if rangeStr == "" {
+				continue // Skip empty ranges
+			}
+			r, err := e.NewVersionRange(rangeStr)
+			if err != nil {
+				return nil, fmt.Errorf("failed to create %s range '%s': %w", e.Name(), rangeStr, err)
+			}
+			ranges = append(ranges, r)
 		}
-		ranges = append(ranges, r)
 	}
 
 	return ranges, nil
 }
 
-// parseconstraints parses VERS constraint strings into individual constraints
-func parseconstraints(constraints []string) ([]constraint, error) {
+// parseConstraints parses VERS constraint strings into individual constraints
+func parseConstraints(constraints []string) ([]constraint, error) {
 	var result []constraint
 
 	for _, constraintStr := range constraints {
@@ -212,7 +223,7 @@ func parseconstraints(constraints []string) ([]constraint, error) {
 			continue
 		}
 
-		constraint, err := parseconstraint(constraintStr)
+		constraint, err := parseConstraint(constraintStr)
 		if err != nil {
 			return nil, fmt.Errorf("invalid constraint '%s': %w", constraintStr, err)
 		}
@@ -227,8 +238,8 @@ func parseconstraints(constraints []string) ([]constraint, error) {
 	return result, nil
 }
 
-// parseconstraint parses a single constraint string
-func parseconstraint(constraintStr string) (constraint, error) {
+// parseConstraint parses a single constraint string
+func parseConstraint(constraintStr string) (constraint, error) {
 	// Check for two-character operators first
 	if len(constraintStr) >= 2 {
 		twoChar := constraintStr[:2]
@@ -381,41 +392,6 @@ func groupConstraintsIntoIntervals(constraints []constraint) ([]interval, error)
 	return intervals, nil
 }
 
-// convertIntervalToGenericRange converts an interval to generic range syntax
-// This uses Maven-style bracket notation which should work for most ecosystems
-func convertIntervalToGenericRange(interval interval) string {
-	if interval.exact != "" {
-		return fmt.Sprintf("[%s]", interval.exact)
-	}
-
-	if interval.exclude != "" {
-		// Most ecosystems don't support exclusions directly, so we'll skip these for now
-		// In a full implementation, we'd need to handle this differently
-		return ""
-	}
-
-	// Convert interval bounds to Maven-style range syntax
-	lowerBracket := "["
-	if !interval.lowerInclusive {
-		lowerBracket = "("
-	}
-
-	upperBracket := "]"
-	if !interval.upperInclusive {
-		upperBracket = ")"
-	}
-
-	if interval.lower != "" && interval.upper != "" {
-		return fmt.Sprintf("%s%s,%s%s", lowerBracket, interval.lower, interval.upper, upperBracket)
-	} else if interval.lower != "" {
-		return fmt.Sprintf("%s%s,)", lowerBracket, interval.lower)
-	} else if interval.upper != "" {
-		return fmt.Sprintf("(,%s%s", interval.upper, upperBracket)
-	}
-
-	return ""
-}
-
 // Contains checks if a version satisfies a VERS range using the stateless API.
 // Example: Contains("vers:maven/>=1.0.0|<=2.0.0", "1.5.0") returns true.
 func Contains(versRange, version string) (bool, error) {
@@ -445,9 +421,7 @@ func Contains(versRange, version string) (bool, error) {
 	}
 
 	schemeToContains := map[string]func([]string, string) (bool, error){
-		maven.Name: func(contraints []string, version string) (bool, error) {
-			return contains(&maven.Ecosystem{}, contraints, version)
-		},
+		"maven": mavenContains,
 	}
 
 	containsForEcosystem, ok := schemeToContains[s]

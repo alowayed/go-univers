@@ -131,6 +131,43 @@ func TestContains(t *testing.T) {
 			want:      true, // For now, accept current behavior - this is complex interval logic
 			wantErr:   false,
 		},
+		// Test exclude functionality
+		{
+			name:      "maven exclude - version should be excluded",
+			versRange: "vers:maven/!=1.5.0",
+			version:   "1.5.0",
+			want:      false,
+			wantErr:   false,
+		},
+		{
+			name:      "maven exclude - version below excluded should be included",
+			versRange: "vers:maven/!=1.5.0",
+			version:   "1.4.0",
+			want:      true,
+			wantErr:   false,
+		},
+		{
+			name:      "maven exclude - version above excluded should be included",
+			versRange: "vers:maven/!=1.5.0",
+			version:   "1.6.0",
+			want:      true,
+			wantErr:   false,
+		},
+		// Test star wildcard
+		{
+			name:      "maven star wildcard - should match any version",
+			versRange: "vers:maven/*",
+			version:   "1.2.3",
+			want:      true,
+			wantErr:   false,
+		},
+		{
+			name:      "maven star wildcard - should match any version including prerelease",
+			versRange: "vers:maven/*",
+			version:   "2.0.0-SNAPSHOT",
+			want:      true,
+			wantErr:   false,
+		},
 	}
 
 	for _, tt := range tests {
