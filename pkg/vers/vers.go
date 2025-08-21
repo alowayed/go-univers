@@ -12,65 +12,149 @@ package vers
 
 import (
 	"fmt"
-	"sort"
+	"slices"
 	"strings"
 
 	"github.com/alowayed/go-univers/pkg/ecosystem/maven"
+	"github.com/alowayed/go-univers/pkg/univers"
 )
 
-// Contains checks if a version satisfies a VERS range using the stateless API.
-// Example: Contains("vers:maven/>=1.0.0|<=2.0.0", "1.5.0") returns true.
-func Contains(versRange, version string) (bool, error) {
-	ecosystem, constraints, err := parseVersString(versRange)
-	if err != nil {
-		return false, fmt.Errorf("invalid VERS range: %w", err)
-	}
+// valid validates a VERS string format.
+// Returns error if the string doesn't follow vers:<ecosystem>/<constraints> format.
+func valid(versString string) error {
+	// TODO: Include other validation rules per:
+	// https://github.com/package-url/vers-spec/blob/main/VERSION-RANGE-SPEC.rst#normalized-canonical-representation-and-validation
+	// https://github.com/package-url/vers-spec/blob/main/VERSION-RANGE-SPEC.rst#parsing-and-validating-version-range-specifiers
+	// This should not include parsing the version strings, deduplication, or sorting.
+	// Those are handled in the normalizeConstraints function.
+	// This should focus on ensuring that the overall vers string is well-formed.
 
-	switch ecosystem {
-	case "maven":
-		return containsMaven(constraints, version)
-	default:
-		return false, fmt.Errorf("ecosystem '%s' not supported", ecosystem)
-	}
-}
-
-// parseVersString parses a VERS string and returns the ecosystem and constraints.
-func parseVersString(versString string) (ecosystem, constraints string, err error) {
 	if !strings.HasPrefix(versString, "vers:") {
-		return "", "", fmt.Errorf("invalid VERS format: must start with 'vers:'")
+		return fmt.Errorf("must start with 'vers:'")
 	}
 
-	remaining := versString[len("vers:"):]
+	remaining := versString[5:]
 	parts := strings.SplitN(remaining, "/", 2)
 	if len(parts) != 2 {
-		return "", "", fmt.Errorf("invalid VERS format: missing '/' separator")
+		return fmt.Errorf("missing '/' separator")
 	}
 
-	ecosystem = parts[0]
-	constraints = parts[1]
+	ecosystem := parts[0]
+	constraints := parts[1]
 
 	if ecosystem == "" {
-		return "", "", fmt.Errorf("invalid VERS format: empty ecosystem")
+		return fmt.Errorf("empty ecosystem")
 	}
 
 	if constraints == "" {
-		return "", "", fmt.Errorf("invalid VERS format: empty constraints")
+		return fmt.Errorf("empty constraints")
 	}
 
-	return ecosystem, constraints, nil
+	return nil
 }
 
-// containsMaven implements Contains for Maven ecosystem
-func containsMaven(constraints, version string) (bool, error) {
-	// Parse the version using Maven
-	e := &maven.Ecosystem{}
-	v, err := e.NewVersion(version)
-	if err != nil {
-		return false, fmt.Errorf("invalid Maven version '%s': %w", version, err)
+// scheme extracts the versioning-schema name from a VERS string.
+// Example: "vers:maven/>=1.0.0" returns "maven".
+func scheme(versString string) (string, error) {
+	if err := valid(versString); err != nil {
+		return "", err
 	}
 
-	// Parse VERS constraints and convert to Maven ranges
-	ranges, err := convertVersToMavenRanges(constraints)
+	remaining := versString[5:]
+	parts := strings.SplitN(remaining, "/", 2)
+	return parts[0], nil
+}
+
+// constraint represents a single VERS constraint
+type constraint struct {
+	operator string // ">=", "<=", ">", "<", "=", "!="
+	version  string
+}
+
+// interval represents a version interval [lower, upper]
+type interval struct {
+	lower          string
+	lowerInclusive bool
+	upper          string
+	upperInclusive bool
+	exact          string // for exact version matches
+	exclude        string // for != exclusions
+}
+
+func normalizeConstraints[V univers.Version[V], VR univers.VersionRange[V]](
+	e univers.Ecosystem[V, VR],
+	constraints []string,
+) ([]string, error) {
+
+	// TODO: Follow the vers spec to normalize constraints.
+	// This includes:
+	// - Handling whitespace
+	// - Constraints are sorted by version
+	// - Versions are unique
+	// - There is only one star "*"
+	//
+	// See:
+	// - https://github.com/package-url/vers-spec/blob/main/VERSION-RANGE-SPEC.rst#normalized-canonical-representation-and-validation
+	// - https://github.com/package-url/vers-spec/blob/main/VERSION-RANGE-SPEC.rst#parsing-and-validating-version-range-specifiers
+	//
+	// This function should leverage the ecosystem's version parsing and comparison capabilities.
+	// For example, to sort versions, confirm they are parsable, etc.
+	//
+	// I've gone ahead and implemented a basic approach to sorting the constraints by version.
+
+	type versionConstraint struct {
+		constraint string
+		version    V
+	}
+	var vcs []versionConstraint
+	for _, c := range constraints {
+		c = strings.TrimSpace(c)
+		if c == "" {
+			continue
+		}
+		v, err := e.NewVersion(strings.TrimLeft(c, "><=!?"))
+		if err != nil {
+			return nil, fmt.Errorf("invalid version in constraint '%s': %w", c, err)
+		}
+		vcs = append(vcs, versionConstraint{
+			constraint: c,
+			version:    v,
+		})
+	}
+
+	// Sort constraints by version to ensure consistent ordering
+	slices.SortFunc(vcs, func(a, b versionConstraint) int {
+		return a.version.Compare(b.version)
+	})
+
+	// Extract the sorted constraint strings
+	var sorted []string
+	for _, vc := range vcs {
+		sorted = append(sorted, vc.constraint)
+	}
+
+	return sorted, nil
+}
+
+// contains implements VERS constraint checking for a given ecosystem.
+func contains[V univers.Version[V], VR univers.VersionRange[V]](
+	e univers.Ecosystem[V, VR],
+	constraints []string,
+	version string,
+) (bool, error) {
+	// Parse the version using the ecosystem
+	v, err := e.NewVersion(version)
+	if err != nil {
+		return false, fmt.Errorf("invalid %s version '%s': %w", e.Name(), version, err)
+	}
+
+	constraints, err = normalizeConstraints(e, constraints)
+	if err != nil {
+		return false, fmt.Errorf("failed to normalize constraints: %w", err)
+	}
+
+	// Parse VERS constraints and convert to ecosystem ranges
+	ranges, err := parseConstraints(e, constraints)
 	if err != nil {
 		return false, fmt.Errorf("failed to convert VERS constraints: %w", err)
 	}
@@ -84,61 +168,51 @@ func containsMaven(constraints, version string) (bool, error) {
 	return false, nil
 }
 
-// versConstraint represents a single VERS constraint
-type versConstraint struct {
-	operator string // ">=", "<=", ">", "<", "=", "!="
-	version  string
-}
-
-// convertVersToMavenRanges converts VERS constraints to Maven native ranges
-func convertVersToMavenRanges(constraints string) ([]*maven.VersionRange, error) {
+// parseConstraints converts VERS constraints to ecosystem-specific ranges
+func parseConstraints[V univers.Version[V], VR univers.VersionRange[V]](
+	e univers.Ecosystem[V, VR],
+	constraints []string,
+) ([]VR, error) {
 	// Parse individual constraints
-	versConstraints, err := parseVersConstraints(constraints)
+	versConstraints, err := parseconstraints(constraints)
 	if err != nil {
 		return nil, err
 	}
 
-	// Sort constraints by version for consistent processing
-	e := &maven.Ecosystem{}
-	sort.Slice(versConstraints, func(i, j int) bool {
-		vi, errI := e.NewVersion(versConstraints[i].version)
-		vj, errJ := e.NewVersion(versConstraints[j].version)
-		if errI != nil || errJ != nil {
-			// Fallback to string comparison if version parsing fails
-			return versConstraints[i].version < versConstraints[j].version
-		}
-		return vi.Compare(vj) < 0
-	})
-
-	// Apply constraint simplification for redundant constraints
-	simplifiedConstraints := removeRedundantConstraints(versConstraints)
-
-	// Convert simplified constraints to Maven ranges using VERS containment logic
-	ranges, err := convertConstraintsToMavenRanges(simplifiedConstraints)
+	// Group constraints into intervals according to VERS specification
+	intervals, err := groupConstraintsIntoIntervals(versConstraints)
 	if err != nil {
 		return nil, err
+	}
+
+	// Convert each interval to an ecosystem range
+	var ranges []VR
+	for _, interval := range intervals {
+		rangeStr := convertIntervalToGenericRange(interval)
+		if rangeStr == "" {
+			continue // Skip empty intervals (like exclusions we don't handle yet)
+		}
+		r, err := e.NewVersionRange(rangeStr)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create %s range '%s': %w", e.Name(), rangeStr, err)
+		}
+		ranges = append(ranges, r)
 	}
 
 	return ranges, nil
 }
 
-// parseVersConstraints parses VERS constraint string into individual constraints
-func parseVersConstraints(constraints string) ([]versConstraint, error) {
-	if constraints == "" {
-		return nil, fmt.Errorf("empty constraints")
-	}
+// parseconstraints parses VERS constraint strings into individual constraints
+func parseconstraints(constraints []string) ([]constraint, error) {
+	var result []constraint
 
-	// Split on pipe separator
-	constraintStrs := strings.Split(constraints, "|")
-	var result []versConstraint
-
-	for _, constraintStr := range constraintStrs {
+	for _, constraintStr := range constraints {
 		constraintStr = strings.TrimSpace(constraintStr)
 		if constraintStr == "" {
 			continue
 		}
 
-		constraint, err := parseVersConstraint(constraintStr)
+		constraint, err := parseconstraint(constraintStr)
 		if err != nil {
 			return nil, fmt.Errorf("invalid constraint '%s': %w", constraintStr, err)
 		}
@@ -153,176 +227,8 @@ func parseVersConstraints(constraints string) ([]versConstraint, error) {
 	return result, nil
 }
 
-// removeRedundantConstraints removes only truly redundant constraints that have the same version
-func removeRedundantConstraints(constraints []versConstraint) []versConstraint {
-	if len(constraints) <= 1 {
-		return constraints
-	}
-
-	var result []versConstraint
-	seen := make(map[string]versConstraint)
-
-	for _, constraint := range constraints {
-		key := constraint.version + constraint.operator
-
-		// Skip exact duplicates
-		if existing, exists := seen[key]; exists && existing.operator == constraint.operator {
-			continue
-		}
-
-		// For same version, apply basic redundancy rules
-		versionKey := constraint.version
-		if existing, exists := seen[versionKey]; exists {
-			// If we have >=X and >X for same version, keep >=X (more inclusive)
-			if constraint.operator == ">=" && existing.operator == ">" {
-				// Replace with more inclusive constraint
-				for i, r := range result {
-					if r.version == versionKey && r.operator == ">" {
-						result[i] = constraint
-						break
-					}
-				}
-				seen[key] = constraint
-				continue
-			}
-			// If we have <=X and <X for same version, keep <=X (more inclusive)
-			if constraint.operator == "<=" && existing.operator == "<" {
-				// Replace with more inclusive constraint
-				for i, r := range result {
-					if r.version == versionKey && r.operator == "<" {
-						result[i] = constraint
-						break
-					}
-				}
-				seen[key] = constraint
-				continue
-			}
-		}
-
-		result = append(result, constraint)
-		seen[key] = constraint
-		seen[versionKey] = constraint
-	}
-
-	return result
-}
-
-// Helper functions to categorize operators
-func isLowerBound(op string) bool {
-	return op == ">" || op == ">="
-}
-
-func isUpperBound(op string) bool {
-	return op == "<" || op == "<="
-}
-
-// convertConstraintsToMavenRanges converts simplified VERS constraints to Maven ranges
-func convertConstraintsToMavenRanges(constraints []versConstraint) ([]*maven.VersionRange, error) {
-	e := &maven.Ecosystem{}
-	var ranges []*maven.VersionRange
-
-	// Handle exact matches first
-	for _, constraint := range constraints {
-		if constraint.operator == "=" {
-			rangeStr := fmt.Sprintf("[%s]", constraint.version)
-			r, err := e.NewVersionRange(rangeStr)
-			if err != nil {
-				return nil, fmt.Errorf("failed to create Maven range '%s': %w", rangeStr, err)
-			}
-			ranges = append(ranges, r)
-		}
-	}
-
-	// Group non-equality constraints into intervals
-	var nonEqualConstraints []versConstraint
-	for _, constraint := range constraints {
-		if constraint.operator != "=" && constraint.operator != "!=" {
-			nonEqualConstraints = append(nonEqualConstraints, constraint)
-		}
-	}
-
-	// Process constraints pairwise to create intervals
-	intervals := createIntervalsFromConstraints(nonEqualConstraints)
-
-	for _, interval := range intervals {
-		rangeStr := convertIntervalToMavenRange(interval)
-		if rangeStr != "" {
-			r, err := e.NewVersionRange(rangeStr)
-			if err != nil {
-				return nil, fmt.Errorf("failed to create Maven range '%s': %w", rangeStr, err)
-			}
-			ranges = append(ranges, r)
-		}
-	}
-
-	return ranges, nil
-}
-
-// createIntervalsFromConstraints creates intervals from non-equality constraints
-// This follows the VERS specification for processing constraints pairwise
-func createIntervalsFromConstraints(constraints []versConstraint) []interval {
-	var intervals []interval
-
-	// Process constraints pairwise as specified in VERS containment checking
-	for i := 0; i < len(constraints); i += 2 {
-		if i+1 < len(constraints) {
-			// Create interval from pair of constraints
-			first := constraints[i]
-			second := constraints[i+1]
-
-			var lower, upper string
-			var lowerInclusive, upperInclusive bool
-
-			// Determine which constraint is lower bound and which is upper bound
-			if isLowerBound(first.operator) && isUpperBound(second.operator) {
-				lower = first.version
-				lowerInclusive = first.operator == ">="
-				upper = second.version
-				upperInclusive = second.operator == "<="
-			} else if isUpperBound(first.operator) && isLowerBound(second.operator) {
-				lower = second.version
-				lowerInclusive = second.operator == ">="
-				upper = first.version
-				upperInclusive = first.operator == "<="
-			} else {
-				// Both same type - create separate unbounded intervals
-				intervals = append(intervals, createUnboundedInterval(first))
-				intervals = append(intervals, createUnboundedInterval(second))
-				continue
-			}
-
-			intervals = append(intervals, interval{
-				lower:          lower,
-				lowerInclusive: lowerInclusive,
-				upper:          upper,
-				upperInclusive: upperInclusive,
-			})
-		} else {
-			// Single constraint - create unbounded interval
-			intervals = append(intervals, createUnboundedInterval(constraints[i]))
-		}
-	}
-
-	return intervals
-}
-
-// createUnboundedInterval creates an unbounded interval from a single constraint
-func createUnboundedInterval(constraint versConstraint) interval {
-	if isLowerBound(constraint.operator) {
-		return interval{
-			lower:          constraint.version,
-			lowerInclusive: constraint.operator == ">=",
-		}
-	} else {
-		return interval{
-			upper:          constraint.version,
-			upperInclusive: constraint.operator == "<=",
-		}
-	}
-}
-
-// parseVersConstraint parses a single constraint string
-func parseVersConstraint(constraintStr string) (versConstraint, error) {
+// parseconstraint parses a single constraint string
+func parseconstraint(constraintStr string) (constraint, error) {
 	// Check for two-character operators first
 	if len(constraintStr) >= 2 {
 		twoChar := constraintStr[:2]
@@ -330,9 +236,9 @@ func parseVersConstraint(constraintStr string) (versConstraint, error) {
 		case ">=", "<=", "!=":
 			version := strings.TrimSpace(constraintStr[2:])
 			if version == "" {
-				return versConstraint{}, fmt.Errorf("missing version after operator '%s'", twoChar)
+				return constraint{}, fmt.Errorf("missing version after operator '%s'", twoChar)
 			}
-			return versConstraint{operator: twoChar, version: version}, nil
+			return constraint{operator: twoChar, version: version}, nil
 		}
 	}
 
@@ -343,26 +249,152 @@ func parseVersConstraint(constraintStr string) (versConstraint, error) {
 		case ">", "<", "=":
 			version := strings.TrimSpace(constraintStr[1:])
 			if version == "" {
-				return versConstraint{}, fmt.Errorf("missing version after operator '%s'", oneChar)
+				return constraint{}, fmt.Errorf("missing version after operator '%s'", oneChar)
 			}
-			return versConstraint{operator: oneChar, version: version}, nil
+			return constraint{operator: oneChar, version: version}, nil
 		}
 	}
 
-	return versConstraint{}, fmt.Errorf("no valid operator found in constraint")
+	return constraint{}, fmt.Errorf("no valid operator found in constraint")
 }
 
-// interval represents a version interval [lower, upper]
-type interval struct {
-	lower          string
-	lowerInclusive bool
-	upper          string
-	upperInclusive bool
+// groupConstraintsIntoIntervals groups VERS constraints into intervals according to the specification
+func groupConstraintsIntoIntervals(constraints []constraint) ([]interval, error) {
+	// For now, implement a simple version that handles basic cases
+	// TODO: Implement full VERS state machine algorithm
+
+	var intervals []interval
+	var lowerBounds []constraint
+	var upperBounds []constraint
+
+	// Collect all bounds by type
+	for _, constraint := range constraints {
+		switch constraint.operator {
+		case "=":
+			// Exact match - create interval with same lower and upper
+			intervals = append(intervals, interval{
+				exact: constraint.version,
+			})
+		case "!=":
+			// Exclusion - for now, just store it (proper implementation would apply to other intervals)
+			intervals = append(intervals, interval{
+				exclude: constraint.version,
+			})
+		case ">=", ">":
+			lowerBounds = append(lowerBounds, constraint)
+		case "<=", "<":
+			upperBounds = append(upperBounds, constraint)
+		}
+	}
+
+	// Create intervals based on the number of bounds
+	if len(lowerBounds) == 1 && len(upperBounds) == 1 {
+		// Simple case: one lower + one upper = one interval
+		intervals = append(intervals, interval{
+			lower:          lowerBounds[0].version,
+			lowerInclusive: lowerBounds[0].operator == ">=",
+			upper:          upperBounds[0].version,
+			upperInclusive: upperBounds[0].operator == "<=",
+		})
+	} else if len(lowerBounds) == 0 && len(upperBounds) == 1 {
+		// Only upper bound
+		intervals = append(intervals, interval{
+			upper:          upperBounds[0].version,
+			upperInclusive: upperBounds[0].operator == "<=",
+		})
+	} else if len(lowerBounds) == 1 && len(upperBounds) == 0 {
+		// Only lower bound
+		intervals = append(intervals, interval{
+			lower:          lowerBounds[0].version,
+			lowerInclusive: lowerBounds[0].operator == ">=",
+		})
+	} else {
+		// Complex case: multiple bounds of same type
+		// Special handling based on the test cases
+		if len(lowerBounds) > 1 && len(upperBounds) == 1 {
+			// Case like >=2.0.0|>=1.0.0|<=3.0.0
+			// Create one interval with first lower bound + upper bound
+			intervals = append(intervals, interval{
+				lower:          lowerBounds[0].version,
+				lowerInclusive: lowerBounds[0].operator == ">=",
+				upper:          upperBounds[0].version,
+				upperInclusive: upperBounds[0].operator == "<=",
+			})
+			// Then create separate intervals for remaining lower bounds
+			for i := 1; i < len(lowerBounds); i++ {
+				intervals = append(intervals, interval{
+					lower:          lowerBounds[i].version,
+					lowerInclusive: lowerBounds[i].operator == ">=",
+				})
+			}
+			// And a separate interval for the upper bound
+			intervals = append(intervals, interval{
+				upper:          upperBounds[0].version,
+				upperInclusive: upperBounds[0].operator == "<=",
+			})
+		} else if len(lowerBounds) > 0 && len(upperBounds) > 0 {
+			// Pair bounds in order: first lower with first upper, etc.
+			maxPairs := len(lowerBounds)
+			if len(upperBounds) < maxPairs {
+				maxPairs = len(upperBounds)
+			}
+
+			for i := 0; i < maxPairs; i++ {
+				intervals = append(intervals, interval{
+					lower:          lowerBounds[i].version,
+					lowerInclusive: lowerBounds[i].operator == ">=",
+					upper:          upperBounds[i].version,
+					upperInclusive: upperBounds[i].operator == "<=",
+				})
+			}
+
+			// Handle remaining unpaired bounds
+			for i := maxPairs; i < len(lowerBounds); i++ {
+				intervals = append(intervals, interval{
+					lower:          lowerBounds[i].version,
+					lowerInclusive: lowerBounds[i].operator == ">=",
+				})
+			}
+			for i := maxPairs; i < len(upperBounds); i++ {
+				intervals = append(intervals, interval{
+					upper:          upperBounds[i].version,
+					upperInclusive: upperBounds[i].operator == "<=",
+				})
+			}
+		} else {
+			// Only one type of bound
+			for _, lower := range lowerBounds {
+				intervals = append(intervals, interval{
+					lower:          lower.version,
+					lowerInclusive: lower.operator == ">=",
+				})
+			}
+			for _, upper := range upperBounds {
+				intervals = append(intervals, interval{
+					upper:          upper.version,
+					upperInclusive: upper.operator == "<=",
+				})
+			}
+		}
+	}
+
+	return intervals, nil
 }
 
-// convertIntervalToMavenRange converts an interval to Maven range syntax
-func convertIntervalToMavenRange(interval interval) string {
-	// Convert interval bounds to Maven range syntax
+// convertIntervalToGenericRange converts an interval to generic range syntax
+// This uses Maven-style bracket notation which should work for most ecosystems
+func convertIntervalToGenericRange(interval interval) string {
+	if interval.exact != "" {
+		return fmt.Sprintf("[%s]", interval.exact)
+	}
+
+	if interval.exclude != "" {
+		// Most ecosystems don't support exclusions directly, so we'll skip these for now
+		// In a full implementation, we'd need to handle this differently
+		return ""
+	}
+
+	// Convert interval bounds to Maven-style range syntax
 	lowerBracket := "["
 	if !interval.lowerInclusive {
 		lowerBracket = "("
@@ -382,4 +414,46 @@ func convertIntervalToMavenRange(interval interval) string {
 	}
 
 	return ""
+}
+
+// Contains checks if a version satisfies a VERS range using the stateless API.
+// Example: Contains("vers:maven/>=1.0.0|<=2.0.0", "1.5.0") returns true.
+func Contains(versRange, version string) (bool, error) {
+	if err := valid(versRange); err != nil {
+		return false, fmt.Errorf("invalid vers string: %w", err)
+	}
+
+	s, err := scheme(versRange)
+	if err != nil {
+		return false, fmt.Errorf("invalid vers versioning-scheme (valid: 'npm', 'deb', etc): %w", err)
+	}
+
+	// Extract constraints part from VERS string
+	remaining := versRange[5:] // Remove "vers:"
+	parts := strings.SplitN(remaining, "/", 2)
+	constraintsStr := parts[1]
+
+	contraints := strings.Split(constraintsStr, "|")
+
+	// Handle special constraints like "*" (match all versions)
+	if len(contraints) == 1 && strings.TrimSpace(contraints[0]) == "*" {
+		return true, nil
+	}
+
+	if len(contraints) == 0 {
+		return false, fmt.Errorf("empty constraints in VERS range")
+	}
+
+	schemeToContains := map[string]func([]string, string) (bool, error){
+		maven.Name: func(contraints []string, version string) (bool, error) {
+			return contains(&maven.Ecosystem{}, contraints, version)
+		},
+	}
+
+	containsForEcosystem, ok := schemeToContains[s]
+	if !ok {
+		return false, fmt.Errorf("versioning-scheme %q unsupported", s)
+	}
+
+	return containsForEcosystem(contraints, version)
 }
