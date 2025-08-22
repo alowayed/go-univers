@@ -14,6 +14,7 @@ import (
 	"fmt"
 	"slices"
 	"strings"
+	"unicode"
 
 	"github.com/alowayed/go-univers/pkg/univers"
 )
@@ -30,7 +31,7 @@ func valid(versString string) error {
 	// VERS spec: Must contain only printable ASCII letters, digits and punctuation
 	for _, r := range versString {
 		if r < 32 || r > 126 {
-			return fmt.Errorf("contains non-printable ASCII character")
+			return fmt.Errorf("contains non-printable ASCII character %q", r)
 		}
 	}
 
@@ -60,29 +61,24 @@ func valid(versString string) error {
 
 	// Basic constraint format validation
 	constraintList := strings.Split(constraints, "|")
-	if len(constraintList) == 0 {
-		return fmt.Errorf("no constraints found")
-	}
 
 	// VERS spec: Star "*" can only occur once and alone
 	starCount := 0
+	hasOtherConstraints := false
 	for _, c := range constraintList {
 		trimmed := strings.TrimSpace(c)
 		if trimmed == "*" {
 			starCount++
+		} else if trimmed != "" {
+			hasOtherConstraints = true
 		}
 	}
+
 	if starCount > 1 {
 		return fmt.Errorf("star '*' can only occur once")
 	}
-	if starCount == 1 && len(constraintList) > 1 {
-		// Check if other constraints are non-empty after trimming
-		for _, c := range constraintList {
-			trimmed := strings.TrimSpace(c)
-			if trimmed != "*" && trimmed != "" {
-				return fmt.Errorf("star '*' must be used alone")
-			}
-		}
+	if starCount == 1 && hasOtherConstraints {
+		return fmt.Errorf("star '*' must be used alone")
 	}
 
 	return nil
@@ -136,8 +132,13 @@ func normalizeConstraints[V univers.Version[V], VR univers.VersionRange[V]](
 	seen := make(map[string]bool) // Track unique constraint strings
 
 	for _, c := range constraints {
-		// VERS spec: Remove all spaces (not significant)
-		c = strings.ReplaceAll(c, " ", "")
+		// VERS spec: Remove all whitespace (not significant)
+		c = strings.Map(func(r rune) rune {
+			if unicode.IsSpace(r) {
+				return -1
+			}
+			return r
+		}, c)
 		if c == "" {
 			continue
 		}
@@ -157,24 +158,13 @@ func normalizeConstraints[V univers.Version[V], VR univers.VersionRange[V]](
 		// Parse operator to extract version
 		var operator string
 		var versionStr string
+		operators := []string{">=", "<=", "!=", ">", "<", "="}
 
-		// Check for two-character operators first
-		if len(c) >= 2 {
-			twoChar := c[:2]
-			switch twoChar {
-			case ">=", "<=", "!=":
-				operator = twoChar
-				versionStr = c[2:]
-			}
-		}
-
-		// Check for single-character operators if no two-char match
-		if operator == "" && len(c) >= 1 {
-			oneChar := c[:1]
-			switch oneChar {
-			case ">", "<", "=":
-				operator = oneChar
-				versionStr = c[1:]
+		for _, op := range operators {
+			if strings.HasPrefix(c, op) {
+				operator = op
+				versionStr = c[len(op):]
+				break
 			}
 		}
 
@@ -560,13 +550,13 @@ func Contains(versRange, version string) (bool, error) {
 	parts := strings.SplitN(remaining, "/", 2)
 	constraintsStr := parts[1]
 
-	contraints := strings.Split(constraintsStr, "|")
+	constraints := strings.Split(constraintsStr, "|")
 
 	// Handle special constraints like "*" (match all versions)
 	// Check if there's a star and all other constraints are empty after trimming
 	hasStarConstraint := false
 	hasNonEmptyNonStarConstraint := false
-	for _, c := range contraints {
+	for _, c := range constraints {
 		trimmed := strings.TrimSpace(c)
 		if trimmed == "*" {
 			hasStarConstraint = true
@@ -579,7 +569,7 @@ func Contains(versRange, version string) (bool, error) {
 		return true, nil
 	}
 
-	if len(contraints) == 0 {
+	if len(constraints) == 0 {
 		return false, fmt.Errorf("empty constraints in VERS range")
 	}
 
@@ -592,5 +582,5 @@ func Contains(versRange, version string) (bool, error) {
 		return false, fmt.Errorf("versioning-scheme %q unsupported", s)
 	}
 
-	return containsForEcosystem(contraints, version)
+	return containsForEcosystem(constraints, version)
 }
