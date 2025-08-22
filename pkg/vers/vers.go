@@ -2,10 +2,13 @@
 // VERS is a universal notation for expressing version ranges across different package ecosystems.
 //
 // VERS syntax: vers:<ecosystem>/<constraints>
-// Example: vers:maven/>=1.0.0|<=2.0.0
+// Examples:
 //
-// Supported operators: >=, <=, >, <, =
-// Note: != operator is parsed but not fully implemented for Maven ranges
+//	vers:maven/>=1.0.0|<=2.0.0
+//	vers:npm/>=1.2.3|<=2.0.0
+//
+// Supported ecosystems: maven, npm
+// Supported operators: >=, <=, >, <, =, !=
 //
 // This package provides stateless functions for working with VERS notation.
 package vers
@@ -301,6 +304,8 @@ func toRanges[V univers.Version[V], VR univers.VersionRange[V]](
 		switch e.Name() {
 		case "maven":
 			rangeStrs = intervalToMavenRanges(interval)
+		case "npm":
+			rangeStrs = intervalToNpmRanges(interval)
 		default:
 			// For unsupported ecosystems, return error
 			return nil, fmt.Errorf("ecosystem '%s' not yet supported for VERS", e.Name())
@@ -573,6 +578,7 @@ func Contains(versRange, version string) (bool, error) {
 
 	schemeToContains := map[string]func([]string, string) (bool, error){
 		"maven": mavenContains,
+		"npm":   npmContains,
 	}
 
 	containsForEcosystem, ok := schemeToContains[s]
