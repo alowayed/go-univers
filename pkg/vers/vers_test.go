@@ -381,6 +381,56 @@ func TestContains(t *testing.T) {
 			want:      false,
 			wantErr:   true,
 		},
+		// Additional ecosystem name validation tests
+		{
+			name:      "ecosystem with hyphen should fail",
+			versRange: "vers:my-ecosystem/>=1.0.0",
+			version:   "1.0.0",
+			want:      false,
+			wantErr:   true,
+		},
+		{
+			name:      "ecosystem with underscore should fail",
+			versRange: "vers:my_ecosystem/>=1.0.0",
+			version:   "1.0.0",
+			want:      false,
+			wantErr:   true,
+		},
+		{
+			name:      "ecosystem with period should fail",
+			versRange: "vers:my.ecosystem/>=1.0.0",
+			version:   "1.0.0",
+			want:      false,
+			wantErr:   true,
+		},
+		{
+			name:      "ecosystem with special characters should fail",
+			versRange: "vers:my@ecosystem/>=1.0.0",
+			version:   "1.0.0",
+			want:      false,
+			wantErr:   true,
+		},
+		{
+			name:      "ecosystem with numbers should pass validation but fail as unsupported",
+			versRange: "vers:ecosystem2/>=1.0.0",
+			version:   "1.5.0",
+			want:      false,
+			wantErr:   true, // Should fail due to unsupported ecosystem, not validation
+		},
+		{
+			name:      "ecosystem with only numbers should pass validation but fail as unsupported",
+			versRange: "vers:123/>=1.0.0",
+			version:   "1.5.0",
+			want:      false,
+			wantErr:   true, // Should fail due to unsupported ecosystem, not validation
+		},
+		{
+			name:      "ecosystem with mixed letters and numbers should pass validation but fail as unsupported",
+			versRange: "vers:maven2/>=1.0.0",
+			version:   "1.5.0",
+			want:      false,
+			wantErr:   true, // Should fail due to unsupported ecosystem, not validation
+		},
 	}
 
 	for _, tt := range tests {

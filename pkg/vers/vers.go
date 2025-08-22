@@ -48,10 +48,10 @@ func valid(versString string) error {
 		return fmt.Errorf("empty ecosystem")
 	}
 
-	// VERS spec: Versioning scheme must be lowercase
+	// VERS spec: Versioning scheme must be composed of lowercase ASCII letters and digits
 	for _, r := range ecosystem {
-		if r >= 'A' && r <= 'Z' {
-			return fmt.Errorf("versioning scheme must be lowercase")
+		if !((r >= 'a' && r <= 'z') || (r >= '0' && r <= '9')) {
+			return fmt.Errorf("versioning scheme must be composed of lowercase ASCII letters and digits, found %q", r)
 		}
 	}
 
@@ -125,7 +125,6 @@ func normalizeConstraints[V univers.Version[V], VR univers.VersionRange[V]](
 	type versionConstraint struct {
 		constraint string
 		version    V
-		operator   string
 	}
 
 	var vcs []versionConstraint
@@ -189,7 +188,6 @@ func normalizeConstraints[V univers.Version[V], VR univers.VersionRange[V]](
 		vcs = append(vcs, versionConstraint{
 			constraint: c,
 			version:    v,
-			operator:   operator,
 		})
 		seen[c] = true
 	}
@@ -202,14 +200,14 @@ func normalizeConstraints[V univers.Version[V], VR univers.VersionRange[V]](
 	// Star constraints should be handled separately and typically come first
 	slices.SortFunc(vcs, func(a, b versionConstraint) int {
 		// Handle star constraints - they should sort first
-		if a.constraint == "*" && b.constraint != "*" {
+		if a.constraint == "*" {
+			if b.constraint == "*" {
+				return 0
+			}
 			return -1
 		}
-		if a.constraint != "*" && b.constraint == "*" {
+		if b.constraint == "*" {
 			return 1
-		}
-		if a.constraint == "*" && b.constraint == "*" {
-			return 0
 		}
 
 		// For regular constraints, sort by version
