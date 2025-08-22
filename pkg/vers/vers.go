@@ -59,7 +59,7 @@ func scheme(versString string) (string, error) {
 		return "", err
 	}
 
-	remaining := versString[5:]
+	remaining := versString[len("vers:"):]
 	parts := strings.SplitN(remaining, "/", 2)
 	return parts[0], nil
 }
@@ -455,7 +455,7 @@ func Contains(versRange, version string) (bool, error) {
 	}
 
 	// Extract constraints part from VERS string
-	remaining := versRange[5:] // Remove "vers:"
+	remaining := versRange[len("vers:"):] // Remove "vers:"
 	parts := strings.SplitN(remaining, "/", 2)
 	constraintsStr := parts[1]
 
