@@ -317,6 +317,70 @@ func TestContains(t *testing.T) {
 			want:      false, // Fixed: Most restrictive lower bound is >1.0.0, so 1.0.0 is excluded
 			wantErr:   false,
 		},
+		// Additional VERS specification compliance tests
+		{
+			name:      "non-printable ASCII character should fail",
+			versRange: "vers:maven/>=1.0.0\x00",
+			version:   "1.0.0",
+			want:      false,
+			wantErr:   true,
+		},
+		{
+			name:      "tab character should fail",
+			versRange: "vers:maven/>=1.0.0\t",
+			version:   "1.0.0",
+			want:      false,
+			wantErr:   true,
+		},
+		{
+			name:      "newline character should fail",
+			versRange: "vers:maven/>=1.0.0\n",
+			version:   "1.0.0",
+			want:      false,
+			wantErr:   true,
+		},
+		{
+			name:      "star with other non-empty constraints should fail",
+			versRange: "vers:maven/*|>=1.0.0",
+			version:   "1.0.0",
+			want:      false,
+			wantErr:   true,
+		},
+		{
+			name:      "star with whitespace-only constraints should pass",
+			versRange: "vers:maven/*| | ",
+			version:   "1.0.0",
+			want:      true,
+			wantErr:   false,
+		},
+		{
+			name:      "constraints with only spaces should be normalized out",
+			versRange: "vers:maven/>=1.0.0|   |<=2.0.0",
+			version:   "1.5.0",
+			want:      true,
+			wantErr:   false,
+		},
+		{
+			name:      "malformed constraint without operator should fail",
+			versRange: "vers:maven/1.0.0",
+			version:   "1.0.0",
+			want:      false,
+			wantErr:   true,
+		},
+		{
+			name:      "constraint with operator but no version should fail",
+			versRange: "vers:maven/>=",
+			version:   "1.0.0",
+			want:      false,
+			wantErr:   true,
+		},
+		{
+			name:      "mixed case ecosystem should fail",
+			versRange: "vers:Maven/>=1.0.0",
+			version:   "1.0.0",
+			want:      false,
+			wantErr:   true,
+		},
 	}
 
 	for _, tt := range tests {

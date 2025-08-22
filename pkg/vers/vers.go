@@ -18,18 +18,20 @@ import (
 	"github.com/alowayed/go-univers/pkg/univers"
 )
 
-// valid validates a VERS string format.
-// Returns error if the string doesn't follow vers:<ecosystem>/<constraints> format.
+// valid validates a VERS string format according to the VERS specification.
+// Returns error if the string doesn't follow vers:<ecosystem>/<constraints> format
+// or violates VERS validation rules.
 func valid(versString string) error {
-	// TODO: Include other validation rules per:
-	// https://github.com/package-url/vers-spec/blob/main/VERSION-RANGE-SPEC.rst#normalized-canonical-representation-and-validation
-	// https://github.com/package-url/vers-spec/blob/main/VERSION-RANGE-SPEC.rst#parsing-and-validating-version-range-specifiers
-	// This should not include parsing the version strings, deduplication, or sorting.
-	// Those are handled in the normalizeConstraints function.
-	// This should focus on ensuring that the overall vers string is well-formed.
-
+	// VERS spec: URI scheme must be "vers" (lowercase)
 	if !strings.HasPrefix(versString, "vers:") {
 		return fmt.Errorf("must start with 'vers:'")
+	}
+
+	// VERS spec: Must contain only printable ASCII letters, digits and punctuation
+	for _, r := range versString {
+		if r < 32 || r > 126 {
+			return fmt.Errorf("contains non-printable ASCII character")
+		}
 	}
 
 	remaining := versString[5:]
@@ -45,8 +47,42 @@ func valid(versString string) error {
 		return fmt.Errorf("empty ecosystem")
 	}
 
+	// VERS spec: Versioning scheme must be lowercase
+	for _, r := range ecosystem {
+		if r >= 'A' && r <= 'Z' {
+			return fmt.Errorf("versioning scheme must be lowercase")
+		}
+	}
+
 	if constraints == "" {
 		return fmt.Errorf("empty constraints")
+	}
+
+	// Basic constraint format validation
+	constraintList := strings.Split(constraints, "|")
+	if len(constraintList) == 0 {
+		return fmt.Errorf("no constraints found")
+	}
+
+	// VERS spec: Star "*" can only occur once and alone
+	starCount := 0
+	for _, c := range constraintList {
+		trimmed := strings.TrimSpace(c)
+		if trimmed == "*" {
+			starCount++
+		}
+	}
+	if starCount > 1 {
+		return fmt.Errorf("star '*' can only occur once")
+	}
+	if starCount == 1 && len(constraintList) > 1 {
+		// Check if other constraints are non-empty after trimming
+		for _, c := range constraintList {
+			trimmed := strings.TrimSpace(c)
+			if trimmed != "*" && trimmed != "" {
+				return fmt.Errorf("star '*' must be used alone")
+			}
+		}
 	}
 
 	return nil
@@ -84,44 +120,109 @@ func normalizeConstraints[V univers.Version[V], VR univers.VersionRange[V]](
 	e univers.Ecosystem[V, VR],
 	constraints []string,
 ) ([]string, error) {
-	// TODO: Follow the vers spec to normalize constraints.
-	// This includes:
-	// - Handling whitespace
-	// - Constraints are sorted by version
-	// - Versions are unique
-	// - There is only one star "*"
-	//
-	// See:
-	// - https://github.com/package-url/vers-spec/blob/main/VERSION-RANGE-SPEC.rst#normalized-canonical-representation-and-validation
-	// - https://github.com/package-url/vers-spec/blob/main/VERSION-RANGE-SPEC.rst#parsing-and-validating-version-range-specifiers
-	//
-	// This function should leverage the ecosystem's version parsing and comparison capabilities.
-	// For example, to sort versions, confirm they are parsable, etc.
-	//
-	// I've gone ahead and implemented a basic approach to sorting the constraints by version.
+	// VERS spec: Normalize constraints according to specification
+	// - Remove whitespace (spaces are not significant)
+	// - Sort constraints by version
+	// - Ensure versions are unique
+	// - Validate star "*" usage
 
 	type versionConstraint struct {
 		constraint string
 		version    V
+		operator   string
 	}
+
 	var vcs []versionConstraint
+	seen := make(map[string]bool) // Track unique constraint strings
+
 	for _, c := range constraints {
-		c = strings.TrimSpace(c)
+		// VERS spec: Remove all spaces (not significant)
+		c = strings.ReplaceAll(c, " ", "")
 		if c == "" {
 			continue
 		}
-		v, err := e.NewVersion(strings.TrimLeft(c, "><=!?"))
+
+		// Handle star constraint specially
+		if c == "*" {
+			if !seen[c] {
+				vcs = append(vcs, versionConstraint{
+					constraint: c,
+					// version field left zero for star - handled specially in sorting
+				})
+				seen[c] = true
+			}
+			continue
+		}
+
+		// Parse operator to extract version
+		var operator string
+		var versionStr string
+
+		// Check for two-character operators first
+		if len(c) >= 2 {
+			twoChar := c[:2]
+			switch twoChar {
+			case ">=", "<=", "!=":
+				operator = twoChar
+				versionStr = c[2:]
+			}
+		}
+
+		// Check for single-character operators if no two-char match
+		if operator == "" && len(c) >= 1 {
+			oneChar := c[:1]
+			switch oneChar {
+			case ">", "<", "=":
+				operator = oneChar
+				versionStr = c[1:]
+			}
+		}
+
+		if operator == "" {
+			return nil, fmt.Errorf("invalid constraint format '%s': no operator found", c)
+		}
+
+		if versionStr == "" {
+			return nil, fmt.Errorf("invalid constraint format '%s': missing version", c)
+		}
+
+		// VERS spec: Ensure versions are unique - use full constraint string as key
+		if seen[c] {
+			continue // Skip duplicate constraints
+		}
+
+		v, err := e.NewVersion(versionStr)
 		if err != nil {
 			return nil, fmt.Errorf("invalid version in constraint '%s': %w", c, err)
 		}
+
 		vcs = append(vcs, versionConstraint{
 			constraint: c,
 			version:    v,
+			operator:   operator,
 		})
+		seen[c] = true
 	}
 
-	// Sort constraints by version to ensure consistent ordering
+	if len(vcs) == 0 {
+		return []string{}, nil
+	}
+
+	// VERS spec: Sort constraints by version
+	// Star constraints should be handled separately and typically come first
 	slices.SortFunc(vcs, func(a, b versionConstraint) int {
+		// Handle star constraints - they should sort first
+		if a.constraint == "*" && b.constraint != "*" {
+			return -1
+		}
+		if a.constraint != "*" && b.constraint == "*" {
+			return 1
+		}
+		if a.constraint == "*" && b.constraint == "*" {
+			return 0
+		}
+
+		// For regular constraints, sort by version
 		return a.version.Compare(b.version)
 	})
 
@@ -462,7 +563,19 @@ func Contains(versRange, version string) (bool, error) {
 	contraints := strings.Split(constraintsStr, "|")
 
 	// Handle special constraints like "*" (match all versions)
-	if len(contraints) == 1 && strings.TrimSpace(contraints[0]) == "*" {
+	// Check if there's a star and all other constraints are empty after trimming
+	hasStarConstraint := false
+	hasNonEmptyNonStarConstraint := false
+	for _, c := range contraints {
+		trimmed := strings.TrimSpace(c)
+		if trimmed == "*" {
+			hasStarConstraint = true
+		} else if trimmed != "" {
+			hasNonEmptyNonStarConstraint = true
+		}
+	}
+
+	if hasStarConstraint && !hasNonEmptyNonStarConstraint {
 		return true, nil
 	}
 
