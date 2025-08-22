@@ -2,6 +2,7 @@ package vers
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/alowayed/go-univers/pkg/ecosystem/npm"
 )
@@ -25,36 +26,24 @@ func intervalToNpmRanges(interval interval) []string {
 	}
 
 	// Handle regular intervals with bounds
-	var constraints []string
+	var parts []string
+	if interval.lower != "" {
+		op := ">"
+		if interval.lowerInclusive {
+			op = ">="
+		}
+		parts = append(parts, fmt.Sprintf("%s%s", op, interval.lower))
+	}
+	if interval.upper != "" {
+		op := "<"
+		if interval.upperInclusive {
+			op = "<="
+		}
+		parts = append(parts, fmt.Sprintf("%s%s", op, interval.upper))
+	}
 
-	if interval.lower != "" && interval.upper != "" {
-		// Both bounds: >=lower <=upper
-		if interval.lowerInclusive {
-			constraints = append(constraints, fmt.Sprintf(">=%s", interval.lower))
-		} else {
-			constraints = append(constraints, fmt.Sprintf(">%s", interval.lower))
-		}
-		if interval.upperInclusive {
-			constraints = append(constraints, fmt.Sprintf("<=%s", interval.upper))
-		} else {
-			constraints = append(constraints, fmt.Sprintf("<%s", interval.upper))
-		}
-		// Return as space-separated constraint for NPM
-		return []string{fmt.Sprintf("%s %s", constraints[0], constraints[1])}
-	} else if interval.lower != "" {
-		// Only lower bound: >=lower
-		if interval.lowerInclusive {
-			return []string{fmt.Sprintf(">=%s", interval.lower)}
-		} else {
-			return []string{fmt.Sprintf(">%s", interval.lower)}
-		}
-	} else if interval.upper != "" {
-		// Only upper bound: <=upper
-		if interval.upperInclusive {
-			return []string{fmt.Sprintf("<=%s", interval.upper)}
-		} else {
-			return []string{fmt.Sprintf("<%s", interval.upper)}
-		}
+	if len(parts) > 0 {
+		return []string{strings.Join(parts, " ")}
 	}
 
 	// Empty interval
