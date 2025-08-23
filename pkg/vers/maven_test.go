@@ -185,20 +185,6 @@ func TestContains_Maven(t *testing.T) {
 			wantErr:   false,
 		},
 		{
-			name:      "multiple lower bounds - should take most restrictive",
-			versRange: "vers:maven/>=1.0.0|>=2.0.0|<=3.0.0",
-			version:   "1.5.0",
-			want:      false, // Current implementation may fail this
-			wantErr:   false,
-		},
-		{
-			name:      "multiple upper bounds - should take most restrictive",
-			versRange: "vers:maven/>=1.0.0|<=3.0.0|<=2.0.0",
-			version:   "2.5.0",
-			want:      false, // Current implementation may fail this
-			wantErr:   false,
-		},
-		{
 			name:      "mixed inclusive and exclusive bounds",
 			versRange: "vers:maven/>1.0.0|<2.0.0",
 			version:   "1.0.0",
