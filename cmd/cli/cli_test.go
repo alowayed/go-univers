@@ -364,15 +364,15 @@ func TestRun_Private(t *testing.T) {
 			wantCode: 1,
 		},
 		{
-			name:     "spec no command",
+			name:     "vers no command",
 			args:     []string{"vers"},
-			wantOut:  "No command specified for spec",
+			wantOut:  "Usage: univers vers <command> [args]",
 			wantCode: 1,
 		},
 		{
-			name:     "spec unknown command",
+			name:     "vers unknown command",
 			args:     []string{"vers", "unknown"},
-			wantOut:  "Unknown spec command: unknown",
+			wantOut:  "Unknown vers command: unknown. Supported commands: contains",
 			wantCode: 1,
 		},
 		{
@@ -402,19 +402,19 @@ func TestRun_Private(t *testing.T) {
 		{
 			name:     "vers contains invalid vers format",
 			args:     []string{"vers", "contains", "invalid-format", "1.0.0"},
-			wantOut:  "Error running command 'contains': invalid vers string: must start with 'vers:'",
+			wantOut:  "Error running command 'vers contains': invalid vers string: must start with 'vers:'",
 			wantCode: 1,
 		},
 		{
 			name:     "vers contains unsupported ecosystem",
 			args:     []string{"vers", "contains", "vers:unsupported/>=1.0.0", "1.0.0"},
-			wantOut:  "Error running command 'contains': versioning-scheme \"unsupported\" unsupported",
+			wantOut:  "Error running command 'vers contains': versioning-scheme \"unsupported\" unsupported",
 			wantCode: 1,
 		},
 		{
 			name:     "vers contains wrong number of args",
 			args:     []string{"vers", "contains", "vers:maven/>=1.0.0"},
-			wantOut:  "Error running command 'contains': contains requires exactly 2 arguments: <vers-range> <version>",
+			wantOut:  "Error running command 'vers contains': contains requires exactly 2 arguments: <vers-range> <version>",
 			wantCode: 1,
 		},
 	}
