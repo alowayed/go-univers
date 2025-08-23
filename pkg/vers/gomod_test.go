@@ -168,6 +168,35 @@ func TestContains_Gomod(t *testing.T) {
 			want:      false,
 			wantErr:   false,
 		},
+		// Additional edge case tests for != operator in Go modules
+		{
+			name:      "exclude_pseudo_version",
+			versRange: "vers:golang/!=v0.0.0-20191109021931-daa7c04131f5",
+			version:   "v0.0.0-20191109021931-daa7c04131f5",
+			want:      false,
+			wantErr:   false,
+		},
+		{
+			name:      "exclude_pseudo_version_different_allowed",
+			versRange: "vers:golang/!=v0.0.0-20191109021931-daa7c04131f5",
+			version:   "v0.0.0-20191109021932-daa7c04131f5",
+			want:      true,
+			wantErr:   false,
+		},
+		{
+			name:      "exclude_prerelease_version",
+			versRange: "vers:golang/!=v1.0.0-beta.1",
+			version:   "v1.0.0-beta.1",
+			want:      false,
+			wantErr:   false,
+		},
+		{
+			name:      "multiple_excludes_go_versions",
+			versRange: "vers:golang/!=v1.0.0|!=v2.0.0|!=v1.5.0",
+			version:   "v1.5.0",
+			want:      false,
+			wantErr:   false,
+		},
 		// Star constraint (all versions)
 		{
 			name:      "star_constraint_matches_all",

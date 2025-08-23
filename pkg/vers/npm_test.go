@@ -97,6 +97,28 @@ func TestContains_NPM(t *testing.T) {
 			want:      true,
 			wantErr:   false,
 		},
+		// Additional edge case tests for != operator in NPM
+		{
+			name:      "npm exclude prerelease version",
+			versRange: "vers:npm/!=1.0.0-alpha.1",
+			version:   "1.0.0-alpha.1",
+			want:      false,
+			wantErr:   false,
+		},
+		{
+			name:      "npm exclude prerelease - different prerelease allowed",
+			versRange: "vers:npm/!=1.0.0-alpha.1",
+			version:   "1.0.0-alpha.2",
+			want:      true,
+			wantErr:   false,
+		},
+		{
+			name:      "npm multiple excludes with prerelease",
+			versRange: "vers:npm/!=1.0.0|!=1.0.0-alpha",
+			version:   "1.0.0-alpha",
+			want:      false,
+			wantErr:   false,
+		},
 		{
 			name:      "npm star constraint",
 			versRange: "vers:npm/*",

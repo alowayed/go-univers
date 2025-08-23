@@ -164,6 +164,21 @@ func TestContains(t *testing.T) {
 			want:      true,
 			wantErr:   false,
 		},
+		// Additional edge case tests for != operator validation
+		{
+			name:      "empty version after != operator should fail",
+			versRange: "vers:maven/!=",
+			version:   "1.0.0",
+			want:      false,
+			wantErr:   true,
+		},
+		{
+			name:      "whitespace-only version after != operator should fail",
+			versRange: "vers:maven/!= ",
+			version:   "1.0.0",
+			want:      false,
+			wantErr:   true,
+		},
 	}
 
 	for _, tt := range tests {
