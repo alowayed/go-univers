@@ -139,6 +139,42 @@ func TestContains_PyPI(t *testing.T) {
 			want:      true,
 			wantErr:   false,
 		},
+		// Additional edge case tests for != operator in PyPI
+		{
+			name:      "pypi exclude with local version identifier",
+			versRange: "vers:pypi/!=1.0.0+local",
+			version:   "1.0.0+local",
+			want:      false,
+			wantErr:   false,
+		},
+		{
+			name:      "pypi exclude with local version - different local also excluded per PEP 440",
+			versRange: "vers:pypi/!=1.0.0+local1",
+			version:   "1.0.0+local2",
+			want:      false, // Local versions are ignored in comparison per PEP 440
+			wantErr:   false,
+		},
+		{
+			name:      "pypi exclude with local version - different base version allowed",
+			versRange: "vers:pypi/!=1.0.0+local1",
+			version:   "1.0.1+local1",
+			want:      true, // Different base version (1.0.1 vs 1.0.0)
+			wantErr:   false,
+		},
+		{
+			name:      "pypi exclude prerelease version",
+			versRange: "vers:pypi/!=1.0.0a1",
+			version:   "1.0.0a1",
+			want:      false,
+			wantErr:   false,
+		},
+		{
+			name:      "pypi exclude dev version",
+			versRange: "vers:pypi/!=1.0.0.dev1",
+			version:   "1.0.0.dev1",
+			want:      false,
+			wantErr:   false,
+		},
 		{
 			name:      "pypi star constraint",
 			versRange: "vers:pypi/*",

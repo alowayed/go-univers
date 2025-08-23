@@ -259,8 +259,14 @@ func contains[V univers.Version[V], VR univers.VersionRange[V]](
 
 	// Check if version is excluded by any != constraints
 	for _, constraint := range versConstraints {
-		if constraint.operator == "!=" && constraint.version == version {
-			return false, nil // Version is explicitly excluded
+		if constraint.operator == "!=" {
+			excludedV, err := e.NewVersion(constraint.version)
+			if err != nil {
+				return false, fmt.Errorf("invalid version in exclusion constraint '%s': %w", constraint.version, err)
+			}
+			if v.Compare(excludedV) == 0 {
+				return false, nil // Version is explicitly excluded
+			}
 		}
 	}
 
