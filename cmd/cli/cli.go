@@ -39,7 +39,7 @@ func run(args []string) (string, int) {
 	specToRun := map[string]func([]string) (string, int){
 		"vers": runSpec,
 	}
-	
+
 	if fn, ok := specToRun[args[0]]; ok {
 		return fn(args[1:])
 	}
