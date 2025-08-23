@@ -102,7 +102,7 @@ func TestRun_Private(t *testing.T) {
 		{
 			name:     "no arguments",
 			args:     []string{},
-			wantOut:  "Usage: univers <ecosystem|vers> <command> [args]",
+			wantOut:  "Usage: univers <ecosystem|spec> <command> [args]",
 			wantCode: 1,
 		},
 		{
@@ -364,15 +364,15 @@ func TestRun_Private(t *testing.T) {
 			wantCode: 1,
 		},
 		{
-			name:     "vers no command",
+			name:     "spec no command",
 			args:     []string{"vers"},
-			wantOut:  "No command specified for vers",
+			wantOut:  "No command specified for spec",
 			wantCode: 1,
 		},
 		{
-			name:     "vers unknown command",
+			name:     "spec unknown command",
 			args:     []string{"vers", "unknown"},
-			wantOut:  "Unknown vers command: unknown",
+			wantOut:  "Unknown spec command: unknown",
 			wantCode: 1,
 		},
 		{
