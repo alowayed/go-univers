@@ -2,6 +2,7 @@ package vers
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/alowayed/go-univers/pkg/ecosystem/gomod"
 )
@@ -25,37 +26,30 @@ func intervalToGomodRanges(interval interval) []string {
 	}
 
 	// Handle regular intervals with bounds
-	if interval.lower != "" && interval.upper != "" {
-		// Both bounds: create a single space-separated constraint (AND logic)
-		var lowerConstraint, upperConstraint string
+	var lowerConstraint, upperConstraint string
 
+	if interval.lower != "" {
+		op := ">"
 		if interval.lowerInclusive {
-			lowerConstraint = fmt.Sprintf(">=%s", ensureVPrefix(interval.lower))
-		} else {
-			lowerConstraint = fmt.Sprintf(">%s", ensureVPrefix(interval.lower))
+			op = ">="
 		}
+		lowerConstraint = fmt.Sprintf("%s%s", op, ensureVPrefix(interval.lower))
+	}
 
+	if interval.upper != "" {
+		op := "<"
 		if interval.upperInclusive {
-			upperConstraint = fmt.Sprintf("<=%s", ensureVPrefix(interval.upper))
-		} else {
-			upperConstraint = fmt.Sprintf("<%s", ensureVPrefix(interval.upper))
+			op = "<="
 		}
+		upperConstraint = fmt.Sprintf("%s%s", op, ensureVPrefix(interval.upper))
+	}
 
+	if lowerConstraint != "" && upperConstraint != "" {
 		return []string{fmt.Sprintf("%s %s", lowerConstraint, upperConstraint)}
-	} else if interval.lower != "" {
-		// Only lower bound
-		if interval.lowerInclusive {
-			return []string{fmt.Sprintf(">=%s", ensureVPrefix(interval.lower))}
-		} else {
-			return []string{fmt.Sprintf(">%s", ensureVPrefix(interval.lower))}
-		}
-	} else if interval.upper != "" {
-		// Only upper bound
-		if interval.upperInclusive {
-			return []string{fmt.Sprintf("<=%s", ensureVPrefix(interval.upper))}
-		} else {
-			return []string{fmt.Sprintf("<%s", ensureVPrefix(interval.upper))}
-		}
+	} else if lowerConstraint != "" {
+		return []string{lowerConstraint}
+	} else if upperConstraint != "" {
+		return []string{upperConstraint}
 	}
 
 	return []string{}
@@ -66,7 +60,7 @@ func ensureVPrefix(version string) string {
 	if version == "" {
 		return version
 	}
-	if version[0] != 'v' {
+	if !strings.HasPrefix(version, "v") {
 		return "v" + version
 	}
 	return version
