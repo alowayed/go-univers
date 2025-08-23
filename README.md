@@ -27,6 +27,12 @@ A Go library to:
 | **RubyGems** | `pkg/ecosystem/gem` | Ruby Gem Versioning | `~> 1.2.3`, `>= 1.0.0`, `!= 1.5.0` |
 | **SemVer** | `pkg/ecosystem/semver` | Semantic Versioning 2.0.0 | `>=1.2.3`, `<2.0.0`, `!=1.5.0` |
 
+## Supported Specs
+
+| Spec | Package | Format | Supported Ecosystems |
+|------|---------|--------|---------------------|
+| **VERS** | `pkg/vers` | `vers:<ecosystem>/<constraints>` | `maven`, `npm`, `pypi` |
+
 ## Installation
 
 ```bash
@@ -42,6 +48,7 @@ import (
     "fmt"
     "slices"
     "github.com/alowayed/go-univers/pkg/ecosystem/npm"
+    "github.com/alowayed/go-univers/pkg/vers"
 )
 
 func main() {
@@ -72,6 +79,10 @@ func main() {
     versions := []*npm.Version{v2, v1}
     slices.SortFunc(versions, (*npm.Version).Compare)
     fmt.Printf("Sorted: %+v\n", versions) // {v1, v2}
+    
+    // VERS range checking
+    result, _ := vers.Contains("vers:npm/>=1.2.0|<=2.0.0", "1.5.0")
+    fmt.Printf("VERS result: %t\n", result) // true
 }
 ```
 
@@ -88,7 +99,7 @@ go build -o univers ./cmd
 
 ### CLI Usage
 
-The CLI follows the pattern: `univers <ecosystem> <command> [args]`
+The CLI follows the pattern: `univers <ecosystem|spec> <command> [args]`
 
 #### Compare Versions
 ```bash
@@ -260,6 +271,11 @@ univers rpm contains ">1.0~beta" "1.0"            # → true (release > tilde)
 univers semver contains ">=1.0.0,<2.0.0" "1.5.0"        # → true (within range)
 univers semver contains ">=1.0.0-alpha" "1.0.0-beta"     # → true (beta > alpha)
 univers semver contains "!=1.5.0" "1.5.0+build"         # → false (build metadata ignored)
+
+# VERS range checking across ecosystems
+univers vers contains "vers:maven/>=1.0.0|<=2.0.0" "1.5.0"  # → true
+univers vers contains "vers:npm/>=1.2.0|<=2.0.0" "1.5.0"    # → true
+univers vers contains "vers:pypi/>=1.2.0|<=2.0.0" "3.0.0"   # → false
 ```
 
 ## Architecture
