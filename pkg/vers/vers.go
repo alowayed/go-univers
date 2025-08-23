@@ -7,9 +7,9 @@
 //	vers:maven/>=1.0.0|<=2.0.0
 //	vers:npm/>=1.2.3|<=2.0.0
 //	vers:pypi/>=1.2.3|<=2.0.0
-//	vers:go/>=v1.2.3|<=v2.0.0
+//	vers:golang/>=v1.2.3|<=v2.0.0
 //
-// Supported ecosystems: maven, npm, pypi, go
+// Supported ecosystems: maven, npm, pypi, golang
 // Supported operators: >=, <=, >, <, =, !=
 //
 // This package provides stateless functions for working with VERS notation.
@@ -583,10 +583,10 @@ func Contains(versRange, version string) (bool, error) {
 	}
 
 	schemeToContains := map[string]func([]string, string) (bool, error){
-		"maven": mavenContains,
-		"npm":   npmContains,
-		"pypi":  pypiContains,
-		"go":    gomodContains,
+		"maven":  mavenContains,
+		"npm":    npmContains,
+		"pypi":   pypiContains,
+		"golang": gomodContains,
 	}
 
 	containsForEcosystem, ok := schemeToContains[s]
