@@ -5,6 +5,7 @@ import (
 	"slices"
 
 	"github.com/alowayed/go-univers/pkg/univers"
+	"github.com/alowayed/go-univers/pkg/vers"
 )
 
 func compare[V univers.Version[V], VR univers.VersionRange[V]](
@@ -82,4 +83,16 @@ func contains[V univers.Version[V], VR univers.VersionRange[V]](
 	}
 
 	return r.Contains(v), nil
+}
+
+// versContains implements the "vers contains" command
+func versContains(args []string) (bool, error) {
+	if len(args) != 2 {
+		return false, fmt.Errorf("contains requires exactly 2 arguments: <vers-range> <version>")
+	}
+
+	versRange := args[0]
+	version := args[1]
+
+	return vers.Contains(versRange, version)
 }

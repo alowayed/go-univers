@@ -75,6 +75,11 @@ func TestRun(t *testing.T) {
 			args:     []string{"gem", "compare", "1.0.0", "2.0.0"},
 			wantCode: 0,
 		},
+		{
+			name:     "vers contains success",
+			args:     []string{"vers", "contains", "vers:maven/>=1.0.0|<=2.0.0", "1.5.0"},
+			wantCode: 0,
+		},
 	}
 
 	for _, tt := range tests {
@@ -97,7 +102,7 @@ func TestRun_Private(t *testing.T) {
 		{
 			name:     "no arguments",
 			args:     []string{},
-			wantOut:  "Usage: univers <ecosystem> <command> [args]",
+			wantOut:  "Usage: univers <ecosystem|vers> <command> [args]",
 			wantCode: 1,
 		},
 		{
@@ -356,6 +361,60 @@ func TestRun_Private(t *testing.T) {
 			name:     "gem contains invalid version",
 			args:     []string{"gem", "contains", "~> 1.0.0", "invalid"},
 			wantOut:  "Error running command 'contains': invalid version 'invalid': invalid Ruby Gem version: invalid",
+			wantCode: 1,
+		},
+		{
+			name:     "vers no command",
+			args:     []string{"vers"},
+			wantOut:  "No command specified for vers",
+			wantCode: 1,
+		},
+		{
+			name:     "vers unknown command",
+			args:     []string{"vers", "unknown"},
+			wantOut:  "Unknown vers command: unknown",
+			wantCode: 1,
+		},
+		{
+			name:     "vers contains success true maven",
+			args:     []string{"vers", "contains", "vers:maven/>=1.0.0|<=2.0.0", "1.5.0"},
+			wantOut:  "true",
+			wantCode: 0,
+		},
+		{
+			name:     "vers contains success false maven",
+			args:     []string{"vers", "contains", "vers:maven/>=1.0.0|<=2.0.0", "3.0.0"},
+			wantOut:  "false",
+			wantCode: 0,
+		},
+		{
+			name:     "vers contains success true npm",
+			args:     []string{"vers", "contains", "vers:npm/>=1.2.0|<=2.0.0", "1.5.0"},
+			wantOut:  "true",
+			wantCode: 0,
+		},
+		{
+			name:     "vers contains success true pypi",
+			args:     []string{"vers", "contains", "vers:pypi/>=1.2.0|<=2.0.0", "1.5.0"},
+			wantOut:  "true",
+			wantCode: 0,
+		},
+		{
+			name:     "vers contains invalid vers format",
+			args:     []string{"vers", "contains", "invalid-format", "1.0.0"},
+			wantOut:  "Error running command 'contains': invalid vers string: must start with 'vers:'",
+			wantCode: 1,
+		},
+		{
+			name:     "vers contains unsupported ecosystem",
+			args:     []string{"vers", "contains", "vers:unsupported/>=1.0.0", "1.0.0"},
+			wantOut:  "Error running command 'contains': versioning-scheme \"unsupported\" unsupported",
+			wantCode: 1,
+		},
+		{
+			name:     "vers contains wrong number of args",
+			args:     []string{"vers", "contains", "vers:maven/>=1.0.0"},
+			wantOut:  "Error running command 'contains': contains requires exactly 2 arguments: <vers-range> <version>",
 			wantCode: 1,
 		},
 	}
