@@ -168,3 +168,9 @@ See [CLAUDE.md](./CLAUDE.md) for detailed guidance on adding new ecosystems. The
 5. Add the new ecosystem to the 'Supported Ecosystems' table in README.md
 
 Refer to existing ecosystems like `cargo/` or `nuget/` for implementation patterns.
+
+## Architecture
+
+go-univers uses a **type-safe, ecosystem-isolated architecture** that prevents accidental cross-ecosystem version mixing. Each ecosystem (npm, pypi, go, etc.) has its own `Version` and `VersionRange` types, eliminating the common bug of accidentally comparing versions from different package managers.
+
+See [DEVELOPMENT.md](./DEVELOPMENT.md) for detailed architecture documentation.
