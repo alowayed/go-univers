@@ -84,8 +84,7 @@ func main() {
 
 | Spec | Package | Format | Ecosystems |
 |------|---------|--------|------------|
-| **VERS** | `pkg/vers` | `vers:<ecosystem>/<constraints>` | `maven`, `npm`, `pypi`
-```
+| **VERS** | `pkg/vers` | `vers:<ecosystem>/<constraints>` | `maven`, `npm`, `pypi` |
 
 ## CLI
 
