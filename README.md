@@ -22,7 +22,7 @@ import (
     "fmt"
     "slices"
     "github.com/alowayed/go-univers/pkg/ecosystem/npm"
-    "github.com/alowayed/go-univers/pkg/vers"
+    "github.com/alowayed/go-univers/pkg/spec/vers"
 )
 
 func main() {
@@ -84,7 +84,7 @@ func main() {
 
 | Spec | Package | Format | Ecosystems |
 |------|---------|--------|------------|
-| **VERS** | `pkg/vers` | `vers:<ecosystem>/<constraints>` | `maven`, `npm`, `pypi` |
+| **VERS** | `pkg/spec/vers` | `vers:<ecosystem>/<constraints>` | `maven`, `npm`, `pypi` |
 
 ## CLI
 
