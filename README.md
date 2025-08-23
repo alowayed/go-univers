@@ -80,11 +80,11 @@ func main() {
 | **RubyGems** | `pkg/ecosystem/gem` |
 | **SemVer** | `pkg/ecosystem/semver` |
 
-### VERS Specification Support
+### Supported Specifications
 
 | Spec | Package | Format | Ecosystems |
 |------|---------|--------|------------|
-| **VERS** | `pkg/spec/vers` | `vers:<ecosystem>/<constraints>` | `maven`, `npm`, `pypi` |
+| **VERS** | `pkg/spec/vers` | `vers:<versioning-scheme>/<constraint>...` | `go`, `maven`, `npm`, `pypi` |
 
 ## CLI
 
