@@ -6,8 +6,9 @@
 //
 //	vers:maven/>=1.0.0|<=2.0.0
 //	vers:npm/>=1.2.3|<=2.0.0
+//	vers:pypi/>=1.2.3|<=2.0.0
 //
-// Supported ecosystems: maven, npm
+// Supported ecosystems: maven, npm, pypi
 // Supported operators: >=, <=, >, <, =, !=
 //
 // This package provides stateless functions for working with VERS notation.
@@ -306,6 +307,8 @@ func toRanges[V univers.Version[V], VR univers.VersionRange[V]](
 			rangeStrs = intervalToMavenRanges(interval)
 		case "npm":
 			rangeStrs = intervalToNpmRanges(interval)
+		case "pypi":
+			rangeStrs = intervalToPypiRanges(interval)
 		default:
 			// For unsupported ecosystems, return error
 			return nil, fmt.Errorf("ecosystem '%s' not yet supported for VERS", e.Name())
@@ -579,6 +582,7 @@ func Contains(versRange, version string) (bool, error) {
 	schemeToContains := map[string]func([]string, string) (bool, error){
 		"maven": mavenContains,
 		"npm":   npmContains,
+		"pypi":  pypiContains,
 	}
 
 	containsForEcosystem, ok := schemeToContains[s]
