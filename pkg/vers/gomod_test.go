@@ -197,6 +197,21 @@ func TestContains_Gomod(t *testing.T) {
 			want:      false,
 			wantErr:   false,
 		},
+		// Tests for v-prefix handling in exclusions - these expose the bug!
+		{
+			name:      "exclude_version_with_v_prefix_in_constraint_no_v_in_version",
+			versRange: "vers:golang/!=v1.5.0",
+			version:   "1.5.0",
+			want:      false,
+			wantErr:   false,
+		},
+		{
+			name:      "exclude_version_without_v_prefix_in_constraint_with_v_in_version",
+			versRange: "vers:golang/!=1.5.0",
+			version:   "v1.5.0",
+			want:      false,
+			wantErr:   false,
+		},
 		// Star constraint (all versions)
 		{
 			name:      "star_constraint_matches_all",

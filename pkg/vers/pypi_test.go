@@ -148,10 +148,17 @@ func TestContains_PyPI(t *testing.T) {
 			wantErr:   false,
 		},
 		{
-			name:      "pypi exclude with local version - different local allowed",
+			name:      "pypi exclude with local version - different local also excluded per PEP 440",
 			versRange: "vers:pypi/!=1.0.0+local1",
 			version:   "1.0.0+local2",
-			want:      true,
+			want:      false, // Local versions are ignored in comparison per PEP 440
+			wantErr:   false,
+		},
+		{
+			name:      "pypi exclude with local version - different base version allowed",
+			versRange: "vers:pypi/!=1.0.0+local1",
+			version:   "1.0.1+local1",
+			want:      true, // Different base version (1.0.1 vs 1.0.0)
 			wantErr:   false,
 		},
 		{
