@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"slices"
 
+	"github.com/alowayed/go-univers/pkg/spec/vers"
 	"github.com/alowayed/go-univers/pkg/univers"
-	"github.com/alowayed/go-univers/pkg/vers"
 )
 
 func compare[V univers.Version[V], VR univers.VersionRange[V]](
