@@ -7,6 +7,8 @@ import (
 	"github.com/alowayed/go-univers/pkg/ecosystem/pypi"
 )
 
+// No regex needed - we can parse the version string more directly
+
 // pypiContains implements VERS constraint checking for PyPI ecosystem
 // with PEP 440 prerelease exclusion logic
 func pypiContains(constraints []string, version string) (bool, error) {
@@ -19,7 +21,7 @@ func pypiContains(constraints []string, version string) (bool, error) {
 	}
 
 	// Check if version is a prerelease (has prerelease or dev components)
-	isPrerelease := hasPrerelease(v) || hasDev(v)
+	isPrerelease := isPyPIPrerelease(v)
 
 	// If it's a prerelease, check if any constraint explicitly includes prereleases
 	if isPrerelease && !constraintsIncludePrerelease(constraints) {
@@ -32,21 +34,18 @@ func pypiContains(constraints []string, version string) (bool, error) {
 // constraintsIncludePrerelease checks if any constraint explicitly includes prerelease versions
 func constraintsIncludePrerelease(constraints []string) bool {
 	for _, constraint := range constraints {
-		// If constraint contains prerelease markers (a, b, alpha, beta, rc, dev),
-		// then prereleases are explicitly allowed
-		if strings.Contains(constraint, "a") || strings.Contains(constraint, "b") ||
-			strings.Contains(constraint, "alpha") || strings.Contains(constraint, "beta") ||
-			strings.Contains(constraint, "rc") || strings.Contains(constraint, "dev") {
+		// If constraint contains prerelease markers, then prereleases are explicitly allowed
+		if containsPrereleaseMarkers(constraint) {
 			return true
 		}
 	}
 	return false
 }
 
-// hasPrerelease checks if a PyPI version has prerelease components
-func hasPrerelease(v *pypi.Version) bool {
+// isPyPIPrerelease checks if a PyPI version has prerelease or dev components
+func isPyPIPrerelease(v *pypi.Version) bool {
 	// Since we can't access private fields directly, check the string representation
-	// But be more careful to avoid false positives from local versions
+	// But be careful to avoid false positives from local versions
 	vStr := v.String()
 
 	// Split on '+' to isolate the main version from local version identifier
@@ -54,20 +53,38 @@ func hasPrerelease(v *pypi.Version) bool {
 	mainVersion := parts[0]
 
 	// Check for prerelease markers in the main version only
-	return strings.Contains(mainVersion, "a") || strings.Contains(mainVersion, "b") ||
-		strings.Contains(mainVersion, "alpha") || strings.Contains(mainVersion, "beta") ||
-		strings.Contains(mainVersion, "rc")
+	return containsPrereleaseMarkers(mainVersion)
 }
 
-// hasDev checks if a PyPI version has dev components
-func hasDev(v *pypi.Version) bool {
-	// Check via string representation since we can't access private fields
-	// Split on '+' to isolate the main version from local version identifier
-	vStr := v.String()
-	parts := strings.Split(vStr, "+")
-	mainVersion := parts[0]
+// containsPrereleaseMarkers checks if a version string contains PEP 440 prerelease markers
+func containsPrereleaseMarkers(versionStr string) bool {
+	// PEP 440 prerelease markers can appear directly attached to version numbers
+	// e.g., "1.5.0b1", "1.5.0rc1", "1.5.0.dev1"
 
-	return strings.Contains(mainVersion, "dev")
+	versionStr = strings.ToLower(versionStr)
+
+	// Define prerelease markers in order of length (longest first to avoid partial matches)
+	markers := []string{"alpha", "beta", "dev", "rc", "a", "b"}
+
+	for _, marker := range markers {
+		// Look for the marker in the version string
+		if idx := strings.Index(versionStr, marker); idx >= 0 {
+			// Check that marker is preceded by a digit or dot and followed by digits or end/+
+			if idx > 0 && (versionStr[idx-1] >= '0' && versionStr[idx-1] <= '9' || versionStr[idx-1] == '.') {
+				afterMarker := idx + len(marker)
+				if afterMarker >= len(versionStr) {
+					return true // marker at end
+				}
+				// Check what comes after the marker
+				next := versionStr[afterMarker]
+				if (next >= '0' && next <= '9') || next == '+' || next == '.' {
+					return true
+				}
+			}
+		}
+	}
+
+	return false
 }
 
 // intervalToPypiRanges converts an interval to PyPI range syntax

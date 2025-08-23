@@ -748,6 +748,84 @@ func TestContains(t *testing.T) {
 			want:      true, // Release > prerelease
 			wantErr:   false,
 		},
+		// Additional PyPI prerelease exclusion edge cases
+		{
+			name:      "pypi prerelease exclusion - alpha format 1",
+			versRange: "vers:pypi/>=1.0.0|<=2.0.0",
+			version:   "1.5.0a1",
+			want:      false,
+			wantErr:   false,
+		},
+		{
+			name:      "pypi prerelease exclusion - alpha format 2",
+			versRange: "vers:pypi/>=1.0.0|<=2.0.0",
+			version:   "1.5.0alpha1",
+			want:      false,
+			wantErr:   false,
+		},
+		{
+			name:      "pypi prerelease exclusion - beta format 1",
+			versRange: "vers:pypi/>=1.0.0|<=2.0.0",
+			version:   "1.5.0beta1",
+			want:      false,
+			wantErr:   false,
+		},
+		{
+			name:      "pypi prerelease exclusion - dot dev format",
+			versRange: "vers:pypi/>=1.0.0|<=2.0.0",
+			version:   "1.5.0.dev1",
+			want:      false,
+			wantErr:   false,
+		},
+		{
+			name:      "pypi prerelease inclusion - explicit alpha in constraint",
+			versRange: "vers:pypi/>=1.0.0alpha1|<=2.0.0",
+			version:   "1.5.0alpha1",
+			want:      true,
+			wantErr:   false,
+		},
+		{
+			name:      "pypi prerelease inclusion - explicit beta in constraint",
+			versRange: "vers:pypi/>=1.0.0|<=2.0.0beta1",
+			version:   "1.5.0beta1",
+			want:      true,
+			wantErr:   false,
+		},
+		{
+			name:      "pypi prerelease inclusion - explicit dev in constraint",
+			versRange: "vers:pypi/>=1.0.0.dev1|<=2.0.0",
+			version:   "1.5.0.dev1",
+			want:      true,
+			wantErr:   false,
+		},
+		{
+			name:      "pypi local version with prerelease-like text - should be included",
+			versRange: "vers:pypi/>=1.0.0|<=2.0.0",
+			version:   "1.5.0+alpha.build",
+			want:      true,
+			wantErr:   false,
+		},
+		{
+			name:      "pypi local version with dev-like text - should be included",
+			versRange: "vers:pypi/>=1.0.0|<=2.0.0",
+			version:   "1.5.0+dev.build",
+			want:      true,
+			wantErr:   false,
+		},
+		{
+			name:      "pypi mixed prerelease and local version",
+			versRange: "vers:pypi/>=1.0.0|<=2.0.0",
+			version:   "1.5.0a1+local.build",
+			want:      false, // Should be excluded due to prerelease
+			wantErr:   false,
+		},
+		{
+			name:      "pypi mixed prerelease and local version - explicit inclusion",
+			versRange: "vers:pypi/>=1.0.0a1|<=2.0.0",
+			version:   "1.5.0a1+local.build",
+			want:      true, // Should be included due to explicit prerelease in constraint
+			wantErr:   false,
+		},
 		{
 			name:      "pypi invalid version",
 			versRange: "vers:pypi/>=1.0.0",
