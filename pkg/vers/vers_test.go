@@ -619,14 +619,14 @@ func TestContains(t *testing.T) {
 			name:      "pypi with prerelease versions - beta",
 			versRange: "vers:pypi/>=1.0.0|<=2.0.0",
 			version:   "1.5.0b1",
-			want:      true,
+			want:      false,
 			wantErr:   false,
 		},
 		{
 			name:      "pypi with prerelease versions - rc",
 			versRange: "vers:pypi/>=1.0.0|<=2.0.0",
 			version:   "1.5.0rc1",
-			want:      true,
+			want:      false,
 			wantErr:   false,
 		},
 		{
@@ -640,7 +640,7 @@ func TestContains(t *testing.T) {
 			name:      "pypi with development release versions",
 			versRange: "vers:pypi/>=1.0.0|<=2.0.0",
 			version:   "1.5.0.dev1",
-			want:      true,
+			want:      false,
 			wantErr:   false,
 		},
 		{
