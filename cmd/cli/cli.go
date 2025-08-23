@@ -36,8 +36,12 @@ func run(args []string) (string, int) {
 	}
 
 	// Handle spec commands first
-	if args[0] == "vers" {
-		return runSpec(args[1:])
+	specToRun := map[string]func([]string) (string, int){
+		"vers": runSpec,
+	}
+	
+	if fn, ok := specToRun[args[0]]; ok {
+		return fn(args[1:])
 	}
 
 	ecosystemToRun := map[string]func([]string) (string, int){
@@ -142,29 +146,20 @@ func runEcosystem[V univers.Version[V], VR univers.VersionRange[V]](
 // runSpec handles spec-specific commands
 func runSpec(args []string) (string, int) {
 	if len(args) == 0 {
-		s := "No command specified for spec"
-		return s, 1
+		return "No command specified for spec", 1
 	}
 
 	command := args[0]
 	commandArgs := args[1:]
 
-	var result string
-	var err error
 	switch command {
 	case "contains":
-		var out bool
-		out, err = versContains(commandArgs)
-		result = fmt.Sprintf("%t", out)
+		out, err := versContains(commandArgs)
+		if err != nil {
+			return fmt.Sprintf("Error running command '%s': %v", command, err), 1
+		}
+		return fmt.Sprintf("%t", out), 0
 	default:
-		s := fmt.Sprintf("Unknown spec command: %s", command)
-		return s, 1
+		return fmt.Sprintf("Unknown spec command: %s", command), 1
 	}
-
-	if err != nil {
-		s := fmt.Sprintf("Error running command '%s': %v", command, err)
-		return s, 1
-	}
-
-	return result, 0
 }
