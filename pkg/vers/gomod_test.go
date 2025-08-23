@@ -4,8 +4,8 @@ import (
 	"testing"
 )
 
-// TestGomodContains tests VERS constraint checking for Go modules ecosystem
-func TestGomodContains(t *testing.T) {
+// TestContains_Gomod tests VERS constraint checking for Go modules ecosystem
+func TestContains_Gomod(t *testing.T) {
 	tests := []struct {
 		name      string
 		versRange string
@@ -206,31 +206,7 @@ func TestGomodContains(t *testing.T) {
 			want:      true,
 			wantErr:   false,
 		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := Contains(tt.versRange, tt.version)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("Contains() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if got != tt.want {
-				t.Errorf("Contains() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-// TestGomodVPrefixHandling tests specific v-prefix handling behavior
-func TestGomodVPrefixHandling(t *testing.T) {
-	tests := []struct {
-		name      string
-		versRange string
-		version   string
-		want      bool
-		wantErr   bool
-	}{
+		// v-prefix handling scenarios
 		{
 			name:      "constraint_with_v_version_without_v",
 			versRange: "vers:go/>=v1.2.3",
