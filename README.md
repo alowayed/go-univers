@@ -84,7 +84,7 @@ func main() {
 
 | Spec | Package | Format | Ecosystems |
 |------|---------|--------|------------|
-| **VERS** | `pkg/spec/vers` | `vers:<versioning-scheme>/<constraint>...` | `go`, `maven`, `npm`, `pypi` |
+| **VERS** | `pkg/spec/vers` | `vers:<versioning-scheme>/<constraint>...` | `alpine`, `go`, `maven`, `npm`, `pypi` |
 
 ## CLI
 
@@ -113,6 +113,7 @@ univers gem sort "2.0.0" "1.0.0-alpha" "1.0.0"
 univers cargo contains "^1.2.0" "1.2.5"       # → true
 univers maven contains "[1.0.0,2.0.0]" "1.5.0" # → true
 univers vers contains "vers:npm/>=1.2.0|<=2.0.0" "1.5.0" # → true
+univers vers contains "vers:alpine/>=1.2.0-r5" "1.2.1-r3" # → true
 ```
 
 ## Documentation
