@@ -20,11 +20,6 @@ func intervalToAlpineRanges(interval interval) []string {
 		return []string{fmt.Sprintf("=%s", interval.exact)}
 	}
 
-	// Exclusions are handled separately, not as Alpine ranges
-	if interval.exclude != "" {
-		return []string{} // Return empty - excludes handled in contains function
-	}
-
 	// Handle regular intervals with bounds
 	var parts []string
 	if interval.lower != "" {
