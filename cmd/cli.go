@@ -1,4 +1,4 @@
-package cli
+package main
 
 import (
 	"fmt"
@@ -22,14 +22,14 @@ import (
 	"github.com/alowayed/go-univers/pkg/univers"
 )
 
-// Run is the main entry point for the CLI
-func Run(args []string) int {
-	out, code := run(args)
+// run is the main entry point for the CLI
+func run(args []string) int {
+	out, code := runWithCode(args)
 	fmt.Printf("%s\n", out)
 	return code
 }
 
-func run(args []string) (string, int) {
+func runWithCode(args []string) (string, int) {
 	if len(args) == 0 {
 		s := "Usage: univers <ecosystem|spec> <command> [args]"
 		return s, 1

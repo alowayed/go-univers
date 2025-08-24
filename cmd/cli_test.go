@@ -1,4 +1,4 @@
-package cli
+package main
 
 import (
 	"testing"
@@ -84,7 +84,7 @@ func TestRun(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotCode := Run(tt.args)
+			gotCode := run(tt.args)
 			if gotCode != tt.wantCode {
 				t.Errorf("Run(%+v) = %v, want %v", tt.args, gotCode, tt.wantCode)
 			}
@@ -421,7 +421,7 @@ func TestRun_Private(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotOut, gotCode := run(tt.args)
+			gotOut, gotCode := runWithCode(tt.args)
 			if gotOut != tt.wantOut {
 				t.Errorf("run(%+v) out = %q, want %q", tt.args, gotOut, tt.wantOut)
 			}
