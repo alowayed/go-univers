@@ -1,6 +1,8 @@
-package cli
+package main
 
 import (
+	"bytes"
+	"io"
 	"testing"
 )
 
@@ -84,7 +86,7 @@ func TestRun(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotCode := Run(tt.args)
+			gotCode := run(io.Discard, tt.args)
 			if gotCode != tt.wantCode {
 				t.Errorf("Run(%+v) = %v, want %v", tt.args, gotCode, tt.wantCode)
 			}
@@ -421,7 +423,13 @@ func TestRun_Private(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotOut, gotCode := run(tt.args)
+			var buf bytes.Buffer
+			gotCode := run(&buf, tt.args)
+			gotOut := buf.String()
+			// Remove trailing newline for comparison
+			if len(gotOut) > 0 && gotOut[len(gotOut)-1] == '\n' {
+				gotOut = gotOut[:len(gotOut)-1]
+			}
 			if gotOut != tt.wantOut {
 				t.Errorf("run(%+v) out = %q, want %q", tt.args, gotOut, tt.wantOut)
 			}

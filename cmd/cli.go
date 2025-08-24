@@ -1,7 +1,8 @@
-package cli
+package main
 
 import (
 	"fmt"
+	"io"
 	"strings"
 
 	"github.com/alowayed/go-univers/pkg/ecosystem/alpine"
@@ -22,17 +23,12 @@ import (
 	"github.com/alowayed/go-univers/pkg/univers"
 )
 
-// Run is the main entry point for the CLI
-func Run(args []string) int {
-	out, code := run(args)
-	fmt.Printf("%s\n", out)
-	return code
-}
-
-func run(args []string) (string, int) {
+// run is the main entry point for the CLI
+func run(w io.Writer, args []string) int {
 	if len(args) == 0 {
 		s := "Usage: univers <ecosystem|spec> <command> [args]"
-		return s, 1
+		fmt.Fprintf(w, "%s\n", s)
+		return 1
 	}
 
 	// Handle spec commands first
@@ -41,7 +37,9 @@ func run(args []string) (string, int) {
 	}
 
 	if fn, ok := specToRun[args[0]]; ok {
-		return fn(args[1:])
+		out, code := fn(args[1:])
+		fmt.Fprintf(w, "%s\n", out)
+		return code
 	}
 
 	ecosystemToRun := map[string]func([]string) (string, int){
@@ -93,11 +91,14 @@ func run(args []string) (string, int) {
 	}
 
 	if fn, ok := ecosystemToRun[args[0]]; ok {
-		return fn(args[1:])
+		out, code := fn(args[1:])
+		fmt.Fprintf(w, "%s\n", out)
+		return code
 	}
 
 	s := fmt.Sprintf("Unknown ecosystem: %s", args[0])
-	return s, 1
+	fmt.Fprintf(w, "%s\n", s)
+	return 1
 }
 
 func runEcosystem[V univers.Version[V], VR univers.VersionRange[V]](
