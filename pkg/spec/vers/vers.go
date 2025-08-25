@@ -9,7 +9,7 @@
 //	vers:pypi/>=1.2.3|<=2.0.0
 //	vers:golang/>=v1.2.3|<=v2.0.0
 //
-// Supported ecosystems: alpine, maven, npm, pypi, golang
+// Supported ecosystems: alpine, gem, maven, npm, pypi, golang
 // Supported operators: >=, <=, >, <, =, !=
 //
 // This package provides stateless functions for working with VERS notation.
@@ -312,6 +312,8 @@ func toRanges[V univers.Version[V], VR univers.VersionRange[V]](
 		switch e.Name() {
 		case "alpine":
 			rangeStrs = intervalToAlpineRanges(interval)
+		case "gem":
+			rangeStrs = intervalToGemRanges(interval)
 		case "maven":
 			rangeStrs = intervalToMavenRanges(interval)
 		case "npm":
@@ -592,6 +594,7 @@ func Contains(versRange, version string) (bool, error) {
 
 	schemeToContains := map[string]func([]string, string) (bool, error){
 		"alpine": alpineContains,
+		"gem":    gemContains,
 		"maven":  mavenContains,
 		"npm":    npmContains,
 		"pypi":   pypiContains,
