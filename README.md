@@ -60,30 +60,30 @@ func main() {
 }
 ```
 
-## Supported Ecosystems
+## Ecosystems
 
 | Ecosystem | Package | [VERS versioning scheme](https://github.com/package-url/vers-spec/blob/main/VERSION-RANGE-SPEC.rst#some-of-the-known-versioning-schemes) |
 |-----------|---------|-----------|
 | **Alpine** | `pkg/ecosystem/alpine` | `alpine` ✅ |
-| **Apache** | ❌ | `apache` ❌ |
-| **Arch Linux (ALPM)** | ❌ | `alpm` ❌ |
+| **Apache** | [❌](https://github.com/alowayed/go-univers/issues/73) | [`apache` ❌](https://github.com/alowayed/go-univers/issues/74) |
+| **Arch Linux (ALPM)** | [❌](https://github.com/alowayed/go-univers/issues/75) | [`alpm` ❌](https://github.com/alowayed/go-univers/issues/76) |
 | **Cargo** | `pkg/ecosystem/cargo` | `cargo` ✅ |
 | **Conan** | `pkg/ecosystem/conan` | [`conan` ❌](https://github.com/alowayed/go-univers/issues/59) |
 | **Composer** | `pkg/ecosystem/composer` | [`composer` ❌](https://github.com/alowayed/go-univers/issues/54) |
 | **CRAN** | `pkg/ecosystem/cran` | ❌ |
 | **Debian** | `pkg/ecosystem/debian` | `deb` ✅ |
 | **Gentoo** | `pkg/ecosystem/gentoo` | [`ebuild` ❌](https://github.com/alowayed/go-univers/issues/70) |
-| **GitHub** | ❌ | `github` ❌ |
+| **GitHub** | [❌](https://github.com/alowayed/go-univers/issues/77) | [`github` ❌](https://github.com/alowayed/go-univers/issues/78) |
 | **Go** | `pkg/ecosystem/gomod` | `golang` ✅ |
-| **Hex (Elixir)** | ❌ | `hex` ❌ |
-| **Intdot** | ❌ | `intdot` ❌ |
-| **Mattermost** | ❌ | `mattermost` ❌ |
+| **Hex (Elixir)** | [❌](https://github.com/alowayed/go-univers/issues/79) | [`hex` ❌](https://github.com/alowayed/go-univers/issues/80) |
+| **Intdot** | [❌](https://github.com/alowayed/go-univers/issues/89) | [`intdot` ❌](https://github.com/alowayed/go-univers/issues/90) |
+| **Mattermost** | [❌](https://github.com/alowayed/go-univers/issues/87) | [`mattermost` ❌](https://github.com/alowayed/go-univers/issues/88) |
 | **Maven** | `pkg/ecosystem/maven` | `maven` ✅ |
-| **Mozilla** | ❌ | `mozilla` ❌ |
-| **Nginx** | ❌ | `nginx` ❌ |
+| **Mozilla** | [❌](https://github.com/alowayed/go-univers/issues/85) | [`mozilla` ❌](https://github.com/alowayed/go-univers/issues/86) |
+| **Nginx** | [❌](https://github.com/alowayed/go-univers/issues/81) | [`nginx` ❌](https://github.com/alowayed/go-univers/issues/82) |
 | **NPM** | `pkg/ecosystem/npm` | `npm` ✅ |
 | **NuGet** | `pkg/ecosystem/nuget` | `nuget` ✅ |
-| **OpenSSL** | ❌ | `openssl` ❌ |
+| **OpenSSL** | [❌](https://github.com/alowayed/go-univers/issues/83) | [`openssl` ❌](https://github.com/alowayed/go-univers/issues/84) |
 | **PyPI** | `pkg/ecosystem/pypi` | `pypi` ✅ |
 | **RPM** | `pkg/ecosystem/rpm` | `rpm` ✅ |
 | **RubyGems** | `pkg/ecosystem/gem` | `gem` ✅ |
