@@ -603,17 +603,17 @@ func Contains(versRange, version string) (bool, error) {
 	}
 
 	schemeToContains := map[string]func([]string, string) (bool, error){
-		"alpine": alpineContains,
-		"cargo":  cargoContains,
-		"deb":    debianContains,
-		"gem":    gemContains,
-		"maven":  mavenContains,
-		"npm":    npmContains,
-		"nuget":  nugetContains,
-		"pypi":   pypiContains,
-		"rpm":    rpmContains,
+		"alpine":  alpineContains,
+		"cargo":   cargoContains,
+		"deb":     debianContains,
+		"gem":     gemContains,
+		"maven":   mavenContains,
+		"npm":     npmContains,
+		"nuget":   nugetContains,
+		"pypi":    pypiContains,
+		"rpm":     rpmContains,
 		"generic": semverContains, // 'generic' is the correct VERS scheme for semver
-		"golang": gomodContains,
+		"golang":  gomodContains,
 	}
 
 	containsForEcosystem, ok := schemeToContains[s]
