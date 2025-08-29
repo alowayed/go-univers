@@ -9,7 +9,7 @@
 //	vers:pypi/>=1.2.3|<=2.0.0
 //	vers:golang/>=v1.2.3|<=v2.0.0
 //
-// Supported ecosystems: alpine, cargo, debian, gem, maven, npm, nuget, pypi, rpm, semver, golang
+// Supported ecosystems: alpine, cargo, deb, gem, maven, npm, nuget, pypi, rpm, generic, golang
 // Supported operators: >=, <=, >, <, =, !=
 //
 // This package provides stateless functions for working with VERS notation.
@@ -605,14 +605,14 @@ func Contains(versRange, version string) (bool, error) {
 	schemeToContains := map[string]func([]string, string) (bool, error){
 		"alpine": alpineContains,
 		"cargo":  cargoContains,
-		"debian": debianContains,
+		"deb":    debianContains,
 		"gem":    gemContains,
 		"maven":  mavenContains,
 		"npm":    npmContains,
 		"nuget":  nugetContains,
 		"pypi":   pypiContains,
 		"rpm":    rpmContains,
-		"semver": semverContains,
+		"generic": semverContains, // 'generic' is the correct VERS scheme for semver
 		"golang": gomodContains,
 	}
 

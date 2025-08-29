@@ -62,29 +62,23 @@ func main() {
 
 ## Supported Ecosystems
 
-| Ecosystem | Package |
-|-----------|---------|
-| **Alpine** | `pkg/ecosystem/alpine` |
-| **Cargo** | `pkg/ecosystem/cargo` |
-| **Conan** | `pkg/ecosystem/conan` |
-| **Composer** | `pkg/ecosystem/composer` |
-| **CRAN** | `pkg/ecosystem/cran` |
-| **Debian** | `pkg/ecosystem/debian` |
-| **Gentoo** | `pkg/ecosystem/gentoo` |
-| **Go** | `pkg/ecosystem/gomod` |
-| **Maven** | `pkg/ecosystem/maven` |
-| **NPM** | `pkg/ecosystem/npm` |
-| **NuGet** | `pkg/ecosystem/nuget` |
-| **PyPI** | `pkg/ecosystem/pypi` |
-| **RPM** | `pkg/ecosystem/rpm` |
-| **RubyGems** | `pkg/ecosystem/gem` |
-| **SemVer** | `pkg/ecosystem/semver` |
-
-### Supported Specifications
-
-| Spec | Package | Format | Ecosystems |
-|------|---------|--------|------------|
-| **VERS** | `pkg/spec/vers` | `vers:<versioning-scheme>/<constraint>...` | `alpine`, `go`, `maven`, `npm`, `pypi` |
+| Ecosystem | Package | [VERS versioning scheme](https://github.com/package-url/vers-spec/blob/main/VERSION-RANGE-SPEC.rst#some-of-the-known-versioning-schemes) |
+|-----------|---------|-----------|
+| **Alpine** | `pkg/ecosystem/alpine` | `alpine` |
+| **Cargo** | `pkg/ecosystem/cargo` | `cargo` |
+| **Conan** | `pkg/ecosystem/conan` | [❌](https://github.com/alowayed/go-univers/issues/59) |
+| **Composer** | `pkg/ecosystem/composer` | [❌](https://github.com/alowayed/go-univers/issues/54) |
+| **CRAN** | `pkg/ecosystem/cran` | ❌ |
+| **Debian** | `pkg/ecosystem/debian` | `deb` |
+| **Gentoo** | `pkg/ecosystem/gentoo` | [❌](https://github.com/alowayed/go-univers/issues/70) |
+| **Go** | `pkg/ecosystem/gomod` | `golang` |
+| **Maven** | `pkg/ecosystem/maven` | `maven` |
+| **NPM** | `pkg/ecosystem/npm` | `npm` |
+| **NuGet** | `pkg/ecosystem/nuget` | `nuget` |
+| **PyPI** | `pkg/ecosystem/pypi` | `pypi` |
+| **RPM** | `pkg/ecosystem/rpm` | `rpm` |
+| **RubyGems** | `pkg/ecosystem/gem` | `gem` |
+| **SemVer** | `pkg/ecosystem/semver` | `generic` |
 
 ## CLI
 
