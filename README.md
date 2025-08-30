@@ -60,25 +60,34 @@ func main() {
 }
 ```
 
-## Supported Ecosystems
+## Ecosystems
 
 | Ecosystem | Package | [VERS versioning scheme](https://github.com/package-url/vers-spec/blob/main/VERSION-RANGE-SPEC.rst#some-of-the-known-versioning-schemes) |
 |-----------|---------|-----------|
-| **Alpine** | `pkg/ecosystem/alpine` | `alpine` |
-| **Cargo** | `pkg/ecosystem/cargo` | `cargo` |
-| **Conan** | `pkg/ecosystem/conan` | [❌](https://github.com/alowayed/go-univers/issues/59) |
-| **Composer** | `pkg/ecosystem/composer` | [❌](https://github.com/alowayed/go-univers/issues/54) |
+| **Alpine** | `pkg/ecosystem/alpine` | `alpine` ✅ |
+| **Apache** | [❌](https://github.com/alowayed/go-univers/issues/73) | [`apache` ❌](https://github.com/alowayed/go-univers/issues/74) |
+| **Arch Linux (ALPM)** | [❌](https://github.com/alowayed/go-univers/issues/75) | [`alpm` ❌](https://github.com/alowayed/go-univers/issues/76) |
+| **Cargo** | `pkg/ecosystem/cargo` | `cargo` ✅ |
+| **Conan** | `pkg/ecosystem/conan` | [`conan` ❌](https://github.com/alowayed/go-univers/issues/59) |
+| **Composer** | `pkg/ecosystem/composer` | [`composer` ❌](https://github.com/alowayed/go-univers/issues/54) |
 | **CRAN** | `pkg/ecosystem/cran` | ❌ |
-| **Debian** | `pkg/ecosystem/debian` | `deb` |
-| **Gentoo** | `pkg/ecosystem/gentoo` | [❌](https://github.com/alowayed/go-univers/issues/70) |
-| **Go** | `pkg/ecosystem/gomod` | `golang` |
-| **Maven** | `pkg/ecosystem/maven` | `maven` |
-| **NPM** | `pkg/ecosystem/npm` | `npm` |
-| **NuGet** | `pkg/ecosystem/nuget` | `nuget` |
-| **PyPI** | `pkg/ecosystem/pypi` | `pypi` |
-| **RPM** | `pkg/ecosystem/rpm` | `rpm` |
-| **RubyGems** | `pkg/ecosystem/gem` | `gem` |
-| **SemVer** | `pkg/ecosystem/semver` | `generic` |
+| **Debian** | `pkg/ecosystem/debian` | `deb` ✅ |
+| **Gentoo** | `pkg/ecosystem/gentoo` | [`ebuild` ❌](https://github.com/alowayed/go-univers/issues/70) |
+| **GitHub** | [❌](https://github.com/alowayed/go-univers/issues/77) | [`github` ❌](https://github.com/alowayed/go-univers/issues/78) |
+| **Go** | `pkg/ecosystem/gomod` | `golang` ✅ |
+| **Hex (Elixir)** | [❌](https://github.com/alowayed/go-univers/issues/79) | [`hex` ❌](https://github.com/alowayed/go-univers/issues/80) |
+| **Intdot** | [❌](https://github.com/alowayed/go-univers/issues/89) | [`intdot` ❌](https://github.com/alowayed/go-univers/issues/90) |
+| **Mattermost** | [❌](https://github.com/alowayed/go-univers/issues/87) | [`mattermost` ❌](https://github.com/alowayed/go-univers/issues/88) |
+| **Maven** | `pkg/ecosystem/maven` | `maven` ✅ |
+| **Mozilla** | [❌](https://github.com/alowayed/go-univers/issues/85) | [`mozilla` ❌](https://github.com/alowayed/go-univers/issues/86) |
+| **Nginx** | [❌](https://github.com/alowayed/go-univers/issues/81) | [`nginx` ❌](https://github.com/alowayed/go-univers/issues/82) |
+| **NPM** | `pkg/ecosystem/npm` | `npm` ✅ |
+| **NuGet** | `pkg/ecosystem/nuget` | `nuget` ✅ |
+| **OpenSSL** | [❌](https://github.com/alowayed/go-univers/issues/83) | [`openssl` ❌](https://github.com/alowayed/go-univers/issues/84) |
+| **PyPI** | `pkg/ecosystem/pypi` | `pypi` ✅ |
+| **RPM** | `pkg/ecosystem/rpm` | `rpm` ✅ |
+| **RubyGems** | `pkg/ecosystem/gem` | `gem` ✅ |
+| **SemVer** | `pkg/ecosystem/semver` | `generic` ✅ |
 
 ## CLI
 
