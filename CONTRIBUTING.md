@@ -172,5 +172,3 @@ Refer to existing ecosystems like `cargo/` or `nuget/` for implementation patter
 ## Architecture
 
 go-univers uses a **type-safe, ecosystem-isolated architecture** that prevents accidental cross-ecosystem version mixing. Each ecosystem (npm, pypi, go, etc.) has its own `Version` and `VersionRange` types, eliminating the common bug of accidentally comparing versions from different package managers.
-
-See [DEVELOPMENT.md](./DEVELOPMENT.md) for detailed architecture documentation.

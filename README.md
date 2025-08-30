@@ -122,7 +122,6 @@ univers vers contains "vers:alpine/>=1.2.0-r5" "1.2.1-r3" # → true
 ## Documentation
 
 - **[CONTRIBUTING.md](./CONTRIBUTING.md)** - Contribution guidelines and architecture details
-- **[DEVELOPMENT.md](./DEVELOPMENT.md)** - Extended development documentation
 - **Individual ecosystem documentation** - See `pkg/ecosystem/<ecosystem>/` directories for detailed examples
 
 ## Related Projects
