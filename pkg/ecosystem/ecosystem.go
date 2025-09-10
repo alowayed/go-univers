@@ -10,6 +10,7 @@ import (
 	"github.com/alowayed/go-univers/pkg/ecosystem/debian"
 	"github.com/alowayed/go-univers/pkg/ecosystem/gem"
 	"github.com/alowayed/go-univers/pkg/ecosystem/gentoo"
+	"github.com/alowayed/go-univers/pkg/ecosystem/github"
 	"github.com/alowayed/go-univers/pkg/ecosystem/gomod"
 	"github.com/alowayed/go-univers/pkg/ecosystem/maven"
 	"github.com/alowayed/go-univers/pkg/ecosystem/npm"
@@ -68,6 +69,11 @@ var (
 	_ univers.Version[*gentoo.Version]                         = &gentoo.Version{}
 	_ univers.VersionRange[*gentoo.Version]                    = &gentoo.VersionRange{}
 	_ univers.Ecosystem[*gentoo.Version, *gentoo.VersionRange] = &gentoo.Ecosystem{}
+
+	// github
+	_ univers.Version[*github.Version]                         = &github.Version{}
+	_ univers.VersionRange[*github.Version]                    = &github.VersionRange{}
+	_ univers.Ecosystem[*github.Version, *github.VersionRange] = &github.Ecosystem{}
 
 	// go
 	_ univers.Version[*gomod.Version]                        = &gomod.Version{}

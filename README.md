@@ -73,7 +73,7 @@ func main() {
 | **CRAN** | `pkg/ecosystem/cran` | ❌ |
 | **Debian** | `pkg/ecosystem/debian` | `deb` ✅ |
 | **Gentoo** | `pkg/ecosystem/gentoo` | [`ebuild` ❌](https://github.com/alowayed/go-univers/issues/70) |
-| **GitHub** | [❌](https://github.com/alowayed/go-univers/issues/77) | [`github` ❌](https://github.com/alowayed/go-univers/issues/78) |
+| **GitHub** | `pkg/ecosystem/github` | [`github` ❌](https://github.com/alowayed/go-univers/issues/78) |
 | **Go** | `pkg/ecosystem/gomod` | `golang` ✅ |
 | **Hex (Elixir)** | [❌](https://github.com/alowayed/go-univers/issues/79) | [`hex` ❌](https://github.com/alowayed/go-univers/issues/80) |
 | **Intdot** | [❌](https://github.com/alowayed/go-univers/issues/89) | [`intdot` ❌](https://github.com/alowayed/go-univers/issues/90) |
@@ -106,6 +106,7 @@ The CLI follows the pattern: `univers <ecosystem|spec> <command> [args]`
 # Compare versions (outputs -1, 0, or 1)
 univers npm compare "1.2.3" "1.2.4"           # → -1 (first < second)
 univers apache compare "2.4.40" "2.4.41"      # → -1 (first < second)
+univers github compare "v1.0.0" "v1.0.1"      # → -1 (first < second)
 univers pypi compare "2.0.0" "1.9.9"          # → 1 (first > second)
 univers semver compare "1.2.3" "1.2.3"        # → 0 (equal)
 
@@ -114,10 +115,13 @@ univers gem sort "2.0.0" "1.0.0-alpha" "1.0.0"
 # → "1.0.0-alpha" "1.0.0" "2.0.0"
 univers apache sort "2.4.41" "2.2.34" "9.0.45"
 # → "2.2.34" "2.4.41" "9.0.45"
+univers github sort "v2.0.0" "v1.0.0-beta" "v1.5.0" "2024.01.15"
+# → "2024.01.15" "v1.0.0-beta" "v1.5.0" "v2.0.0"
 
 # Check if version satisfies range (outputs true/false)
 univers cargo contains "^1.2.0" "1.2.5"       # → true
 univers apache contains ">=2.4.0" "2.4.41"    # → true
+univers github contains ">=v1.0.0" "v1.5.0"   # → true
 univers maven contains "[1.0.0,2.0.0]" "1.5.0" # → true
 univers vers contains "vers:npm/>=1.2.0|<=2.0.0" "1.5.0" # → true
 univers vers contains "vers:alpine/>=1.2.0-r5" "1.2.1-r3" # → true

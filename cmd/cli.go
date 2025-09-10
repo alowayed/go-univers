@@ -14,6 +14,7 @@ import (
 	"github.com/alowayed/go-univers/pkg/ecosystem/debian"
 	"github.com/alowayed/go-univers/pkg/ecosystem/gem"
 	"github.com/alowayed/go-univers/pkg/ecosystem/gentoo"
+	"github.com/alowayed/go-univers/pkg/ecosystem/github"
 	"github.com/alowayed/go-univers/pkg/ecosystem/gomod"
 	"github.com/alowayed/go-univers/pkg/ecosystem/maven"
 	"github.com/alowayed/go-univers/pkg/ecosystem/npm"
@@ -70,6 +71,9 @@ func run(w io.Writer, args []string) int {
 		},
 		gentoo.Name: func(args []string) (string, int) {
 			return runEcosystem(&gentoo.Ecosystem{}, args)
+		},
+		github.Name: func(args []string) (string, int) {
+			return runEcosystem(&github.Ecosystem{}, args)
 		},
 		gomod.Name: func(args []string) (string, int) {
 			return runEcosystem(&gomod.Ecosystem{}, args)
