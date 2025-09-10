@@ -66,7 +66,7 @@ func main() {
 |-----------|---------|-----------|
 | **Alpine** | `pkg/ecosystem/alpine` | `alpine` ✅ |
 | **Apache** | `pkg/ecosystem/apache` | [`apache` ❌](https://github.com/alowayed/go-univers/issues/74) |
-| **Arch Linux (ALPM)** | [❌](https://github.com/alowayed/go-univers/issues/75) | [`alpm` ❌](https://github.com/alowayed/go-univers/issues/76) |
+| **Arch Linux (ALPM)** | `pkg/ecosystem/alpm` | [`alpm` ❌](https://github.com/alowayed/go-univers/issues/76) |
 | **Cargo** | `pkg/ecosystem/cargo` | `cargo` ✅ |
 | **Conan** | `pkg/ecosystem/conan` | [`conan` ❌](https://github.com/alowayed/go-univers/issues/59) |
 | **Composer** | `pkg/ecosystem/composer` | [`composer` ❌](https://github.com/alowayed/go-univers/issues/54) |
@@ -105,6 +105,7 @@ The CLI follows the pattern: `univers <ecosystem|spec> <command> [args]`
 ```bash
 # Compare versions (outputs -1, 0, or 1)
 univers npm compare "1.2.3" "1.2.4"           # → -1 (first < second)
+univers alpm compare "6.1.0-1" "6.1.1-1"      # → -1 (first < second)
 univers apache compare "2.4.40" "2.4.41"      # → -1 (first < second)
 univers github compare "v1.0.0" "v1.0.1"      # → -1 (first < second)
 univers hex compare "1.7.9" "1.7.10"          # → -1 (first < second)
@@ -115,6 +116,8 @@ univers semver compare "1.2.3" "1.2.3"        # → 0 (equal)
 # Sort versions in ascending order
 univers gem sort "2.0.0" "1.0.0-alpha" "1.0.0"
 # → "1.0.0-alpha" "1.0.0" "2.0.0"
+univers alpm sort "1.0a-1" "1.0beta-1" "1.0rc-1" "1.0-1"
+# → "1.0a-1" "1.0beta-1" "1.0rc-1" "1.0-1"
 univers apache sort "2.4.41" "2.2.34" "9.0.45"
 # → "2.2.34" "2.4.41" "9.0.45"
 univers github sort "v2.0.0" "v1.0.0-beta" "v1.5.0" "2024.01.15"
@@ -126,6 +129,7 @@ univers mattermost sort "v8.1.0-rc1" "v8.1.5-esr" "v8.1.5" "v10.0.0"
 
 # Check if version satisfies range (outputs true/false)
 univers cargo contains "^1.2.0" "1.2.5"       # → true
+univers alpm contains ">=6.1.0-1" "6.1.1-1"   # → true
 univers apache contains ">=2.4.0" "2.4.41"    # → true
 univers github contains ">=v1.0.0" "v1.5.0"   # → true
 univers hex contains "~>1.7.0" "1.7.10"       # → true
