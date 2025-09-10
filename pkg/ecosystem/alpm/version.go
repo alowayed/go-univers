@@ -9,10 +9,11 @@ import (
 
 // Version represents an ALMP package version
 type Version struct {
-	epoch    int    // optional epoch (defaults to 0)
-	pkgver   string // package version (upstream software version)
-	pkgrel   int    // optional package release number (defaults to 0)
-	original string // original version string
+	epoch     int    // optional epoch (defaults to 0)
+	pkgver    string // package version (upstream software version)
+	pkgrel    int    // optional package release number (defaults to 0)
+	hasPkgrel bool   // whether pkgrel was explicitly provided
+	original  string // original version string
 }
 
 // NewVersion creates a new ALMP version from a string
@@ -84,9 +85,10 @@ func (e *Ecosystem) NewVersion(version string) (*Version, error) {
 		return nil, fmt.Errorf("invalid pkgver in %s: %v", original, err)
 	}
 
-	// Parse pkgrel (default to 0)
+	// Parse pkgrel (track if it was explicitly provided)
 	pkgrel := 0
-	if pkgrelStr != "" {
+	hasPkgrel := pkgrelStr != ""
+	if hasPkgrel {
 		var err error
 		pkgrel, err = strconv.Atoi(pkgrelStr)
 		if err != nil {
@@ -98,10 +100,11 @@ func (e *Ecosystem) NewVersion(version string) (*Version, error) {
 	}
 
 	return &Version{
-		epoch:    epoch,
-		pkgver:   pkgver,
-		pkgrel:   pkgrel,
-		original: original,
+		epoch:     epoch,
+		pkgver:    pkgver,
+		pkgrel:    pkgrel,
+		hasPkgrel: hasPkgrel,
+		original:  original,
 	}, nil
 }
 
@@ -160,7 +163,19 @@ func (v *Version) Compare(other *Version) int {
 		return pkgverCmp
 	}
 
-	// 3. Compare pkgrel parts numerically
+	// 3. Compare pkgrel parts with special handling for missing pkgrel
+	// According to vercmp: comparing "1.5-1" and "1.5" yields 0
+	if !v.hasPkgrel && !other.hasPkgrel {
+		return 0 // Both have no pkgrel
+	}
+	if !v.hasPkgrel && other.hasPkgrel {
+		return 0 // Special case: no pkgrel == with pkgrel when versions match
+	}
+	if v.hasPkgrel && !other.hasPkgrel {
+		return 0 // Special case: with pkgrel == no pkgrel when versions match
+	}
+
+	// Both have pkgrel, compare numerically
 	if v.pkgrel < other.pkgrel {
 		return -1
 	}
@@ -172,71 +187,137 @@ func (v *Version) Compare(other *Version) int {
 }
 
 // compareALMPVersionString compares two ALMP version strings using vercmp rules
-// This implements the Arch Linux vercmp algorithm which alternates between
-// comparing non-numeric and numeric segments
+// This implements the Arch Linux vercmp algorithm based on the precedence:
+// 1.0a < 1.0b < 1.0beta < 1.0p < 1.0pre < 1.0rc < 1.0 < 1.0.a < 1.0.1
 func compareALMPVersionString(a, b string) int {
-	i, j := 0, 0
+	// Handle the specific documented precedence cases first
+	if a == b {
+		return 0
+	}
 
-	for i < len(a) || j < len(b) {
-		// Extract non-digit segments
-		iStart := i
-		for i < len(a) && !unicode.IsDigit(rune(a[i])) {
-			i++
+	// Check if this is a direct suffix comparison (no dots separating)
+	if isDirectSuffixComparison(a, b) {
+		return compareDirectSuffixes(a, b)
+	}
+
+	// Otherwise use standard segment-by-segment comparison
+	return compareSegmentBySegment(a, b)
+}
+
+// isDirectSuffixComparison checks if we're comparing like "1.0" vs "1.0rc"
+func isDirectSuffixComparison(a, b string) bool {
+	// Simple heuristic: if one is a prefix of the other without separators
+	if len(a) < len(b) && b[:len(a)] == a {
+		// Check if remainder is alpha (no separators)
+		remainder := b[len(a):]
+		return len(remainder) > 0 && unicode.IsLetter(rune(remainder[0])) &&
+			!strings.ContainsAny(remainder[:1], ".+-_")
+	}
+	if len(b) < len(a) && a[:len(b)] == b {
+		// Check if remainder is alpha (no separators)
+		remainder := a[len(b):]
+		return len(remainder) > 0 && unicode.IsLetter(rune(remainder[0])) &&
+			!strings.ContainsAny(remainder[:1], ".+-_")
+	}
+	return false
+}
+
+// compareDirectSuffixes handles cases like "1.0" vs "1.0rc"
+func compareDirectSuffixes(a, b string) int {
+	if len(a) < len(b) && b[:len(a)] == a {
+		// a is prefix of b, b has direct suffix -> a wins (1.0 > 1.0rc)
+		return 1
+	}
+	if len(b) < len(a) && a[:len(b)] == b {
+		// b is prefix of a, a has direct suffix -> b wins
+		return -1
+	}
+	// Both have suffixes, compare lexicographically
+	return strings.Compare(a, b)
+}
+
+// compareSegmentBySegment does standard version segment comparison
+// This implements a more accurate vercmp-style algorithm
+func compareSegmentBySegment(a, b string) int {
+	// Convert to segments first, handling delimiters properly
+	aSegments := splitToSegments(a)
+	bSegments := splitToSegments(b)
+
+	// Compare segment by segment
+	maxLen := len(aSegments)
+	if len(bSegments) > maxLen {
+		maxLen = len(bSegments)
+	}
+
+	for i := 0; i < maxLen; i++ {
+		var aSeg, bSeg string
+		if i < len(aSegments) {
+			aSeg = aSegments[i]
 		}
-		aNonDigit := a[iStart:i]
-
-		jStart := j
-		for j < len(b) && !unicode.IsDigit(rune(b[j])) {
-			j++
-		}
-		bNonDigit := b[jStart:j]
-
-		// Compare non-digit segments with vercmp alphanumeric precedence
-		nonDigitCmp := compareALMPNonDigits(aNonDigit, bNonDigit)
-		if nonDigitCmp != 0 {
-			return nonDigitCmp
+		if i < len(bSegments) {
+			bSeg = bSegments[i]
 		}
 
-		// Extract digit segments
-		iStart = i
-		for i < len(a) && unicode.IsDigit(rune(a[i])) {
-			i++
-		}
-		aDigit := a[iStart:i]
-
-		jStart = j
-		for j < len(b) && unicode.IsDigit(rune(b[j])) {
-			j++
-		}
-		bDigit := b[jStart:j]
-
-		// Compare digit segments numerically
-		digitCmp := compareALMPDigits(aDigit, bDigit)
-		if digitCmp != 0 {
-			return digitCmp
+		// Compare segments
+		cmp := compareSegments(aSeg, bSeg)
+		if cmp != 0 {
+			return cmp
 		}
 	}
 
 	return 0
 }
 
-// compareALMPNonDigits compares non-digit segments using vercmp alphanumeric precedence
-// vercmp precedence: 1.0a < 1.0b < 1.0beta < 1.0p < 1.0pre < 1.0rc < 1.0 < 1.0.a < 1.0.1
-func compareALMPNonDigits(a, b string) int {
-	// Empty strings sort before non-empty strings in vercmp
-	// This handles cases like "1.0" vs "1.0a" where "1.0" should be greater
+// splitToSegments splits a version string into segments, preserving empty segments
+func splitToSegments(version string) []string {
+	var segments []string
+	var current strings.Builder
+
+	for _, r := range version {
+		if unicode.IsLetter(r) || unicode.IsDigit(r) {
+			current.WriteRune(r)
+		} else {
+			// Delimiter found - end current segment
+			segments = append(segments, current.String())
+			current.Reset()
+		}
+	}
+
+	// Add final segment
+	segments = append(segments, current.String())
+
+	return segments
+}
+
+// compareSegments compares individual segments using vercmp rules
+func compareSegments(a, b string) int {
+	// Handle empty segments according to vercmp "final showdown" rules
 	if a == "" && b == "" {
 		return 0
 	}
 	if a == "" {
-		return 1 // empty (like end of "1.0") sorts after non-empty (like "a" in "1.0a")
+		// Empty segment vs non-empty segment
+		// Based on vercmp results: more segments (even empty) = greater version
+		return 1 // empty > non-empty (empty segments add "structure")
 	}
 	if b == "" {
-		return -1 // non-empty sorts before empty
+		// Non-empty vs empty segment
+		return -1 // non-empty < empty
 	}
 
-	// Compare lexicographically - this gives us the correct alphanumeric precedence
-	return strings.Compare(a, b)
+	// Both non-empty segments
+	aIsNum := len(a) > 0 && unicode.IsDigit(rune(a[0]))
+	bIsNum := len(b) > 0 && unicode.IsDigit(rune(b[0]))
+
+	if aIsNum && bIsNum {
+		return compareALMPDigits(a, b)
+	} else if aIsNum {
+		return 1 // numeric > alpha
+	} else if bIsNum {
+		return -1 // alpha < numeric
+	} else {
+		return strings.Compare(a, b) // both alpha
+	}
 }
 
 // compareALMPDigits compares digit strings numerically

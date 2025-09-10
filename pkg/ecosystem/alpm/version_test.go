@@ -17,20 +17,22 @@ func TestEcosystem_NewVersion(t *testing.T) {
 			name:  "simple version",
 			input: "1.0.0",
 			want: &Version{
-				original: "1.0.0",
-				epoch:    0,
-				pkgver:   "1.0.0",
-				pkgrel:   0,
+				original:  "1.0.0",
+				epoch:     0,
+				pkgver:    "1.0.0",
+				pkgrel:    0,
+				hasPkgrel: false,
 			},
 		},
 		{
 			name:  "version with release",
 			input: "1.0.0-1",
 			want: &Version{
-				original: "1.0.0-1",
-				epoch:    0,
-				pkgver:   "1.0.0",
-				pkgrel:   1,
+				original:  "1.0.0-1",
+				epoch:     0,
+				pkgver:    "1.0.0",
+				pkgrel:    1,
+				hasPkgrel: true,
 			},
 		},
 		{
@@ -338,26 +340,26 @@ func TestVersion_Compare(t *testing.T) {
 			name: "release vs dot extension",
 			v1:   "1.0-1",
 			v2:   "1.0.a-1",
-			want: 1, // "1.0" (no suffix) > "1.0.a" (with suffix)
+			want: -1, // "1.0" < "1.0.a" per vercmp precedence
 		},
 		{
 			name: "dot extension vs dot number",
 			v1:   "1.0.a-1",
 			v2:   "1.0.1-1",
-			want: 1, // "1.0.a" (letter) > "1.0.1" (numeric after dot)
+			want: -1, // "1.0.a" < "1.0.1" (numeric after dot wins)
 		},
 		// Numeric precedence
 		{
 			name: "numeric comparison",
 			v1:   "1-1",
 			v2:   "1.0-1",
-			want: 1, // "1" (shorter) > "1.0" (longer)
+			want: -1, // "1" < "1.0" (1.0 has more precision)
 		},
 		{
 			name: "more numeric comparison",
 			v1:   "1.1-1",
 			v2:   "1.1.1-1",
-			want: 1, // "1.1" (shorter) > "1.1.1" (longer)
+			want: -1, // "1.1" < "1.1.1" (1.1.1 has more precision)
 		},
 		{
 			name: "version precedence",
@@ -376,7 +378,7 @@ func TestVersion_Compare(t *testing.T) {
 			name: "no release vs with release",
 			v1:   "1.0",
 			v2:   "1.0-1",
-			want: -1,
+			want: 0, // vercmp: 1.0 vs 1.0-1 → 0 (equal)
 		},
 		// Real Arch package comparisons
 		{
@@ -409,6 +411,128 @@ func TestVersion_Compare(t *testing.T) {
 			v1:   "2.4_rc1-1",
 			v2:   "2.4_rc2-1",
 			want: -1,
+		},
+		// Edge cases for robust vercmp implementation
+		{
+			name: "empty vs alpha suffix",
+			v1:   "1.0-1",
+			v2:   "1.0alpha-1",
+			want: 1, // 1.0 > 1.0alpha (alpha suffix makes it older)
+		},
+		{
+			name: "alpha suffix vs beta suffix",
+			v1:   "1.0alpha-1",
+			v2:   "1.0beta-1",
+			want: -1, // alpha < beta
+		},
+		{
+			name: "beta vs pre suffix",
+			v1:   "1.0beta-1",
+			v2:   "1.0pre-1",
+			want: -1, // beta < pre
+		},
+		{
+			name: "pre vs rc suffix",
+			v1:   "1.0pre-1",
+			v2:   "1.0rc-1",
+			want: -1, // pre < rc
+		},
+		{
+			name: "rc vs release",
+			v1:   "1.0rc-1",
+			v2:   "1.0-1",
+			want: -1, // rc < release
+		},
+		{
+			name: "release vs dot alpha",
+			v1:   "1.0-1",
+			v2:   "1.0.alpha-1",
+			want: -1, // 1.0 < 1.0.alpha (dot extension wins)
+		},
+		{
+			name: "dot alpha vs dot numeric",
+			v1:   "1.0.alpha-1",
+			v2:   "1.0.1-1",
+			want: -1, // 1.0.alpha < 1.0.1 (numeric wins over alpha)
+		},
+		{
+			name: "multiple delimiters NOT treated as one",
+			v1:   "1...2-1",
+			v2:   "1.2-1",
+			want: 1, // vercmp: 1...2 vs 1.2 → 1 (multiple delimiters make it LARGER)
+		},
+		{
+			name: "leading zeros in numeric",
+			v1:   "1.001-1",
+			v2:   "1.1-1",
+			want: 0, // 1.001 == 1.1 (001 == 1 when compared numerically)
+		},
+		{
+			name: "very large numbers",
+			v1:   "1.999999999999999999-1",
+			v2:   "1.1000000000000000000-1",
+			want: -1, // Should handle large numbers correctly
+		},
+		{
+			name: "mixed alpha and numeric segments",
+			v1:   "1.0a2b3c-1",
+			v2:   "1.0a2b4c-1",
+			want: -1, // Should parse segments: [1] [0] [a] [2] [b] [3] [c] vs [1] [0] [a] [2] [b] [4] [c]
+		},
+		{
+			name: "empty string comparison edge case",
+			v1:   "1.-1",
+			v2:   "1.0-1",
+			want: -1, // "1." should parse as [1] vs [1] [0]
+		},
+		// Additional tests based on actual vercmp behavior
+		{
+			name: "1 vs 1.0 (vercmp verified)",
+			v1:   "1",
+			v2:   "1.0",
+			want: -1, // vercmp: 1 vs 1.0 → -1
+		},
+		{
+			name: "1.0 vs 1.00 (vercmp verified)",
+			v1:   "1.0",
+			v2:   "1.00",
+			want: 0, // vercmp: 1.0 vs 1.00 → 0
+		},
+		{
+			name: "1.1 vs 1.1.1 (vercmp verified)",
+			v1:   "1.1",
+			v2:   "1.1.1",
+			want: -1, // vercmp: 1.1 vs 1.1.1 → -1
+		},
+		{
+			name: "1.10 vs 1.2 (vercmp verified)",
+			v1:   "1.10",
+			v2:   "1.2",
+			want: 1, // vercmp: 1.10 vs 1.2 → 1
+		},
+		{
+			name: "multiple hyphens (vercmp verified)",
+			v1:   "1---2",
+			v2:   "1-2",
+			want: 1, // vercmp: 1---2 vs 1-2 → 1
+		},
+		{
+			name: "underscore vs dot (vercmp verified)",
+			v1:   "1_2",
+			v2:   "1.2",
+			want: 0, // vercmp: 1_2 vs 1.2 → 0
+		},
+		{
+			name: "trailing dot (vercmp verified)",
+			v1:   "1.",
+			v2:   "1.0",
+			want: -1, // vercmp: 1. vs 1.0 → -1
+		},
+		{
+			name: "trailing dot after number (vercmp verified)",
+			v1:   "1.0.",
+			v2:   "1.0",
+			want: 1, // vercmp: 1.0. vs 1.0 → 1
 		},
 	}
 
