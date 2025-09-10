@@ -22,7 +22,10 @@ var (
 	// - Release candidates: 2.4.41-RC1, 9.0.0-RC2
 	// - Beta/Alpha releases: 2.4.0-beta, 3.0.0-alpha
 	// - Development versions: 2.5.0-dev
-	apacheVersionPattern = regexp.MustCompile(`^(\d+)\.(\d+)\.(\d+)(?:-([A-Za-z]+)(\d*))?$`)
+	// - Milestone versions: 2.5.0-M4, 3.0.0-milestone-2
+	// - Snapshot versions: 2.4.0-SNAPSHOT
+	// - Date versions: 2.4.41-v20230415 (Apache Directory Project format)
+	apacheVersionPattern = regexp.MustCompile(`^(\d+)\.(\d+)\.(\d+)(?:-([A-Za-z]+)(\d*|v\d{8})?)?$`)
 )
 
 func (e *Ecosystem) NewVersion(version string) (*Version, error) {
@@ -59,16 +62,31 @@ func (e *Ecosystem) NewVersion(version string) (*Version, error) {
 		return nil, fmt.Errorf("invalid patch version: %s", matches[3])
 	}
 
-	// Parse optional qualifier (RC, beta, alpha, dev, etc.)
+	// Parse optional qualifier (RC, beta, alpha, dev, milestone, snapshot, etc.)
 	qualifier := ""
 	number := 0
 	if matches[4] != "" {
 		qualifier = strings.ToLower(matches[4])
 		if matches[5] != "" {
-			number, err = strconv.Atoi(matches[5])
-			if err != nil {
-				return nil, fmt.Errorf("invalid qualifier number: %s", matches[5])
+			// Handle date-based qualifiers (v20230415)
+			if strings.HasPrefix(matches[5], "v") && len(matches[5]) == 9 {
+				// Extract date number for comparison (v20230415 -> 20230415)
+				dateStr := matches[5][1:]
+				number, err = strconv.Atoi(dateStr)
+				if err != nil {
+					return nil, fmt.Errorf("invalid date qualifier: %s", matches[5])
+				}
+			} else if matches[5] != "" {
+				// Regular numeric qualifier
+				number, err = strconv.Atoi(matches[5])
+				if err != nil {
+					return nil, fmt.Errorf("invalid qualifier number: %s", matches[5])
+				}
 			}
+		}
+		// Normalize milestone qualifiers
+		if qualifier == "milestone" {
+			qualifier = "m"
 		}
 	}
 
@@ -135,10 +153,14 @@ func getQualifierPrecedence(qualifier string) int {
 		return 1
 	case "beta":
 		return 2
-	case "rc":
+	case "m", "milestone":
 		return 3
-	case "dev":
+	case "rc":
 		return 4
+	case "snapshot":
+		return 5
+	case "dev":
+		return 6
 	default:
 		return 99 // Unknown qualifiers come last
 	}

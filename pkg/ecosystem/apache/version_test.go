@@ -107,6 +107,54 @@ func TestEcosystem_NewVersion(t *testing.T) {
 				original:  "2.4.0-RC2",
 			},
 		},
+		{
+			name:  "Apache with milestone M4",
+			input: "2.5.0-M4",
+			want: &Version{
+				major:     2,
+				minor:     5,
+				patch:     0,
+				qualifier: "m",
+				number:    4,
+				original:  "2.5.0-M4",
+			},
+		},
+		{
+			name:  "Apache with full milestone qualifier",
+			input: "3.0.0-milestone2",
+			want: &Version{
+				major:     3,
+				minor:     0,
+				patch:     0,
+				qualifier: "m",
+				number:    2,
+				original:  "3.0.0-milestone2",
+			},
+		},
+		{
+			name:  "Apache with SNAPSHOT qualifier",
+			input: "2.4.0-SNAPSHOT",
+			want: &Version{
+				major:     2,
+				minor:     4,
+				patch:     0,
+				qualifier: "snapshot",
+				number:    0,
+				original:  "2.4.0-SNAPSHOT",
+			},
+		},
+		{
+			name:  "Apache Directory Project date version",
+			input: "2.4.41-v20230415",
+			want: &Version{
+				major:     2,
+				minor:     4,
+				patch:     41,
+				qualifier: "v",
+				number:    20230415,
+				original:  "2.4.41-v20230415",
+			},
+		},
 		// Error cases
 		{
 			name:    "empty string",
@@ -246,6 +294,48 @@ func TestVersion_Compare(t *testing.T) {
 			name: "RC vs dev",
 			v1:   "2.4.41-RC1",
 			v2:   "2.4.41-dev",
+			want: -1,
+		},
+		{
+			name: "beta vs milestone",
+			v1:   "2.4.41-beta",
+			v2:   "2.4.41-M1",
+			want: -1,
+		},
+		{
+			name: "milestone vs RC",
+			v1:   "2.4.41-M4",
+			v2:   "2.4.41-RC1",
+			want: -1,
+		},
+		{
+			name: "RC vs snapshot",
+			v1:   "2.4.41-RC1",
+			v2:   "2.4.41-SNAPSHOT",
+			want: -1,
+		},
+		{
+			name: "snapshot vs dev",
+			v1:   "2.4.41-SNAPSHOT",
+			v2:   "2.4.41-dev",
+			want: -1,
+		},
+		{
+			name: "milestone comparison",
+			v1:   "2.4.41-M1",
+			v2:   "2.4.41-M4",
+			want: -1,
+		},
+		{
+			name: "date version comparison",
+			v1:   "2.4.41-v20230415",
+			v2:   "2.4.41-v20230416",
+			want: -1,
+		},
+		{
+			name: "date version vs release",
+			v1:   "2.4.41-v20230415",
+			v2:   "2.4.41",
 			want: -1,
 		},
 		// Numbered qualifiers

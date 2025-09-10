@@ -260,6 +260,37 @@ func TestVersionRange_Contains(t *testing.T) {
 			version:  "2.4.41",
 			want:     true,
 		},
+		// New qualifier tests
+		{
+			name:     "Milestone version in range",
+			rangeStr: ">=2.4.41-M1",
+			version:  "2.4.41-M4",
+			want:     true,
+		},
+		{
+			name:     "Snapshot version range",
+			rangeStr: ">=2.4.0-RC1",
+			version:  "2.4.0-SNAPSHOT",
+			want:     true,
+		},
+		{
+			name:     "Date version range",
+			rangeStr: ">=2.4.41-v20230401",
+			version:  "2.4.41-v20230415",
+			want:     true,
+		},
+		{
+			name:     "Milestone exact match",
+			rangeStr: "2.5.0-M4",
+			version:  "2.5.0-M4",
+			want:     true,
+		},
+		{
+			name:     "Apache Directory Project range",
+			rangeStr: ">=2.4.0-v20230101 <=2.4.0-v20231231",
+			version:  "2.4.0-v20230415",
+			want:     true,
+		},
 	}
 
 	ecosystem := &Ecosystem{}
