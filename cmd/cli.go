@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/alowayed/go-univers/pkg/ecosystem/alpine"
+	"github.com/alowayed/go-univers/pkg/ecosystem/apache"
 	"github.com/alowayed/go-univers/pkg/ecosystem/cargo"
 	"github.com/alowayed/go-univers/pkg/ecosystem/composer"
 	"github.com/alowayed/go-univers/pkg/ecosystem/conan"
@@ -45,6 +46,9 @@ func run(w io.Writer, args []string) int {
 	ecosystemToRun := map[string]func([]string) (string, int){
 		alpine.Name: func(args []string) (string, int) {
 			return runEcosystem(&alpine.Ecosystem{}, args)
+		},
+		apache.Name: func(args []string) (string, int) {
+			return runEcosystem(&apache.Ecosystem{}, args)
 		},
 		cargo.Name: func(args []string) (string, int) {
 			return runEcosystem(&cargo.Ecosystem{}, args)
