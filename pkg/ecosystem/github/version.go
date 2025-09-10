@@ -43,7 +43,7 @@ func (e *Ecosystem) NewVersion(version string) (*Version, error) {
 
 	// Try date-based pattern first
 	if matches := githubDatePattern.FindStringSubmatch(trimmed); matches != nil {
-		return parseeDateBasedVersion(trimmed, matches)
+		return parseDateBasedVersion(trimmed, matches)
 	}
 
 	// Try semantic version pattern
@@ -55,7 +55,7 @@ func (e *Ecosystem) NewVersion(version string) (*Version, error) {
 	return parseSemanticVersion(trimmed, matches)
 }
 
-func parseeDateBasedVersion(original string, matches []string) (*Version, error) {
+func parseDateBasedVersion(original string, matches []string) (*Version, error) {
 	prefix := matches[1]
 	year, _ := strconv.Atoi(matches[2])
 	month, _ := strconv.Atoi(matches[3])
@@ -189,6 +189,8 @@ func compareQualifiers(q1 string, n1 int, q2 string, n2 int) int {
 // Lower values have lower precedence (come first in ordering)
 func getQualifierPrecedence(qualifier string) int {
 	switch qualifier {
+	case "dev":
+		return 0
 	case "alpha":
 		return 1
 	case "beta":
@@ -197,8 +199,6 @@ func getQualifierPrecedence(qualifier string) int {
 		return 3
 	case "snapshot":
 		return 4
-	case "dev":
-		return 5
 	default:
 		return 99 // Unknown qualifiers come last
 	}
