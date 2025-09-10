@@ -323,10 +323,35 @@ func TestVersionRange_Contains(t *testing.T) {
 			want:     true,
 		},
 		{
-			name:     "Elixir compatibility",
+			name:     "Elixir compatibility - out of range",
 			rangeStr: "~>1.14",
 			version:  "1.15.7",
+			want:     false,
+		},
+		{
+			name:     "Elixir compatibility - in range",
+			rangeStr: "~>1.14",
+			version:  "1.14.3",
 			want:     true,
+		},
+		// Pessimistic operator with pre-release identifiers
+		{
+			name:     "pessimistic with pre-release - exact match",
+			rangeStr: "~>1.0.0-alpha",
+			version:  "1.0.0-alpha",
+			want:     true,
+		},
+		{
+			name:     "pessimistic with pre-release - in range",
+			rangeStr: "~>1.0.0-alpha",
+			version:  "1.0.1",
+			want:     true,
+		},
+		{
+			name:     "pessimistic with pre-release - out of range",
+			rangeStr: "~>1.0.0-alpha",
+			version:  "1.1.0",
+			want:     false,
 		},
 	}
 

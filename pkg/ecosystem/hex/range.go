@@ -104,43 +104,46 @@ func parseConstraint(constraintStr string, ecosystem *Ecosystem) (*constraint, e
 }
 
 // expandPessimisticConstraint converts ~> operator to equivalent >= and < constraints
-// Standard pessimistic operator behavior:
-// ~> 1.2.3 means >= 1.2.3 and < 1.3.0 (increment minor)
-// ~> 1.2.0 means >= 1.2.0 and < 1.3.0 (increment minor)
-// ~> 1.14 means >= 1.14.0 and < 2.0.0 (increment major for partial version)
+// Hex pessimistic operator behavior:
+// ~> X.Y.Z means >= X.Y.Z and < X.(Y+1).0
+// ~> X.Y (Y>0) means >= X.Y.0 and < X.(Y+1).0
+// ~> X.0 means >= X.0.0 and < (X+1).0.0
 func expandPessimisticConstraint(c *constraint) []*constraint {
 	v := c.version
 
-	// Create >= constraint with full version (ensuring patch is present)
-	lowerVersion := &Version{
-		original: fmt.Sprintf("%d.%d.%d", v.major, v.minor, v.patch),
-		major:    v.major,
-		minor:    v.minor,
-		patch:    v.patch,
-	}
+	// The lower bound is simply the version from the constraint.
+	// This correctly preserves any pre-release identifiers.
 	geConstraint := &constraint{
 		operator: ">=",
-		version:  lowerVersion,
+		version:  v,
 	}
 
-	// Determine upper bound
-	var upperBound *Version
+	// Determine upper bound based on Hex pessimistic version operator rules.
+	var upperMajor, upperMinor int
+
 	if strings.Count(v.original, ".") == 1 {
-		// Partial version like "1.14" - increment major
-		upperBound = &Version{
-			original: fmt.Sprintf("%d.0.0", v.major+1),
-			major:    v.major + 1,
-			minor:    0,
-			patch:    0,
+		// Case: ~> X.Y
+		if v.minor == 0 {
+			// ~> X.0 is >= X.0.0 and < (X+1).0.0
+			upperMajor = v.major + 1
+			upperMinor = 0
+		} else {
+			// ~> X.Y (Y>0) is >= X.Y.0 and < X.(Y+1).0
+			upperMajor = v.major
+			upperMinor = v.minor + 1
 		}
 	} else {
-		// Full version like "1.2.3" or "1.2.0" - increment minor
-		upperBound = &Version{
-			original: fmt.Sprintf("%d.%d.0", v.major, v.minor+1),
-			major:    v.major,
-			minor:    v.minor + 1,
-			patch:    0,
-		}
+		// Case: ~> X.Y.Z
+		// ~> X.Y.Z is >= X.Y.Z and < X.(Y+1).0
+		upperMajor = v.major
+		upperMinor = v.minor + 1
+	}
+
+	upperBound := &Version{
+		original: fmt.Sprintf("%d.%d.0", upperMajor, upperMinor),
+		major:    upperMajor,
+		minor:    upperMinor,
+		patch:    0,
 	}
 
 	ltConstraint := &constraint{
