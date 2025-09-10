@@ -33,7 +33,7 @@ func (e *Ecosystem) NewVersionRange(rangeStr string) (*VersionRange, error) {
 	}
 
 	// Parse constraints by splitting on spaces
-	constraints, err := parseConstraints(trimmed)
+	constraints, err := parseConstraints(trimmed, e)
 	if err != nil {
 		return nil, err
 	}
@@ -44,7 +44,7 @@ func (e *Ecosystem) NewVersionRange(rangeStr string) (*VersionRange, error) {
 	}, nil
 }
 
-func parseConstraints(rangeStr string) ([]*constraint, error) {
+func parseConstraints(rangeStr string, ecosystem *Ecosystem) ([]*constraint, error) {
 	// Split by spaces to handle multiple constraints
 	parts := strings.Fields(rangeStr)
 	if len(parts) == 0 {
@@ -52,7 +52,6 @@ func parseConstraints(rangeStr string) ([]*constraint, error) {
 	}
 
 	var constraints []*constraint
-	ecosystem := &Ecosystem{}
 
 	for _, part := range parts {
 		constraint, err := parseConstraint(part, ecosystem)

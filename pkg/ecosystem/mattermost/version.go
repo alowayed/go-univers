@@ -17,6 +17,12 @@ type Version struct {
 	number    int    // for rc1, rc2, etc.
 }
 
+const (
+	precedenceRC      = 1
+	precedenceESR     = 2
+	precedenceUnknown = 99 // Unknown qualifiers come last
+)
+
 var (
 	// Mattermost version pattern supports:
 	// - Semantic with v prefix: v8.1.5, v10.12.0
@@ -141,11 +147,11 @@ func compareQualifiers(q1 string, n1 int, q2 string, n2 int) int {
 func getQualifierPrecedence(qualifier string) int {
 	switch qualifier {
 	case "rc":
-		return 1
+		return precedenceRC
 	case "esr":
-		return 2
+		return precedenceESR
 	default:
-		return 99 // Unknown qualifiers come last
+		return precedenceUnknown
 	}
 }
 
