@@ -12,6 +12,7 @@ import (
 	"github.com/alowayed/go-univers/pkg/ecosystem/gentoo"
 	"github.com/alowayed/go-univers/pkg/ecosystem/github"
 	"github.com/alowayed/go-univers/pkg/ecosystem/gomod"
+	"github.com/alowayed/go-univers/pkg/ecosystem/hex"
 	"github.com/alowayed/go-univers/pkg/ecosystem/mattermost"
 	"github.com/alowayed/go-univers/pkg/ecosystem/maven"
 	"github.com/alowayed/go-univers/pkg/ecosystem/npm"
@@ -80,6 +81,11 @@ var (
 	_ univers.Version[*gomod.Version]                        = &gomod.Version{}
 	_ univers.VersionRange[*gomod.Version]                   = &gomod.VersionRange{}
 	_ univers.Ecosystem[*gomod.Version, *gomod.VersionRange] = &gomod.Ecosystem{}
+
+	// hex
+	_ univers.Version[*hex.Version]                      = &hex.Version{}
+	_ univers.VersionRange[*hex.Version]                 = &hex.VersionRange{}
+	_ univers.Ecosystem[*hex.Version, *hex.VersionRange] = &hex.Ecosystem{}
 
 	// mattermost
 	_ univers.Version[*mattermost.Version]                             = &mattermost.Version{}
