@@ -65,7 +65,7 @@ func main() {
 | Ecosystem | Package | [VERS versioning scheme](https://github.com/package-url/vers-spec/blob/main/VERSION-RANGE-SPEC.rst#some-of-the-known-versioning-schemes) |
 |-----------|---------|-----------|
 | **Alpine** | `pkg/ecosystem/alpine` | `alpine` ✅ |
-| **Apache** | [❌](https://github.com/alowayed/go-univers/issues/73) | [`apache` ❌](https://github.com/alowayed/go-univers/issues/74) |
+| **Apache** | `pkg/ecosystem/apache` | [`apache` ❌](https://github.com/alowayed/go-univers/issues/74) |
 | **Arch Linux (ALPM)** | [❌](https://github.com/alowayed/go-univers/issues/75) | [`alpm` ❌](https://github.com/alowayed/go-univers/issues/76) |
 | **Cargo** | `pkg/ecosystem/cargo` | `cargo` ✅ |
 | **Conan** | `pkg/ecosystem/conan` | [`conan` ❌](https://github.com/alowayed/go-univers/issues/59) |
@@ -105,15 +105,19 @@ The CLI follows the pattern: `univers <ecosystem|spec> <command> [args]`
 ```bash
 # Compare versions (outputs -1, 0, or 1)
 univers npm compare "1.2.3" "1.2.4"           # → -1 (first < second)
+univers apache compare "2.4.40" "2.4.41"      # → -1 (first < second)
 univers pypi compare "2.0.0" "1.9.9"          # → 1 (first > second)
 univers semver compare "1.2.3" "1.2.3"        # → 0 (equal)
 
 # Sort versions in ascending order
 univers gem sort "2.0.0" "1.0.0-alpha" "1.0.0"
 # → "1.0.0-alpha" "1.0.0" "2.0.0"
+univers apache sort "2.4.41" "2.2.34" "9.0.45"
+# → "2.2.34" "2.4.41" "9.0.45"
 
 # Check if version satisfies range (outputs true/false)
 univers cargo contains "^1.2.0" "1.2.5"       # → true
+univers apache contains ">=2.4.0" "2.4.41"    # → true
 univers maven contains "[1.0.0,2.0.0]" "1.5.0" # → true
 univers vers contains "vers:npm/>=1.2.0|<=2.0.0" "1.5.0" # → true
 univers vers contains "vers:alpine/>=1.2.0-r5" "1.2.1-r3" # → true
