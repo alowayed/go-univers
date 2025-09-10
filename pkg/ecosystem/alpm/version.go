@@ -2,16 +2,10 @@ package alpm
 
 import (
 	"fmt"
-	"regexp"
 	"strconv"
 	"strings"
 	"unicode"
 )
-
-// versionPattern matches ALMP version strings
-// Format: [epoch:]pkgver[-pkgrel]
-// Note: pkgrel is always numeric, so we split on the last hyphen followed by digits
-var versionPattern = regexp.MustCompile(`^(?:(\d+):)?(.+?)(?:-(\d+))?$`)
 
 // Version represents an ALMP package version
 type Version struct {
