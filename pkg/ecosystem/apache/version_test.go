@@ -1,6 +1,7 @@
 package apache
 
 import (
+	"reflect"
 	"testing"
 )
 
@@ -205,23 +206,8 @@ func TestEcosystem_NewVersion(t *testing.T) {
 			if tt.wantErr {
 				return
 			}
-			if got.major != tt.want.major {
-				t.Errorf("Ecosystem.NewVersion() major = %v, want %v", got.major, tt.want.major)
-			}
-			if got.minor != tt.want.minor {
-				t.Errorf("Ecosystem.NewVersion() minor = %v, want %v", got.minor, tt.want.minor)
-			}
-			if got.patch != tt.want.patch {
-				t.Errorf("Ecosystem.NewVersion() patch = %v, want %v", got.patch, tt.want.patch)
-			}
-			if got.qualifier != tt.want.qualifier {
-				t.Errorf("Ecosystem.NewVersion() qualifier = %v, want %v", got.qualifier, tt.want.qualifier)
-			}
-			if got.number != tt.want.number {
-				t.Errorf("Ecosystem.NewVersion() number = %v, want %v", got.number, tt.want.number)
-			}
-			if got.original != tt.want.original {
-				t.Errorf("Ecosystem.NewVersion() original = %v, want %v", got.original, tt.want.original)
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Ecosystem.NewVersion() got = %+v, want %+v", got, tt.want)
 			}
 		})
 	}
