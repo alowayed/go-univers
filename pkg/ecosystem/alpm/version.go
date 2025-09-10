@@ -251,14 +251,31 @@ func compareSegmentBySegment(a, b string) int {
 
 	for i := 0; i < maxLen; i++ {
 		var aSeg, bSeg string
+		var aMissing, bMissing bool
+
 		if i < len(aSegments) {
 			aSeg = aSegments[i]
+		} else {
+			aMissing = true
 		}
 		if i < len(bSegments) {
 			bSeg = bSegments[i]
+		} else {
+			bMissing = true
 		}
 
-		// Compare segments
+		// Handle missing segments differently from empty segments
+		if aMissing && bMissing {
+			continue // both missing, equal
+		}
+		if aMissing {
+			return -1 // missing < present (even if empty)
+		}
+		if bMissing {
+			return 1 // present (even if empty) > missing
+		}
+
+		// Compare segments (both present)
 		cmp := compareSegments(aSeg, bSeg)
 		if cmp != 0 {
 			return cmp
@@ -268,23 +285,42 @@ func compareSegmentBySegment(a, b string) int {
 	return 0
 }
 
-// splitToSegments splits a version string into segments, preserving empty segments
+// splitToSegments splits a version string into segments following vercmp rules
+// vercmp alternates between alpha and numeric segments
 func splitToSegments(version string) []string {
 	var segments []string
 	var current strings.Builder
+	var lastWasAlpha *bool // nil = no character yet, true = alpha, false = numeric
 
 	for _, r := range version {
 		if unicode.IsLetter(r) || unicode.IsDigit(r) {
+			isAlpha := unicode.IsLetter(r)
+
+			// Check if we need to split due to alpha/numeric transition
+			if lastWasAlpha != nil && *lastWasAlpha != isAlpha {
+				// Transition between alpha and numeric - split here
+				segments = append(segments, current.String())
+				current.Reset()
+			}
+
 			current.WriteRune(r)
+			lastWasAlpha = &isAlpha
 		} else {
 			// Delimiter found - end current segment
-			segments = append(segments, current.String())
-			current.Reset()
+			if current.Len() > 0 {
+				segments = append(segments, current.String())
+				current.Reset()
+				lastWasAlpha = nil
+			}
+			// Add empty segment for delimiter (preserving empty segments)
+			segments = append(segments, "")
 		}
 	}
 
-	// Add final segment
-	segments = append(segments, current.String())
+	// Add final segment if any content remains
+	if current.Len() > 0 {
+		segments = append(segments, current.String())
+	}
 
 	return segments
 }
@@ -297,8 +333,8 @@ func compareSegments(a, b string) int {
 	}
 	if a == "" {
 		// Empty segment vs non-empty segment
-		// Based on vercmp results: more segments (even empty) = greater version
-		return 1 // empty > non-empty (empty segments add "structure")
+		// In vercmp, empty segments can be greater than non-empty in certain contexts
+		return 1 // empty > non-empty
 	}
 	if b == "" {
 		// Non-empty vs empty segment
