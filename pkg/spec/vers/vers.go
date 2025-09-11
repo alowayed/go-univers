@@ -330,7 +330,7 @@ func toRanges[V univers.Version[V], VR univers.VersionRange[V]](
 			rangeStrs = intervalToRpmRanges(interval)
 		case "semver":
 			rangeStrs = intervalToSemverRanges(interval)
-		case "go":
+		case "golang":
 			rangeStrs = intervalToGomodRanges(interval)
 		default:
 			// For unsupported ecosystems, return error

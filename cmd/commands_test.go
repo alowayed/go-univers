@@ -3,7 +3,7 @@ package main
 import (
 	"testing"
 
-	"github.com/alowayed/go-univers/pkg/ecosystem/gomod"
+	"github.com/alowayed/go-univers/pkg/ecosystem/golang"
 	"github.com/alowayed/go-univers/pkg/ecosystem/maven"
 	"github.com/alowayed/go-univers/pkg/ecosystem/npm"
 	"github.com/alowayed/go-univers/pkg/ecosystem/pypi"
@@ -260,7 +260,7 @@ func TestCompare(t *testing.T) {
 	}...)
 
 	t.Run("go", func(t *testing.T) {
-		testCompare(t, &gomod.Ecosystem{}, goTests)
+		testCompare(t, &golang.Ecosystem{}, goTests)
 	})
 
 	t.Run("maven", func(t *testing.T) {
@@ -378,7 +378,7 @@ func TestSort(t *testing.T) {
 	}...)
 
 	t.Run("go", func(t *testing.T) {
-		testSort(t, &gomod.Ecosystem{}, goTests)
+		testSort(t, &golang.Ecosystem{}, goTests)
 	})
 
 	t.Run("maven", func(t *testing.T) {
@@ -622,7 +622,7 @@ func TestContains(t *testing.T) {
 	}
 
 	t.Run("go", func(t *testing.T) {
-		testContains(t, &gomod.Ecosystem{}, goTests)
+		testContains(t, &golang.Ecosystem{}, goTests)
 	})
 
 	t.Run("maven", func(t *testing.T) {

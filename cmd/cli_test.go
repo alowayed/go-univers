@@ -63,8 +63,8 @@ func TestRun(t *testing.T) {
 			wantCode: 0,
 		},
 		{
-			name:     "go ecosystem success",
-			args:     []string{"go", "compare", "v1.0.0", "v2.0.0"},
+			name:     "golang ecosystem success",
+			args:     []string{"golang", "compare", "v1.0.0", "v2.0.0"},
 			wantCode: 0,
 		},
 		{
@@ -270,8 +270,8 @@ func TestRun_Private(t *testing.T) {
 			wantCode: 0,
 		},
 		{
-			name:     "go ecosystem success",
-			args:     []string{"go", "compare", "v1.0.0", "v2.0.0"},
+			name:     "golang ecosystem success",
+			args:     []string{"golang", "compare", "v1.0.0", "v2.0.0"},
 			wantOut:  "-1",
 			wantCode: 0,
 		},

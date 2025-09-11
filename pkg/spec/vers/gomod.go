@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/alowayed/go-univers/pkg/ecosystem/gomod"
+	"github.com/alowayed/go-univers/pkg/ecosystem/golang"
 )
 
 // gomodContains implements VERS constraint checking for Go modules ecosystem using 'golang' scheme
 func gomodContains(constraints []string, version string) (bool, error) {
-	e := &gomod.Ecosystem{}
+	e := &golang.Ecosystem{}
 	return contains(e, constraints, version)
 }
 
