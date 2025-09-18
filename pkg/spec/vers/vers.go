@@ -331,7 +331,7 @@ func toRanges[V univers.Version[V], VR univers.VersionRange[V]](
 		case "semver":
 			rangeStrs = intervalToSemverRanges(interval)
 		case "golang":
-			rangeStrs = intervalToGomodRanges(interval)
+			rangeStrs = intervalToGolangRanges(interval)
 		default:
 			// For unsupported ecosystems, return error
 			return nil, fmt.Errorf("ecosystem '%s' not yet supported for VERS", e.Name())
@@ -613,7 +613,7 @@ func Contains(versRange, version string) (bool, error) {
 		"pypi":    pypiContains,
 		"rpm":     rpmContains,
 		"generic": semverContains, // 'generic' is the correct VERS scheme for semver
-		"golang":  gomodContains,
+		"golang":  golangContains,
 	}
 
 	containsForEcosystem, ok := schemeToContains[s]

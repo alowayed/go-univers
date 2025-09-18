@@ -259,7 +259,7 @@ func TestCompare(t *testing.T) {
 		},
 	}...)
 
-	t.Run("go", func(t *testing.T) {
+	t.Run("golang", func(t *testing.T) {
 		testCompare(t, &golang.Ecosystem{}, goTests)
 	})
 
@@ -377,7 +377,7 @@ func TestSort(t *testing.T) {
 		},
 	}...)
 
-	t.Run("go", func(t *testing.T) {
+	t.Run("golang", func(t *testing.T) {
 		testSort(t, &golang.Ecosystem{}, goTests)
 	})
 
@@ -621,7 +621,7 @@ func TestContains(t *testing.T) {
 		},
 	}
 
-	t.Run("go", func(t *testing.T) {
+	t.Run("golang", func(t *testing.T) {
 		testContains(t, &golang.Ecosystem{}, goTests)
 	})
 
