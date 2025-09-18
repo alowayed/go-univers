@@ -16,7 +16,7 @@ import (
 	"github.com/alowayed/go-univers/pkg/ecosystem/gem"
 	"github.com/alowayed/go-univers/pkg/ecosystem/gentoo"
 	"github.com/alowayed/go-univers/pkg/ecosystem/github"
-	"github.com/alowayed/go-univers/pkg/ecosystem/gomod"
+	"github.com/alowayed/go-univers/pkg/ecosystem/golang"
 	"github.com/alowayed/go-univers/pkg/ecosystem/hex"
 	"github.com/alowayed/go-univers/pkg/ecosystem/mattermost"
 	"github.com/alowayed/go-univers/pkg/ecosystem/maven"
@@ -81,8 +81,8 @@ func run(w io.Writer, args []string) int {
 		github.Name: func(args []string) (string, int) {
 			return runEcosystem(&github.Ecosystem{}, args)
 		},
-		gomod.Name: func(args []string) (string, int) {
-			return runEcosystem(&gomod.Ecosystem{}, args)
+		golang.Name: func(args []string) (string, int) {
+			return runEcosystem(&golang.Ecosystem{}, args)
 		},
 		hex.Name: func(args []string) (string, int) {
 			return runEcosystem(&hex.Ecosystem{}, args)

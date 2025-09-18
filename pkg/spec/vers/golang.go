@@ -4,17 +4,17 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/alowayed/go-univers/pkg/ecosystem/gomod"
+	"github.com/alowayed/go-univers/pkg/ecosystem/golang"
 )
 
-// gomodContains implements VERS constraint checking for Go modules ecosystem using 'golang' scheme
-func gomodContains(constraints []string, version string) (bool, error) {
-	e := &gomod.Ecosystem{}
+// golangContains implements VERS constraint checking for Go modules ecosystem using 'golang' scheme
+func golangContains(constraints []string, version string) (bool, error) {
+	e := &golang.Ecosystem{}
 	return contains(e, constraints, version)
 }
 
-// intervalToGomodRanges converts an interval to Go module range syntax
-func intervalToGomodRanges(interval interval) []string {
+// intervalToGolangRanges converts an interval to Go module range syntax
+func intervalToGolangRanges(interval interval) []string {
 	// Handle exact matches
 	if interval.exact != "" {
 		return []string{fmt.Sprintf("=%s", ensureVPrefix(interval.exact))}
